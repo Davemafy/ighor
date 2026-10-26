@@ -8,6 +8,7 @@ import { SqliteTaskStore } from "../../src/data/store";
 import { freshTask } from "../../src/data/fixtures";
 import { runTurn } from "../../src/core/orchestrator";
 import { compose } from "../../src/capabilities/compose";
+import { invalidate } from "../../src/core/revision";
 import type { Artifact } from "../../src/core/contracts";
 
 const original: Artifact = {
@@ -196,6 +197,20 @@ describe("connected artifact approvals", () => {
     expect(result[1].content).toBe(earlier[1].content);
     expect(result[1].locked).toBe(true);
     expect(result[1].freshness).toBe("stale");
+  });
+
+  it("changing only the venue preserves an approved soundtrack and invalidates its practical drafts", () => {
+    const task = freshTask("venue", "owner");
+    task.artifacts = [
+      { ...original, id: "main", kind: "music-direction", dependencies: ["goal", "taste"], locked: true },
+      { ...original, id: "concept", dependencies: ["main", "location"] },
+      { ...original, id: "invitation", kind: "invitation", dependencies: ["concept", "location"] },
+    ];
+    invalidate(task, ["location"]);
+    expect(task.artifacts.find((a) => a.id === "main")?.freshness).toBe("current");
+    expect(task.artifacts.find((a) => a.id === "main")?.locked).toBe(true);
+    expect(task.artifacts.find((a) => a.id === "concept")?.freshness).toBe("stale");
+    expect(task.artifacts.find((a) => a.id === "invitation")?.freshness).toBe("stale");
   });
 
 });
