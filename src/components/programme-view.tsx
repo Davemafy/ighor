@@ -258,7 +258,7 @@ export function ProgrammeView({
           disabled={isBusy || (!main.locked && main.freshness !== "current")}
           onClick={() => onTurn({ type: "artifact-lock", artifactId: main.id, locked: !main.locked })}
         >
-          {main.locked ? "Unlock approved direction" : "Approve and lock this direction"}
+          {main.locked ? main.freshness === "stale" ? "Unlock and regenerate" : "Unlock approved direction" : "Approve and lock this direction"}
         </button>
       )}
       {task.artifacts.some((artifact) => artifact.id !== "main") && (
@@ -280,7 +280,7 @@ export function ProgrammeView({
                   disabled={isBusy || (!artifact.locked && artifact.freshness !== "current")}
                   onClick={() => onTurn({ type: "artifact-lock", artifactId: artifact.id, locked: !artifact.locked })}
                 >
-                  {artifact.locked ? "Unlock" : "Approve and lock"}
+                  {artifact.locked ? artifact.freshness === "stale" ? "Unlock and regenerate" : "Unlock" : "Approve and lock"}
                 </button>
                 {!artifact.locked && (
                   <ArtifactEditor
