@@ -214,3 +214,60 @@ it("retains an opening profile while asking for a missing locality", async () =>
     store.close();
   }
 });
+
+it("completes an initial request from earlier user facts after a clarifying answer", async () => {
+  const { interpretMessage } = await import("../../src/core/interpret-message");
+  const { ExecutionBudget } = await import("../../src/core/execution");
+  const task = freshTask("clarified-plan", "owner");
+  task.messages = [
+    {
+      role: "user",
+      text: "I want a 2-day trip and I like Radiohead.",
+      at: new Date().toISOString(),
+    },
+    {
+      role: "assistant",
+      kind: "conversation",
+      text: "Which city would you like to explore?",
+      at: new Date().toISOString(),
+    },
+  ];
+  const update = await interpretMessage(
+    task,
+    { type: "message", text: "Paris", version: 0 },
+    {
+      async interpret() {
+        return {
+          intent: "goal",
+          supported: true,
+          kind: "discovery",
+          goal: "A two-day trip in Paris",
+          targetType: "place",
+          outcome: { kind: "itinerary", days: 2, transferMinutes: null },
+          actions: [
+            {
+              kind: "profile",
+              participant: "you",
+              preferences: [
+                { value: "Radiohead", entityType: "artist", polarity: "like" },
+              ],
+            },
+            { kind: "constraints", location: "Paris" },
+          ],
+        };
+      },
+    },
+    new ExecutionBudget(),
+    () => {},
+  );
+  expect(update.interpretationFailed).toBe(false);
+  expect(update.clarification).toBeNull();
+  expect(update.task.brief.constraints.location).toBe("Paris");
+  expect(update.task.brief.outcome).toMatchObject({
+    kind: "itinerary",
+    days: 2,
+  });
+  expect(update.task.brief.participants[0].preferences[0].value).toBe(
+    "Radiohead",
+  );
+});

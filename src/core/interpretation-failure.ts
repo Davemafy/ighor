@@ -1,0 +1,91 @@
+import { z } from "zod";
+
+/** Report only known categories and schema paths, never raw provider content or credentials. */
+export function interpretationFailure(error: unknown): string {
+  if (error instanceof z.ZodError) {
+    const fields = new Set([
+      "decision",
+      "reply",
+      "replyEvidenceIds",
+      "candidates",
+      "finishReason",
+      "content",
+      "parts",
+      "functionCall",
+      "actions",
+      "kind",
+      "participant",
+      "preferences",
+      "value",
+      "polarity",
+      "entityType",
+      "targetType",
+      "outcome",
+      "intent",
+      "goal",
+      "supported",
+      "budget",
+      "duration",
+      "wording",
+      "days",
+      "transferMinutes",
+      "transitionMinutes",
+    ]);
+    const issues = flattenIssues(error.issues)
+      .slice(0, 6)
+      .map((issue) => {
+        const path = issue.path
+          .filter(
+            (part) => typeof part === "number" || fields.has(String(part)),
+          )
+          .join(".");
+
+        return `${issue.code}${path ? ` at ${path}` : ""}`;
+      });
+
+    return `invalid schema: ${issues.join(", ")}`;
+  }
+
+  if (error instanceof SyntaxError) {
+    return "invalid JSON";
+  }
+
+  if (error instanceof Error) {
+    const status = /Gemini returned HTTP (\d{3})/.exec(error.message);
+
+    if (status) {
+      return `provider HTTP ${status[1]}`;
+    }
+
+    if (/timed out|timeout/i.test(error.message)) {
+      return "provider timeout";
+    }
+
+    if (
+      /Unauthorized model tool|Exactly one allowed tool/.test(error.message)
+    ) {
+      return "invalid tool call";
+    }
+
+    if (error.message === "Outcome and discovery domain disagree.") {
+      return "outcome domain mismatch";
+    }
+
+    if (/State the|must be explicitly supplied/.test(error.message)) {
+      return "ungrounded outcome allowance";
+    }
+  }
+
+  return "unclassified provider response";
+}
+
+function flattenIssues(
+  issues: z.ZodError["issues"],
+  depth = 0,
+): z.ZodError["issues"] {
+  return issues.flatMap((issue) =>
+    issue.code === "invalid_union" && depth < 3
+      ? issue.errors.flatMap((branch) => flattenIssues(branch, depth + 1))
+      : [issue],
+  );
+}

@@ -26,5 +26,89 @@
     "Provider adapters share a bounded response reader; four tests cover UTF-8 byte counts, oversize cancellation, transport failure and missing bodies.",
     "All 213 unit/integration tests and 15 browser checks passed locally. Formatting, lint, type checking and the production build passed.",
     "Existing long messages and prompts were compared across the source before and after the refactor. Fixture hashes remain unchanged."
-  ]
+  ],
+  "latest_release": {
+    "at": "2026-10-26T05:38:32.192Z",
+    "engine_commit": "daacd11f4d0cabaa36473d93d7554aaa477ca51e",
+    "runtime": "https://igor-production-243e.up.railway.app/",
+    "railway_deployment": "success",
+    "local_checks": {
+      "format": "passed",
+      "typecheck": "passed",
+      "lint": "passed",
+      "production_build": "passed",
+      "unit_integration": {
+        "passed": 181,
+        "complete_suite": false,
+        "excluded_recording_dependent_suites": 6
+      },
+      "browser": {
+        "passed": 10,
+        "projects": ["home", "workspace", "provider-boundary"],
+        "complete_suite": false
+      }
+    },
+    "production_checks": [
+      {
+        "taste": ["Radiohead", "Arrival"],
+        "result": "10 film references",
+        "delivery": "CACHED",
+        "opening_model_requests": 1,
+        "opening_cultural_requests": 0
+      },
+      {
+        "taste": ["Portishead", "Arrival"],
+        "result": "10 film references",
+        "delivery": "LIVE",
+        "opening_model_requests": 1,
+        "opening_cultural_requests": 2
+      },
+      {
+        "correction": "Budget: 20",
+        "result": "budget updated; catalogue preserved in both journeys",
+        "cultural_requests_per_turn": 0
+      }
+    ],
+    "ci": "Failed before runner assignment; no steps executed.",
+    "limitations": [
+      "Full recorded-data regression run is pending.",
+      "Practical facts remain unverified.",
+      "No human preference-quality evaluation or broader autonomy claim."
+    ]
+  },
+  "conversation_release": {
+    "at": "2026-10-26T06:28:01.830Z",
+    "engine_commit": "ffd5c6b4cf1dc75f3b2b0eca782bf43fc0295c4b",
+    "railway_deployment": "success",
+    "production": {
+      "discussion_turns": 7,
+      "recalled_earlier_occasion_and_mood": true,
+      "restored_discussion_messages": 14,
+      "total_turns": 9,
+      "total_saved_messages": 18,
+      "film_references": 10,
+      "cultural_delivery": "CACHED",
+      "total_cultural_requests": 0,
+      "total_model_requests": 9,
+      "explanation_referenced_existing_evidence": true,
+      "browser_restored_after_refresh": true,
+      "task_survived_deployment": true,
+      "persistent_memory_items": 0
+    },
+    "local": {
+      "passed_tests": 195,
+      "available_suites": 20,
+      "passed_browser_checks": 11,
+      "recording_dependent_suites_not_run": 6,
+      "format": "passed",
+      "types": "passed",
+      "lint": "passed",
+      "build": "passed"
+    },
+    "limits": [
+      "History is bounded with explicit omissions for long threads.",
+      "Recommendation and explanation quality has not been independently assessed.",
+      "Full recorded-data CI verification remains pending."
+    ]
+  }
 }

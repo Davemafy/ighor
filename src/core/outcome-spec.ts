@@ -64,6 +64,16 @@ export const OutcomeDetailsSchema = z.object({
 
 export type OutcomeDetails = z.infer<typeof OutcomeDetailsSchema>;
 
+export class OutcomeGroundingError extends Error {
+  constructor(
+    message: string,
+    readonly question = message,
+  ) {
+    super(message);
+    this.name = "OutcomeGroundingError";
+  }
+}
+
 /** Model-extracted allowances must be stated; omitted values use disclosed defaults. */
 export function assertGroundedOutcome(
   spec: OutcomeSpec,
@@ -78,7 +88,10 @@ export function assertGroundedOutcome(
       spec.days !== expected &&
       !(previous?.kind === "itinerary" && previous.days === spec.days)
     ) {
-      throw new Error("State the journey day count explicitly.");
+      throw new OutcomeGroundingError(
+        "State the journey day count explicitly.",
+        "How many days should I plan for?",
+      );
     }
 
     if (
@@ -93,7 +106,10 @@ export function assertGroundedOutcome(
         "i",
       ).test(text)
     ) {
-      throw new Error("State the transfer allowance explicitly.");
+      throw new OutcomeGroundingError(
+        "State the transfer allowance explicitly.",
+        "How much time should I allow for travel between stops?",
+      );
     }
 
     // Even zero is a supplied fact, never infer instantaneous travel.
@@ -104,7 +120,10 @@ export function assertGroundedOutcome(
         text,
       )
     ) {
-      throw new Error("Zero travel time must be explicitly supplied.");
+      throw new OutcomeGroundingError(
+        "Zero travel time must be explicitly supplied.",
+        "Should travel time between stops stay unconfirmed?",
+      );
     }
   }
 
@@ -120,6 +139,9 @@ export function assertGroundedOutcome(
       "i",
     ).test(text)
   ) {
-    throw new Error("State the transition allowance explicitly.");
+    throw new OutcomeGroundingError(
+      "State the transition allowance explicitly.",
+      "How much time would you like between listening segments?",
+    );
   }
 }

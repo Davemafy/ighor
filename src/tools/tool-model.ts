@@ -1,12 +1,57 @@
+import { modelContext } from "./model-context";
 import { readModelResponse } from "./response-body";
-import { OutcomeSpecSchema } from "../core/outcome-spec";
 import { z } from "zod";
-import {
-  InterpretationSchema,
-  ConversationActionSchema,
-  type Task,
-} from "../core/contracts";
+import type { Task } from "../core/contracts";
+import { interpretationFailure } from "../core/interpretation-failure";
+import { turnTool, readTurnDecision } from "./turn-protocol";
 import type { ModelProvider } from "./interfaces";
+
+const conversationInstructions = [
+  "You are Igor, your agent with taste, in one ongoing conversation",
+  "Use update_brief to choose the turn type",
+  "Encode the full decision object as JSON in its decision string",
+  "For discussion, greetings, explanations, reactions, questions about previous messages or brainstorming, set intent conversation and give a helpful reply; no actions are needed",
+  "For a vague request or an ambiguous reference, set intent clarification and ask one useful follow-up question in reply",
+  "Do not invent a goal merely to fit a schema",
+  "For conversation/clarification omit planning fields; the server will not execute edits",
+  "For a new actionable goal use intent goal; for explicit edits use revision",
+  "Goal/revision must include kind and goal plus grounded actions",
+  "Preserve the existing goal and known preferences unless the user changes them",
+  "Use thread history to understand pronouns and short follow-ups",
+  "When completing an initial request after clarification, reuse facts and tastes already explicitly supplied in this thread; do not ask the user to repeat them",
+  "Write clear, concise plain-text replies",
+  "Put evidence IDs in replyEvidenceIds, not in the prose",
+  "Do not claim to have changed state without actions",
+  "If history is omitted and a reference is unclear, ask rather than guess",
+  "Explain workspace choices using current evidence IDs in replyEvidenceIds, distinguish cultural associations from user-supplied practical facts, and acknowledge unknowns or stale evidence",
+  "For requests outside the executable tools, discuss possibilities and explain the limit using conversation intent",
+  "Clearly distinguish general knowledge or opinion from retrieved evidence",
+  "Never invent current hours, prices, availability, completed actions or source citations",
+  "Supported executable goals: gathering, cultural discovery (including locality-filtered places) and reference-based creative briefs",
+  "Optional outcome uses exact validated schema: itinerary (days 1-7, transferMinutes null unless explicitly supplied), listening (transitionMinutes 0 unless explicitly supplied), research or music-direction",
+  "These compose existing evidence only; never claim tracks, routes, rights, trends or audience demand",
+  "Set itinerary targetType place, listening/music-direction targetType artist",
+  "For place discovery set targetType to place, kind discovery, and a constraints action with the explicitly requested locality",
+  "Do not claim itineraries, routes or opening hours have been verified",
+  "For an existing task, changes to an offered identity, preference, practical fact, constraint, selection or document are intent revision; do not reissue the existing goal",
+  "Use only these exact action kind values: profile, constraints, preference, facts, resolve, select, artifact",
+  "For an opening request containing personal taste, create a profile action with participant you and only the explicitly stated preferences",
+  "For a named new person, use a profile action with that exact name",
+  "Never treat sample profiles as the user or infer taste from demographics",
+  "A profile action can accompany a goal and constraints in one turn",
+  "Existing people can receive preference corrections",
+  "Choosing an offered entity identity uses resolve, never choose",
+  "Replacing a like sets the previous preference to unknown and the new preference to like",
+  "Use actions for explicit preference, practical-fact, location, identity, selection or document corrections",
+  "Participant and candidate references must match supplied context; ambiguous references require clarification, never guess",
+  "No inferred availability, price, genre exclusion or new tool permissions",
+  "Missing fields stay absent",
+  "Numeric action facts must be stated numerically by the user",
+  "Return wording null unless the user explicitly requests a document edit and supplies the wording",
+  "Never turn a discovery request into an invitation or artifact edit",
+  "An invitation-only edit must not trigger cultural discovery",
+  "Context: ",
+].join(". ");
 
 export class ToolCallingModel implements ModelProvider {
   readonly executionMode = "tool-calling" as const;
@@ -94,102 +139,50 @@ export class ToolCallingModel implements ModelProvider {
   }
 
   async interpret(text: string, context?: Task) {
-    const tool = {
-      type: "function",
-      name: "update_brief",
-      description:
-        "Extract a supported goal or explicit correction, without invented facts.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          outcome: z.toJSONSchema(OutcomeSpecSchema),
-          targetType: {
-            type: "string",
-            enum: ["movie", "tv_show", "artist", "place"],
-          },
-          actions: {
-            anyOf: [
-              z.toJSONSchema(z.array(ConversationActionSchema).max(8)),
-              { type: "null" },
-            ],
-          },
-          supported: { type: "boolean" },
-          intent: { type: "string", enum: ["goal", "revision", "unsupported"] },
-          kind: {
-            type: "string",
-            enum: ["gathering", "creative", "discovery"],
-          },
-          goal: { type: "string" },
-          budget: { type: ["number", "null"] },
-          duration: { type: ["integer", "null"] },
-          wording: { type: ["string", "null"] },
-        },
-        required: [
-          "supported",
-          "intent",
-          "kind",
-          "goal",
-          "budget",
-          "duration",
-          "wording",
-        ],
+    const tool = turnTool();
+    const input: unknown[] = [
+      {
+        role: "system",
+        content:
+          conversationInstructions +
+          JSON.stringify(context ? modelContext(context, text) : {}),
       },
-      strict: false,
-    };
-    const result = await this.call(
-      [
-        {
-          role: "system",
-          content:
-            "Use update_brief only. Supported goals: gathering, cultural discovery (including locality-filtered places) and reference-based creative briefs. Optional outcome uses exact validated schema: itinerary (days 1-7, transferMinutes null unless explicitly supplied), listening (transitionMinutes 0 unless explicitly supplied), research or music-direction. These compose existing evidence only; never claim tracks, routes, rights, trends or audience demand. Set itinerary targetType place, listening/music-direction targetType artist. For place discovery set targetType to place, kind discovery, and a constraints action with the explicitly requested locality. Do not claim itineraries, routes or opening hours have been verified. For an existing task, changes to an offered identity, preference, practical fact, constraint, selection or document are intent revision; do not reissue the existing goal. Use only these exact action kind values: profile, constraints, preference, facts, resolve, select, artifact. For an opening request containing personal taste, create a profile action with participant you and only the explicitly stated preferences. For a named new person, use a profile action with that exact name. Never treat sample profiles as the user or infer taste from demographics. A profile action can accompany a goal and constraints in one turn. Existing people can receive preference corrections. Choosing an offered entity identity uses resolve, never choose. Replacing a like sets the previous preference to unknown and the new preference to like. Use actions for explicit preference, practical-fact, location, identity, selection or document corrections. Participant and candidate references must match supplied context; ambiguous references require clarification, never guess. No inferred availability, price, genre exclusion or new tool permissions. Missing fields stay absent. Numeric action facts must be stated numerically by the user. Return wording null unless the user explicitly requests a document edit and supplies the wording. Never turn a discovery request into an invitation or artifact edit. An invitation-only edit must not trigger cultural discovery. Context: " +
-            JSON.stringify(
-              context
-                ? {
-                    messages: context.messages.slice(-8),
-                    goal: context.brief.goal,
-                    kind: context.brief.kind,
-                    targetType: context.brief.targetType,
-                    outcome: context.brief.outcome,
-                    constraints: context.brief.constraints,
-                    participants: context.brief.participants,
-                    candidates: context.catalogue.map((candidate) => ({
-                      id: candidate.id,
-                      name: candidate.name,
-                      type: candidate.type,
-                    })),
-                    entities: context.entities,
-                    artifacts: context.artifacts.map((a) => ({
-                      id: a.id,
-                      content: a.content,
-                    })),
-                  }
-                : {},
-            ),
-        },
-        { role: "user", content: text },
-      ],
-      [tool],
-    );
+      { role: "user", content: text },
+    ];
 
-    if (result.call.name !== "update_brief") {
-      throw new Error("Unauthorized model tool.");
-    }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await this.call(input, [tool]);
 
-    const data = JSON.parse(result.call.arguments ?? "{}");
+      if (result.call.name !== "update_brief") {
+        throw new Error("Unauthorized model tool.");
+      }
 
-    for (const normalizedValue of [
-      "budget",
-      "duration",
-      "wording",
-      "actions",
-    ]) {
-      if (data[normalizedValue] === null) {
-        delete data[normalizedValue];
+      try {
+        return readTurnDecision(result.call.arguments ?? "{}", context);
+      } catch (error) {
+        if (
+          attempt === 1 ||
+          !result.call.call_id ||
+          !(error instanceof z.ZodError || error instanceof SyntaxError)
+        ) {
+          throw error;
+        }
+
+        // Repair formatting once. No operation has run, and transport failures are never retried.
+        input.push(...result.output, {
+          type: "function_call_output",
+          call_id: result.call.call_id,
+          output: JSON.stringify({
+            status: "rejected",
+            reason: interpretationFailure(error),
+            instruction:
+              "No edits or tools were executed. Return one valid decision in the declared envelope. If the request needs details, use clarification with a useful question; do not invent planning fields.",
+          }),
+        });
       }
     }
 
-    return InterpretationSchema.parse(data);
+    throw new Error("Model decision could not be validated.");
   }
 
   async recommend(task: Task, cultural: boolean) {

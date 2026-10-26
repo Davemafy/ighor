@@ -1,4 +1,5 @@
-import { assertGroundedOutcome } from "./outcome-spec";
+import { interpretationFailure } from "./interpretation-failure";
+import { assertGroundedOutcome, OutcomeGroundingError } from "./outcome-spec";
 import {
   TurnSchema,
   InterpretationSchema,
@@ -35,14 +36,31 @@ export async function interpretMessage(
   const interpretationStarted = Date.now();
   const callsBefore = model.calls ?? 0;
   let parsed: z.infer<typeof InterpretationSchema>;
+  const context = structuredClone(task);
+  const initialRequestText = [
+    input.text,
+    ...context.messages
+      .filter((message) => message.role === "user")
+      .map((message) => message.text)
+      .reverse(),
+  ].join("\n");
+  task.messages.push({ role: "user", text: input.text, at: at() });
 
   try {
     parsed = InterpretationSchema.parse(
       await withToolDeadline(
-        model.interpret(input.text, structuredClone(task)),
+        model.interpret(input.text, context),
         model.timeoutMs ?? 5000,
       ),
     );
+
+    if (parsed.intent === "conversation" || parsed.intent === "clarification") {
+      for (const id of parsed.replyEvidenceIds) {
+        if (!task.evidence.some((evidence) => evidence.id === id)) {
+          throw new Error("Conversation cited unavailable evidence.");
+        }
+      }
+    }
 
     if (parsed.outcome) {
       const explicitRevision =
@@ -50,7 +68,9 @@ export async function interpretMessage(
         task.brief.outcome?.kind === parsed.outcome.kind;
       assertGroundedOutcome(
         parsed.outcome,
-        input.text,
+        parsed.intent === "goal" && !context.brief.goal
+          ? initialRequestText
+          : input.text,
         explicitRevision ? task.brief.outcome : undefined,
       );
       const expectedTarget =
@@ -60,17 +80,37 @@ export async function interpretMessage(
             ? parsed.targetType
             : "artist";
 
-      if (parsed.targetType !== expectedTarget) {
-        throw new Error("Outcome and discovery domain disagree.");
+      if (parsed.targetType === undefined) {
+        parsed.targetType = expectedTarget;
+      } else if (parsed.targetType !== expectedTarget) {
+        throw new OutcomeGroundingError(
+          "Should I put together a place-based itinerary or a cultural shortlist first?",
+        );
       }
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof OutcomeGroundingError) {
+      trace(
+        "proposal.clarify",
+        error.message,
+        (model.calls ?? 0) - callsBefore,
+      );
+      task.messages.push({
+        role: "assistant",
+        kind: "conversation",
+        text: error.question,
+        at: at(),
+      });
+
+      return { ...update, task, conversationOnly: true };
+    }
+
     task.status = "error";
     task.error =
-      "Interpretation failed safely. Your previous decisions were preserved; retry or use the structured brief.";
+      "I couldn’t complete that reply just now. Your conversation and saved work are still here. Please try again.";
     trace(
       "model.interpret.error",
-      task.error,
+      `${task.error} Diagnostic: ${interpretationFailure(error)}.`,
       (model.calls ?? 0) - callsBefore,
       [],
       Date.now() - interpretationStarted,
@@ -81,11 +121,26 @@ export async function interpretMessage(
 
   trace(
     "model.interpret",
-    "Validated supported goal or correction against the brief contract.",
+    parsed.intent === "conversation" || parsed.intent === "clarification"
+      ? "Validated a conversational reply without planning edits."
+      : "Validated supported goal or correction against the brief contract.",
     (model.calls ?? 0) - callsBefore,
     [],
     Date.now() - interpretationStarted,
   );
+
+  if (parsed.intent === "conversation" || parsed.intent === "clarification") {
+    task.messages.push({
+      role: "assistant",
+      kind: "conversation",
+      text: parsed.reply,
+      evidenceIds: parsed.replyEvidenceIds,
+      at: at(),
+    });
+
+    return { ...update, task, conversationOnly: true };
+  }
+
   // Validate extraction again; a future model cannot bypass the input contract.
   const patch = TurnSchema.parse({
     type: "constraints",
@@ -98,7 +153,6 @@ export async function interpretMessage(
     throw new Error("Invalid interpreted patch");
   }
 
-  task.messages.push({ role: "user", text: input.text, at: at() });
   // All model-supplied numeric and wording patches use the same grounding rules,
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
@@ -148,7 +202,13 @@ export async function interpretMessage(
     task.brief.outcome = parsed.outcome;
     changedDependencies.push("outcome");
   } else if (proposals.length) {
-    const applied = applyConversationActions(task, proposals, input.text);
+    const applied = applyConversationActions(
+      task,
+      proposals,
+      parsed.intent === "goal" && !context.brief.goal
+        ? initialRequestText
+        : input.text,
+    );
 
     if (!applied.ok) {
       clarification = applied.question;

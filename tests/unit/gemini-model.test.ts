@@ -155,7 +155,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
       expect(JSON.stringify(body)).toContain("Amara");
       expect(
         body.tools[0].functionDeclarations[0].parametersJsonSchema.properties
-          .actions,
+          .decision,
       ).toBeDefined();
 
       return result("update_brief", {
@@ -196,7 +196,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     await expect(
       model.interpret("Use Moonlight from 2016.", freshLiveTask("t", "o")),
     ).rejects.toThrow();
-    expect(model.calls).toBe(1);
+    expect(model.calls).toBe(2);
   });
   it("rejects a model attempting to grant itself new actions", async () => {
     const http = vi.fn(async () =>

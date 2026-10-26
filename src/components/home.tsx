@@ -19,7 +19,10 @@ export function Home() {
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const showingHome =
-    screen === "home" || (screen === "auto" && !workspace.task?.brief.goal);
+    screen === "home" ||
+    (screen === "auto" &&
+      !workspace.task?.brief.goal &&
+      !workspace.task?.messages.length);
 
   async function begin(action: TaskAction) {
     if (!workspace.task || workspace.isBusy) {

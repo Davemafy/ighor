@@ -291,6 +291,8 @@ export const TaskSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),
+      kind: z.literal("conversation").optional(),
+      evidenceIds: z.array(z.string()).optional(),
       text: z.string(),
       at: z.string(),
     }),
@@ -379,7 +381,7 @@ export const ConversationActionSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-export const InterpretationSchema = z.object({
+const ActionInterpretationSchema = z.object({
   outcome: OutcomeSpecSchema.optional(),
   targetType: z.enum(["movie", "tv_show", "artist", "place"]).optional(),
   actions: z.array(ConversationActionSchema).max(8).optional(),
@@ -391,6 +393,37 @@ export const InterpretationSchema = z.object({
   duration: z.number().int().min(15).max(1440).optional(),
   wording: z.string().min(1).max(10000).optional(),
 });
+
+const ConversationInterpretationSchema = z
+  .object({
+    intent: z.enum(["conversation", "clarification"]),
+    reply: z.string().trim().min(1).max(6000),
+    replyEvidenceIds: z.array(z.string().max(500)).max(80).default([]),
+  })
+  .transform((value) => ({
+    ...value,
+    supported: true,
+    kind: "discovery" as const,
+    goal: "",
+    actions: undefined,
+    outcome: undefined,
+    targetType: undefined,
+    budget: undefined,
+    duration: undefined,
+    wording: undefined,
+  }));
+
+export const LiveDecisionSchema = z.union([
+  ConversationInterpretationSchema,
+  ActionInterpretationSchema.extend({
+    intent: z.enum(["goal", "revision"]),
+  }),
+]);
+
+export const InterpretationSchema = z.union([
+  ConversationInterpretationSchema,
+  ActionInterpretationSchema,
+]);
 
 export const TurnSchema = z.discriminatedUnion("type", [
   z.strictObject({
@@ -537,4 +570,6 @@ export type WithoutVersion<T> = T extends { version: number }
 export type TaskAction = WithoutVersion<Turn>;
 
 /** Model proposals use the schema's input type; defaults are applied during validation. */
-export type ModelInterpretation = z.input<typeof InterpretationSchema>;
+export type ModelInterpretation = z.input<typeof InterpretationSchema> & {
+  actions?: z.input<typeof ActionInterpretationSchema>["actions"];
+};

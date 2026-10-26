@@ -41,6 +41,13 @@ export function DiscoveryResults({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
+  const lastMessage = task.messages.at(-1);
+  const conversation =
+    !busy &&
+    lastMessage?.role === "assistant" &&
+    lastMessage.kind === "conversation"
+      ? lastMessage.text
+      : null;
   const candidates = currentCandidates(task);
   const types = [...new Set(candidates.map((candidate) => candidate.type))];
   const visible = candidates.filter(
@@ -98,30 +105,38 @@ export function DiscoveryResults({
 
   return (
     <div className="ig-results" aria-busy={busy}>
-      <header className="ig-result-heading">
-        <div className="ig-eyebrow">
-          <span className="ig-small-orbit" aria-hidden="true" />{" "}
-          {task.brief.kind === "gathering"
-            ? "A SHARED STARTING POINT"
-            : "FOLLOWING THE THREAD"}
-        </div>
-        <h1>{title}</h1>
-        <p className="ig-goal">
-          {task.brief.goal || "Finding your next starting point."}
-        </p>
-        <div className="ig-result-meta">
-          <span>
-            {task.mode === "illustrative-fixtures"
-              ? "Illustrative example"
-              : "Qloo cultural connections"}
-          </span>
-          <span aria-hidden="true">·</span>
-          <span>{candidates.length} discoveries</span>
-          <button type="button" onClick={() => setEvidenceVisible(true)}>
-            Behind the connections <ArrowUpRight size={14} />
-          </button>
-        </div>
-      </header>
+      {(!conversation || task.brief.goal) && (
+        <header className="ig-result-heading">
+          <div className="ig-eyebrow">
+            <span className="ig-small-orbit" aria-hidden="true" />{" "}
+            {task.brief.kind === "gathering"
+              ? "A SHARED STARTING POINT"
+              : "FOLLOWING THE THREAD"}
+          </div>
+          <h1>{title}</h1>
+          <p className="ig-goal">
+            {task.brief.goal || "Finding your next starting point."}
+          </p>
+          <div className="ig-result-meta">
+            <span>
+              {task.mode === "illustrative-fixtures"
+                ? "Illustrative example"
+                : "Qloo cultural connections"}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{candidates.length} discoveries</span>
+            <button type="button" onClick={() => setEvidenceVisible(true)}>
+              Behind the connections <ArrowUpRight size={14} />
+            </button>
+          </div>
+        </header>
+      )}
+      {conversation && (
+        <section className="ig-clarification" aria-label="Igor’s reply">
+          {!task.brief.goal && <h1>Let’s start with you.</h1>}
+          <p>{conversation}</p>
+        </section>
+      )}
 
       {busy && (
         <div className="ig-progress" role="status">
@@ -314,16 +329,19 @@ export function DiscoveryResults({
         </>
       )}
 
-      {!busy && !candidates.length && !task.brief.unresolved.length && (
-        <section className="ig-empty-result">
-          <span aria-hidden="true">↗</span>
-          <h2>A new direction needs a starting point.</h2>
-          <p>
-            No current cultural results were returned. Try an artist, a film, or
-            a city in the conversation below.
-          </p>
-        </section>
-      )}
+      {!busy &&
+        !conversation &&
+        !candidates.length &&
+        !task.brief.unresolved.length && (
+          <section className="ig-empty-result">
+            <span aria-hidden="true">↗</span>
+            <h2>A new direction needs a starting point.</h2>
+            <p>
+              No current cultural results were returned. Try an artist, a film,
+              or a city in the conversation below.
+            </p>
+          </section>
+        )}
       <DiscoveryOutcome task={task} />
       {saveMessage && (
         <p className="ig-save-message" role="status">

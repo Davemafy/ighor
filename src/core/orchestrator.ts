@@ -46,16 +46,21 @@ export async function runTurn(
     throw new ConflictError("A newer correction is already saved.");
   }
 
-  provider ??= runtimeCulturalProvider(task.mode);
+  const wasInterpretationError =
+    task.status === "error" &&
+    task.trace.at(-1)?.action === "model.interpret.error";
   model ??= runtimeModelProvider(task.mode);
   const receiptFromVersion = task.brief.version;
   const receiptTraceIds = task.trace.map((entry) => entry.id);
   const initialModelCalls = model.calls ?? 0;
-  const initialCulturalCalls = provider.calls ?? 0;
-  const culturalRequestDelta = () =>
-    provider.calls === undefined
-      ? undefined
-      : provider.calls - initialCulturalCalls;
+  const initialCulturalCalls = provider?.calls ?? 0;
+
+  const culturalRequestDelta = () => {
+    const calls = provider?.calls;
+
+    return calls === undefined ? undefined : calls - initialCulturalCalls;
+  };
+
   task.modelMode = model.executionMode ?? "scripted";
 
   if (input.type === "baseline") {
@@ -114,6 +119,31 @@ export async function runTurn(
         });
   task = update.task;
 
+  if (update.conversationOnly) {
+    if (wasInterpretationError) {
+      task.error = null;
+      task.status = task.brief.goal ? "partial" : "draft";
+    }
+
+    task.brief.version++;
+    task.trace = task.trace.slice(-100);
+    appendReceipt(
+      task,
+      input,
+      receiptFromVersion,
+      [],
+      receiptTraceIds,
+      (model.calls ?? 0) - initialModelCalls,
+      task.status,
+      0,
+    );
+    TaskSchema.parse(task);
+    store.save(task, receiptFromVersion, owner);
+    emit({ type: "done", task: structuredClone(task) });
+
+    return task;
+  }
+
   if (update.interpretationFailed) {
     task.brief.version++;
     appendReceipt(
@@ -132,6 +162,8 @@ export async function runTurn(
 
     return task;
   }
+
+  provider ??= runtimeCulturalProvider(task.mode);
 
   const { changedDependencies, artifactEdit, localChangeOnly, memoryChange } =
     update;

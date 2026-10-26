@@ -1,3 +1,4 @@
+import { developmentReply } from "./development-replies";
 import type { ModelProvider } from "./interfaces";
 import type { Task, ModelInterpretation } from "../core/contracts";
 import { ConversationActionSchema } from "../core/contracts";
@@ -9,6 +10,12 @@ export class DevelopmentModel implements ModelProvider {
     text: string,
     context?: Task,
   ): ReturnType<ModelProvider["interpret"]> {
+    const reply = developmentReply(text, context);
+
+    if (reply) {
+      return { intent: "conversation", reply };
+    }
+
     for (const parse of correctionParsers) {
       const correction = parse(text, context);
 

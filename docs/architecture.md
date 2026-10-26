@@ -2,6 +2,35 @@
 
 Igor is one Next.js App Router application. Server routes validate ownership and input; the browser edits task state and displays artifacts. SQLite persists local accounts, versioned tasks, explicit memory, saved collections and reviews. Provider adapters remain server-side.
 
+## Runtime flow
+
+```mermaid
+flowchart TD
+  A["Message and saved thread"] --> B["Model decision"]
+  B --> C{"Valid response?"}
+  C -->|"No: one format repair"| B
+  C -->|"Yes"| D{"Reply, clarify or propose?"}
+  D -->|"Reply or question"| H["Save thread and respond"]
+  D -->|"Proposal"| E["Ground facts and check readiness"]
+  E -->|"Missing information"| H
+  E -->|"Ready"| F["Execute relevant capabilities"]
+  F --> G["Verify evidence and commit result"]
+  G --> H
+```
+
+The format-repair edge runs at most once and never retries transport failures. No cultural retrieval or planning edits run before decision validation. Missing user information is a question, not a provider failure.
+
+| Boundary                         | Owner                                            | Failure behavior                                            |
+| -------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| Thread access and version        | API and orchestrator                             | Reject unauthorised or stale edits                          |
+| Model response contract          | `core/contracts.ts` and `tools/turn-protocol.ts` | One argument repair, then preserve state and report failure |
+| Provider transport               | Gemini/OpenAI adapters                           | Bounded request; no automatic transport retry               |
+| Planning readiness and grounding | `core/interpret-message.ts`                      | Ask for missing facts without partial edits                 |
+| Capability execution             | Registry and executor                            | Bound work and retain provenance                            |
+| Result integrity and persistence | Evaluators and task store                        | Validate evidence and reject late writes                    |
+
+`LiveDecisionSchema` is the shared source for provider instructions and response validation. Both model adapters receive one JSON decision envelope, avoiding a separate hand-written provider schema. The engine distinguishes malformed model data, incomplete user requests and tool failures instead of treating them as the same interpretation error.
+
 ## Product and presentation contract
 
 Igor is "your agent with taste": one conversational workspace that turns a person's goal into personalized outcomes using Qloo cultural intelligence. Discover, Compose, Collaborate and Evaluate are reusable capabilities within that workspace. They are not separate products or a requirement for users to choose a tool before describing a goal.
@@ -42,6 +71,10 @@ Acceptance requires more than a polished response: inspect a result's sources, c
 Natural requests can create personal or named taste profiles through the validated `profile` conversation action. The first real profile replaces demo participants; subsequent profiles retain existing real people. Preference values and names must occur in the user message. Creation shares correction grounding and remains atomic with the rest of the turn. Asking for a missing locality preserves the supplied profile. No profile is saved to persistent memory without explicit approval.
 
 `core/turn-reply.ts` describes current result names, artifacts, evidence delivery and open questions from committed state. It does not generate practical facts or describe stale outputs as ready.
+
+Every live message receives a model turn decision: conversation, clarification, goal or revision. Conversation and clarification responses have their own schema and cannot mutate planning state. They retain messages and validated references to same-thread evidence with its freshness, through the same ownership and version checks, without cultural requests or dependency invalidation. `kind: conversation` messages are displayed as replies. Credential-free development replies remain explicitly scripted in `tools/development-replies.ts`.
+
+`tools/model-context.ts` rebuilds context from the current saved thread, including its messages, constraints, profiles, current results, evidence, artifacts and unresolved questions. Ordinary histories are passed in full. Long histories have a bounded recent window plus relevant older messages, with an explicit omitted-message count so the model can ask when context is missing. Owner credentials and other threads are excluded. Refreshing or reopening a conversation restores its persisted messages as well as its goal.
 
 Input handlers prepare task changes. They do not save to the database. The orchestrator commits stale outputs before provider calls, then saves the completed turn with an optimistic version check. A late result cannot overwrite a newer correction.
 

@@ -22,6 +22,7 @@ export interface TurnUpdate {
   memoryChange?: MemoryChange;
   clarification: string | null;
   interpretationFailed: boolean;
+  conversationOnly?: boolean;
 }
 
 export function unchangedTurn(task: Task): TurnUpdate {

@@ -394,10 +394,11 @@ describe("Outcome integrity negative cases", () => {
       ),
     ).toThrow("day count");
   });
-  it("an invented model allowance fails before it changes task facts", async () => {
+  it("an invented model allowance asks for clarification before changing task facts", async () => {
     const h = setup();
     let t = await h.start();
     const duration = t.brief.constraints.duration;
+    const previousStatus = t.status;
     t = await runTurn(
       h.store,
       "t",
@@ -420,7 +421,9 @@ describe("Outcome integrity negative cases", () => {
         }),
       },
     );
-    expect(t.status).toBe("error");
+    expect(t.status).toBe(previousStatus);
+    expect(t.error).toBeNull();
+    expect(t.messages.at(-1)?.kind).toBe("conversation");
     expect(t.brief.outcome).toBeUndefined();
     expect(t.brief.constraints.duration).toBe(duration);
   });

@@ -67,7 +67,7 @@ describe("Gemini boundary for typed broader outcomes (mock HTTP, not live execut
       expect(body.tools[0].functionDeclarations[0].name).toBe("update_brief");
       expect(
         body.tools[0].functionDeclarations[0].parametersJsonSchema.properties
-          .outcome,
+          .decision,
       ).toBeDefined();
       expect(body.systemInstruction.parts[0].text).toContain('"outcome"');
     },
@@ -77,7 +77,7 @@ describe("Gemini boundary for typed broader outcomes (mock HTTP, not live execut
     { kind: "research", url: "https://untrusted.test" },
     { kind: "listening", transitionMinutes: -5 },
   ])(
-    "rejects invalid provider output without retry or action execution: %j",
+    "rejects invalid provider output after at most one format repair: %j",
     async (outcome) => {
       const transport = vi.fn<typeof fetch>(async () => response(outcome));
       const model = new GeminiModel(
@@ -88,7 +88,7 @@ describe("Gemini boundary for typed broader outcomes (mock HTTP, not live execut
       await expect(
         model.interpret("User request", freshLiveTask("t", "o")),
       ).rejects.toThrow();
-      expect(transport).toHaveBeenCalledTimes(1);
+      expect(transport).toHaveBeenCalledTimes(2);
     },
   );
 });

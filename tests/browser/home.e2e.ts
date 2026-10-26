@@ -186,3 +186,31 @@ test("stale candidates are hidden and provider limitations stay inspectable", as
     page.getByRole("dialog").getByText("No real Qloo request was made."),
   ).toBeVisible();
 });
+
+test("a greeting gets a reply without discovery failure or an empty-results warning", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Find common ground", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByRole("textbox", { name: "What would you like to explore?" })
+    .fill("hey");
+  await page
+    .getByRole("button", { name: "Start exploring", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Igor’s reply" }),
+  ).toContainText("Hey! I’m Igor.");
+  await expect(
+    page.getByText("A new direction needs a starting point.", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveCount(
+    0,
+  );
+  await page.reload();
+  await expect(
+    page.getByRole("region", { name: "Igor’s reply" }),
+  ).toContainText("Hey! I’m Igor.");
+});
