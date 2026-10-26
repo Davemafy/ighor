@@ -1,3 +1,4 @@
+import { installPresentation, validatePresentation } from "./presentation";
 import { interpretationFailure } from "./interpretation-failure";
 import { assertGroundedOutcome, OutcomeGroundingError } from "./outcome-spec";
 import {
@@ -59,6 +60,14 @@ export async function interpretMessage(
         if (!task.evidence.some((evidence) => evidence.id === id)) {
           throw new Error("Conversation cited unavailable evidence.");
         }
+      }
+    }
+
+    if (parsed.presentation) {
+      try {
+        parsed.presentation = validatePresentation(parsed.presentation, task);
+      } catch {
+        parsed.presentation = undefined;
       }
     }
 
@@ -128,6 +137,23 @@ export async function interpretMessage(
     [],
     Date.now() - interpretationStarted,
   );
+
+  if (parsed.presentation) {
+    if (!task.brief.goal) {
+      task.brief.goal = input.text;
+    }
+
+    task.error = null;
+    task.status = "ready";
+    task.canvas = installPresentation(
+      task.canvas,
+      validatePresentation(parsed.presentation, task),
+    );
+    trace(
+      "ui.present",
+      `Prepared ${parsed.presentation.title} with ${parsed.presentation.nodes.length} validated components.`,
+    );
+  }
 
   if (parsed.intent === "conversation" || parsed.intent === "clarification") {
     task.messages.push({

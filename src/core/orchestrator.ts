@@ -1,3 +1,5 @@
+import { mutateCanvas } from "./presentation";
+import { ensureBoundPresentation } from "./presentation-default";
 import { randomUUID } from "node:crypto";
 import {
   TurnSchema,
@@ -44,6 +46,36 @@ export async function runTurn(
 
   if (task.brief.version !== input.version) {
     throw new ConflictError("A newer correction is already saved.");
+  }
+
+  if (input.type === "canvas") {
+    if (!task.canvas) {
+      throw new Error("No canvas exists for this task.");
+    }
+
+    task.canvas = mutateCanvas(
+      task.canvas,
+      input.surfaceId,
+      input.mutation,
+      task,
+    );
+    task.brief.version++;
+    task.trace.push({
+      id: randomUUID(),
+      version: task.brief.version,
+      action: "ui." + input.mutation.operation,
+      outcome: "Saved a direct canvas edit to the shared task.",
+      requests: 0,
+      durationMs: 0,
+      evidenceIds: [],
+      at: new Date().toISOString(),
+    });
+    task.trace = task.trace.slice(-100);
+    TaskSchema.parse(task);
+    store.save(task, input.version, owner);
+    emit({ type: "done", task: structuredClone(task) });
+
+    return task;
   }
 
   const wasInterpretationError =
@@ -243,6 +275,7 @@ export async function runTurn(
     editedArtifactWasCurrent,
   );
 
+  ensureBoundPresentation(task);
   task.brief.version++;
   task.trace = task.trace.slice(-100);
   task.messages.push({

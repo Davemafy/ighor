@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  PresentationSchema,
+  CanvasStateSchema,
+  CanvasMutationSchema,
+} from "./presentation";
 import { OutcomeSpecSchema, OutcomeDetailsSchema } from "./outcome-spec";
 
 export const Source = z.enum([
@@ -259,6 +264,7 @@ export const ScheduleSchema = z.object({
 });
 
 export const TaskSchema = z.object({
+  canvas: CanvasStateSchema.optional(),
   reviewEffects: z.array(z.string().uuid()).max(100).optional(),
   receipts: z
     .array(
@@ -382,6 +388,7 @@ export const ConversationActionSchema = z.discriminatedUnion("kind", [
 ]);
 
 const ActionInterpretationSchema = z.object({
+  presentation: PresentationSchema.optional(),
   outcome: OutcomeSpecSchema.optional(),
   targetType: z.enum(["movie", "tv_show", "artist", "place"]).optional(),
   actions: z.array(ConversationActionSchema).max(8).optional(),
@@ -397,6 +404,7 @@ const ActionInterpretationSchema = z.object({
 const ConversationInterpretationSchema = z
   .object({
     intent: z.enum(["conversation", "clarification"]),
+    presentation: PresentationSchema.optional(),
     reply: z.string().trim().min(1).max(6000),
     replyEvidenceIds: z.array(z.string().max(500)).max(80).default([]),
   })
@@ -426,6 +434,12 @@ export const InterpretationSchema = z.union([
 ]);
 
 export const TurnSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("canvas"),
+    surfaceId: z.string().min(1).max(80),
+    mutation: CanvasMutationSchema,
+    version: z.number().int().nonnegative(),
+  }),
   z.strictObject({
     type: z.literal("outcome"),
     outcome: OutcomeSpecSchema,

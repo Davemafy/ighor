@@ -52,6 +52,16 @@ export function modelContext(task: Task, message: string) {
       totalMessages: messages.length,
       omittedMessages: messages.length - history.length,
     },
+    canvas: task.canvas
+      ? {
+          ...task.canvas,
+          previous: task.canvas.previous.map(({ id, title }) => ({
+            id,
+            title,
+          })),
+        }
+      : undefined,
+    schedule: task.schedule,
     goal: task.brief.goal,
     kind: task.brief.kind,
     targetType: task.brief.targetType,
@@ -83,6 +93,7 @@ export function modelContext(task: Task, message: string) {
     evidence: task.evidence.slice(-80).map((evidence) => ({
       id: evidence.id,
       source: evidence.source,
+      reference: evidence.reference,
       delivery: evidence.delivery,
       at: evidence.at,
       entityIds: evidence.entityIds,

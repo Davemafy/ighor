@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
+import { TaskCanvas } from "./task-canvas";
 import { useWorkspace } from "./use-workspace";
 import {
   ProductText,
@@ -33,6 +34,7 @@ import {
 } from "./product-surfaces";
 import { useSavedOutcomes } from "./use-saved-outcomes";
 import "../app/product.css";
+import "../app/canvas.css";
 
 type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
 const asset = "/marketing/assets/";
@@ -136,8 +138,10 @@ export function Home() {
   }, [workspace.task]);
   async function begin(action: TaskAction) {
     if (!workspace.task || workspace.isBusy) return;
-    navigate("conversation");
-    setPrompt("");
+    if (action.type === "message") {
+      navigate("conversation");
+      setPrompt("");
+    }
     await workspace.sendTurn(action);
     void workspace.loadHistory().catch(() => {});
   }
@@ -294,7 +298,11 @@ export function Home() {
                 onClick={() =>
                   navigate(view === "editor" ? "conversation" : "editor")
                 }
-                disabled={view !== "editor" && !currentWork.length}
+                disabled={
+                  view !== "editor" &&
+                  !currentWork.length &&
+                  !workspace.task?.canvas
+                }
                 title={
                   view === "editor"
                     ? "Return to your conversation"
@@ -488,7 +496,7 @@ export function Home() {
                     alt=""
                   />
                   <h1>What are we making?</h1>
-                  <p>A weekend away. A thoughtful gift. Your next big idea.</p>
+                  <p>Research a decision. Shape an idea. Make a plan.</p>
                   <div className="ip-starter-grid">
                     {makingIdeas.slice(0, 4).map((item) => (
                       <button
@@ -525,7 +533,35 @@ export function Home() {
               </div>
             </section>
           )}
-          {view === "editor" && workspace.task && (
+          {view === "editor" && workspace.task?.canvas && (
+            <section className="ip-conversation">
+              {workspace.errorMessage && (
+                <p role="alert" className="ip-error">
+                  {workspace.errorMessage} Your draft is still here. Save again
+                  to retry.
+                </p>
+              )}
+              <TaskCanvas
+                task={workspace.task}
+                busy={workspace.isBusy}
+                onTurn={(a) => void begin(a)}
+              />
+              <div className="ip-conversation-composer">
+                <ProductComposer
+                  value={prompt}
+                  onChange={setPrompt}
+                  onSubmit={() =>
+                    void begin({ type: "message", text: prompt.trim() })
+                  }
+                  inputRef={inputRef}
+                  disabled={workspace.isBusy}
+                  busy={workspace.isBusy}
+                  continuing
+                />
+              </div>
+            </section>
+          )}
+          {view === "editor" && workspace.task && !workspace.task.canvas && (
             <ProductEditor
               key={workspace.task.id}
               task={workspace.task}
