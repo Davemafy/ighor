@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   reconcileGeneratedArtifact,
   hasLockedConflict,
+  finalizeConnectedArtifacts,
 } from "../../src/core/connected-artifacts";
 import { SqliteTaskStore } from "../../src/data/store";
 import { freshTask } from "../../src/data/fixtures";
@@ -108,4 +109,38 @@ describe("connected artifact approvals", () => {
       store.close();
     }
   });
+  it("retains approved artifacts even when the new planner output omits them", () => {
+    const lockedSound: Artifact = {
+      ...original,
+      id: "sound",
+      kind: "music-direction",
+      locked: true,
+    };
+    const result = finalizeConnectedArtifacts([{ ...original }], [lockedSound]);
+    expect(result.map((a) => a.id)).toEqual(["main", "sound"]);
+    expect(result[1].locked).toBe(true);
+    expect(result[1].freshness).toBe("stale");
+  });
+
+  it("marks downstream artifacts stale if their approved input is invalidated", () => {
+    const lockedSound: Artifact = {
+      ...original,
+      id: "sound",
+      kind: "music-direction",
+      freshness: "stale",
+      locked: true,
+    };
+    const invitation: Artifact = {
+      ...original,
+      id: "invitation",
+      kind: "invitation",
+      dependencies: ["sound"],
+    };
+    const result = finalizeConnectedArtifacts(
+      [lockedSound, invitation],
+      [lockedSound],
+    );
+    expect(result.find((a) => a.id === "invitation")?.freshness).toBe("stale");
+  });
+
 });
