@@ -1,0 +1,152 @@
+.ig-connected-work { min-width: 0; }
+.ig-connected-doc-tabs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 0 24px 18px;
+  scroll-snap-type: x proximity;
+}
+.ic-canvas .ig-connected-doc-tabs button {
+  flex: none;
+  max-width: 230px;
+  min-height: 43px;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  scroll-snap-align: start;
+}
+.ic-canvas .ig-connected-doc-tabs button[aria-pressed="true"] {
+  background: #f3eee4;
+  color: #17161b;
+}
+.ig-connected-doc-tabs svg { width: 13px; height: 13px; }
+.ig-connected-document { padding: 0 24px 24px; }
+.ig-connected-document-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  padding: 14px 0;
+  border-top: 1px solid #ffffff22;
+}
+.ig-connected-document-bar > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.ig-connected-document-bar > span:last-child { color: #aaa; }
+.ig-connected-document-bar svg { width: 16px; height: 16px; }
+.ig-connected-warning {
+  padding: 12px 16px;
+  margin: 10px 24px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  background: #352c25;
+  border: 1px solid #b28b5f66;
+  color: #f6dfc5;
+}
+.ig-connected-document > .ig-connected-warning { margin: 8px 0 20px; }
+.ig-connected-tools {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.ig-connected-tools label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #aaa;
+  font-size: 11px;
+}
+.ig-connected-tools select {
+  color: white;
+  background: #2b2a30;
+  border: 1px solid #ffffff27;
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  max-width: 170px;
+}
+.ig-connected-tools label > svg:last-child { display: none; }
+.ig-connected-paper {
+  background: #f4f1e9;
+  border-radius: 16px;
+  color: #282523;
+  padding: clamp(20px, 4vw, 45px);
+  min-height: 190px;
+  box-shadow: 0 16px 34px #0002;
+}
+.ig-connected-paper pre {
+  margin: 0;
+  font: 14px/1.8 "DM Sans", sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ig-connected-edit label {
+  display: block;
+  font-size: 11px;
+  color: #c5c1c2;
+  margin: 10px 0;
+}
+.ic-canvas .ig-connected-edit textarea {
+  background: #f4f1e9;
+  color: #282523;
+  border: 0;
+  border-radius: 14px;
+  width: 100%;
+  min-height: 300px;
+  padding: 25px;
+  resize: vertical;
+  line-height: 1.8;
+  font-size: 16px;
+}
+.ig-connected-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.ic-canvas .ig-connected-edit-actions button:first-child {
+  color: #17161b;
+  background: #f3eee4;
+  border-color: #f3eee4;
+}
+.ig-connected-edit > p { color: #f8c1ba; font-size: 12px; margin-bottom: 12px; }
+.ig-connected-approval {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 11px;
+}
+.ig-connected-approval > span { display: flex; align-items: center; gap: 8px; color: #b9b5b8; }
+.ic-canvas .ig-connected-approval button {
+  background: #f3eee4;
+  color: #17161b;
+}
+.ig-connected-decisions { padding: 20px 24px 28px; border-top: 1px solid #ffffff23; }
+.ig-connected-decisions > h3 { font-size: 16px; margin-bottom: 16px; }
+.ig-connected-decisions article { padding: 20px 0; border-top: 1px solid #ffffff13; }
+.ig-connected-decisions article > div:first-child {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.ig-connected-decisions strong { font-size: 13px; }
+.ig-connected-decisions small { color: #b6a5ca; text-transform: capitalize; }
+.ig-connected-decisions p { font-size: 12px; line-height: 1.7; margin: 12px 0; }
+.ig-connected-decisions summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px; color: #b5b1b7; }
+.ig-connected-decisions article > div:last-child { display: flex; gap: 7px; margin-top: 12px; }
+@media (max-width: 760px) {
+  .ig-connected-doc-tabs { padding-inline: 17px; }
+  .ig-connected-document, .ig-connected-decisions { padding-inline: 17px; }
+  .ig-connected-paper { padding: 22px 18px; }
+  .ic-canvas .ig-connected-edit textarea { min-height: 230px; padding: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ig-connected-doc-tabs { scroll-behavior: auto; }
+}
