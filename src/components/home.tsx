@@ -588,6 +588,7 @@ export function Home() {
                 />
               ) : (
                 <ConnectedWorkCanvas
+                  key={workspace.task.id}
                   task={workspace.task}
                   busy={workspace.isBusy}
                   onTurn={(a) => void begin(a)}
