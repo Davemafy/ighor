@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import {
   PresentationSchema,
   installPresentation,
@@ -17,6 +17,31 @@ test("composed work persists through edits, filtering, planning, maps and refres
     route.fulfill({ json: { browserKey: "test-browser-key" } }),
   );
   await page.addInitScript(() => {
+    const sample = { layoutShift: 0, longTasks: 0, longestTaskMs: 0 };
+    Object.assign(window, { __igorInteractionMetrics: sample });
+    if ("PerformanceObserver" in window) {
+      try {
+        const shift = new PerformanceObserver((items) => {
+          for (const item of items.getEntries()) {
+            const entry = item as PerformanceEntry & {
+              hadRecentInput?: boolean;
+              value?: number;
+            };
+            if (!entry.hadRecentInput) sample.layoutShift += entry.value ?? 0;
+          }
+        });
+        shift.observe({type: "layout-shift", buffered: true});
+        const tasks = new PerformanceObserver((items) => {
+          for (const item of items.getEntries()) {
+            sample.longTasks += 1;
+            sample.longestTaskMs = Math.max(sample.longestTaskMs, item.duration);
+          }
+        });
+        tasks.observe({type: "longtask", buffered: true});
+      } catch {
+        // Browser support differs. Record zero only when no entries are delivered.
+      }
+    }
     class MapMock extends HTMLElement {
       center = { lat: 40.73, lng: -73.99, altitude: 0 };
       range = 1800;
@@ -381,11 +406,31 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await expect(canvas.locator(".ic-map-plan")).toContainText(
     "Supplied venue 2",
   );
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBeTruthy();
+  const measurements = await page.evaluate(() => {
+    const composer = document.querySelector(".ip-conversation-composer");
+    const rect = composer?.getBoundingClientRect();
+    const metrics = (window as Window & {
+      __igorInteractionMetrics?: {
+        layoutShift: number; longTasks: number; longestTaskMs: number;
+      };
+    }).__igorInteractionMetrics;
+    return {
+      viewport: {width: innerWidth, height: innerHeight},
+      scrollWidth: document.documentElement.scrollWidth,
+      composerVisible: rect ? rect.top >= 0 &&
+        rect.bottom <= (window.visualViewport?.height ?? innerHeight) + 1 : false,
+      ...metrics,
+    };
+  });
+  mkdirSync("test-results/canvas/metrics", {recursive: true});
+  writeFileSync(
+    `test-results/canvas/metrics/${info.project.name}.json`,
+    JSON.stringify(measurements, null, 2),
+  );
+  expect(measurements.scrollWidth).toBeLessThanOrEqual(
+    measurements.viewport.width + 1,
+  );
+  expect(measurements.composerVisible).toBe(true);
   await canvas.evaluate((el) => {
     (document.activeElement as HTMLElement | null)?.blur();
     window.scrollTo({
