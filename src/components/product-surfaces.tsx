@@ -393,7 +393,8 @@ export function ProductResults({
   }, []);
   useEffect(() => {
     if (!busy && !follow.current) return;
-    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches
       ? "instant"
       : "smooth";
     if (window.matchMedia("(max-width: 760px)").matches) {
@@ -411,18 +412,26 @@ export function ProductResults({
       data-pane={pane}
     >
       {task.canvas && (
-        <div className="pp-mobile-switch" role="tablist" aria-label="Workspace views">
+        <div
+          className="pp-mobile-switch"
+          role="tablist"
+          aria-label="Workspace views"
+        >
           <button
             role="tab"
             aria-selected={pane === "thread"}
-            onClick={() => morphLayout(() => setPaneChoice({ surfaceId, pane: "thread" }))}
+            onClick={() =>
+              morphLayout(() => setPaneChoice({ surfaceId, pane: "thread" }))
+            }
           >
             Conversation
           </button>
           <button
             role="tab"
             aria-selected={pane === "canvas"}
-            onClick={() => morphLayout(() => setPaneChoice({ surfaceId, pane: "canvas" }))}
+            onClick={() =>
+              morphLayout(() => setPaneChoice({ surfaceId, pane: "canvas" }))
+            }
           >
             Your result
           </button>
@@ -430,11 +439,11 @@ export function ProductResults({
       )}
       {task.canvas && pane === "canvas" && feedback?.state === "error" && (
         <div className="pp-mobile-result-error" role="alert">
-          <span>{feedback.error || "Igor could not finish this reply. Your work is preserved."}</span>
-          <button
-            disabled={busy}
-            onClick={() => onTurn(feedback.action)}
-          >
+          <span>
+            {feedback.error ||
+              "Igor could not finish this reply. Your work is preserved."}
+          </span>
+          <button disabled={busy} onClick={() => onTurn(feedback.action)}>
             Try again
           </button>
         </div>
@@ -551,8 +560,14 @@ export function ProductResults({
                   <button
                     className="pp-result-open"
                     onClick={(event) => {
-                      const artwork = event.currentTarget.querySelector<HTMLElement>(".pp-artwork");
-                      artwork?.style.setProperty("view-transition-name", "igor-result-artwork");
+                      const artwork =
+                        event.currentTarget.querySelector<HTMLElement>(
+                          ".pp-artwork",
+                        );
+                      artwork?.style.setProperty(
+                        "view-transition-name",
+                        "igor-result-artwork",
+                      );
                       morphLayout(() => {
                         setSelected(c.id);
                         artwork?.style.removeProperty("view-transition-name");
@@ -639,7 +654,10 @@ export function ProductResults({
       >
         {detail && (
           <div className="pp-detail">
-            <div className="pp-shared-artwork" style={{ viewTransitionName: "igor-result-artwork" }}>
+            <div
+              className="pp-shared-artwork"
+              style={{ viewTransitionName: "igor-result-artwork" }}
+            >
               <Artwork candidate={detail} />
             </div>
             <div className="pp-detail-copy">
