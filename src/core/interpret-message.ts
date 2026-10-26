@@ -141,20 +141,6 @@ export async function interpretMessage(
     clarification =
       "State the new goal, or describe this as a correction to the current task.";
   } else if (
-    parsed.targetType === "place" &&
-    !proposals.some(
-      (action) => action.kind === "constraints" && action.location,
-    ) &&
-    /^(?:at home|home screening room)$/i.test(task.brief.constraints.location)
-  ) {
-    clarification =
-      "Which city or locality should Igor explore? State Location: followed by its name.";
-    task.brief.kind = "discovery";
-    task.brief.outcome = parsed.outcome;
-    task.brief.targetType = "place";
-    task.brief.goal = parsed.goal || input.text;
-    changedDependencies.push("goal");
-  } else if (
     parsed.intent === "revision" &&
     parsed.outcome &&
     !proposals.length
@@ -204,6 +190,15 @@ export async function interpretMessage(
     if (task.candidates.length === 0) {
       needsDiscovery = true;
     }
+  }
+
+  // Keep explicitly supplied taste while asking for the locality needed to retrieve places.
+  if (
+    !clarification &&
+    task.brief.targetType === "place" &&
+    /^(?:at home|home screening room)$/i.test(task.brief.constraints.location)
+  ) {
+    clarification = "Which city or locality should Igor explore?";
   }
 
   return {

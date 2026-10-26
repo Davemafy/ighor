@@ -11,3 +11,9 @@ The provider APIs have now been exercised in Actions; see [provider validation](
 No additional service account, database, deployment or paid resource is required for the local recorded-data workflow. Frontend redesign remains deferred. No invitation is sent and nothing is booked by the application.
 
 Primary references: https://github.com/qloo/docs-public/blob/main/reference/get-search.md ; https://github.com/qloo/docs-public/blob/main/reference/insights-api-deep-dive.md ; https://github.com/qloo/docs-public/blob/main/docs/interpreting-affinity-scores.md ; https://ai.google.dev/api/generate-content ; https://ai.google.dev/api/models ; https://ai.google.dev/gemini-api/docs/generate-content/thought-signatures . Runtime evidence, not documentation alone, established the observed contracts.
+
+## Production conversation probe, 26 October 2026
+
+The Railway service accepted a fresh task and reported live-provider mode with a tool-calling model. A single natural request, "I like Radiohead and Arrival. Find films for me for a quiet evening.", returned clarification about mixing document wording and planning corrections, retained six demo participants and returned no candidates. This is a failed production conversation check, not evidence of successful live discovery.
+
+The engine follow-up adds grounded profile creation, conversation history in model context, explicit instructions against unsolicited document edits and state-derived turn replies. Regression coverage uses controlled model/provider responses. Repeat the same production request after integration before claiming the live conversation gap is closed.

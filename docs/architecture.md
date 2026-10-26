@@ -2,6 +2,30 @@
 
 Igor is one Next.js App Router application. Server routes validate ownership and input; the browser edits task state and displays artifacts. SQLite persists local accounts, versioned tasks, explicit memory, saved collections and reviews. Provider adapters remain server-side.
 
+## Product and presentation contract
+
+Igor is "your agent with taste": one conversational workspace that turns a person's goal into personalized outcomes using Qloo cultural intelligence. Discover, Compose, Collaborate and Evaluate are reusable capabilities within that workspace. They are not separate products or a requirement for users to choose a tool before describing a goal.
+
+The engine owns interpretation, validated task state, capability execution, evidence, eligibility, dependency invalidation and persistence. The visual layer owns layout, typography, motion and how people inspect or edit those results. A new presentation must consume the same contracts and submit the same actions without recreating ranking, eligibility or revision rules in components.
+
+| Integration surface               | Contract                                               |
+| --------------------------------- | ------------------------------------------------------ |
+| `src/core/contracts.ts`           | Validated task, action, evidence and event schemas     |
+| `src/components/workspace-api.ts` | Browser requests and streamed turn events              |
+| `src/components/use-workspace.ts` | Existing browser task lifecycle and pending state      |
+| `src/tools/interfaces.ts`         | Server provider boundaries independent of presentation |
+| `src/core/orchestrator.ts`        | Versioned execution and persistence lifecycle          |
+
+Important results must expose their supporting evidence and limitations. Qloo output, user-supplied facts, Igor inferences and unknown information must remain distinguishable through presentation changes. A provider explanation must not be presented as a verified practical fact. Cached results retain their original provenance and retrieval time.
+
+A constraint correction changes only dependent work. Unaffected results retain their identity and evidence. Affected results become stale before replacement; failed retrieval must not make an old result appear current. Ambiguous edits ask for clarification rather than applying part of a guessed correction. Concurrent turns retain version checks.
+
+`core/inspect-result.ts` provides a read-only evidence inspection projection for candidates and artifacts. It retains source, delivery, timestamps and limitations, reports dangling evidence IDs and treats stale supporting evidence as stale output. Views must not convert this projection into stronger factual claims. `EventSchema` validates streamed task snapshots; incomplete streams surface an error instead of reporting completion.
+
+Visual work may add views over structured results and controls over existing actions. A new interaction that needs a new domain operation requires a validated engine action and its dependency rules before a component can implement it. Credentials, storage and provider calls remain on the server.
+
+Acceptance requires more than a polished response: inspect a result's sources, change a constraint, observe the affected dependencies, preserve unrelated work and handle unavailable evidence explicitly. Recorded checks and live provider checks must be reported separately. The current practical-facts adapter validates supplied facts; live venue verification remains unfinished.
+
 ## Turn lifecycle
 
 `src/core/orchestrator.ts` owns the versioned lifecycle: load, apply the input, publish stale outputs, execute work and save the result. It is the place to start when following a request.
@@ -14,6 +38,10 @@ Igor is one Next.js App Router application. Server routes validate ownership and
 | `execute-plan.ts`      | Resolve identities, retrieve options, check eligibility, compare preferences and compose outputs |
 
 `conversation.ts` applies a validated batch on a clone through named handlers for constraints, preferences, facts, identities, selections and documents. Ambiguity discards the whole batch.
+
+Natural requests can create personal or named taste profiles through the validated `profile` conversation action. The first real profile replaces demo participants; subsequent profiles retain existing real people. Preference values and names must occur in the user message. Creation shares correction grounding and remains atomic with the rest of the turn. Asking for a missing locality preserves the supplied profile. No profile is saved to persistent memory without explicit approval.
+
+`core/turn-reply.ts` describes current result names, artifacts, evidence delivery and open questions from committed state. It does not generate practical facts or describe stale outputs as ready.
 
 Input handlers prepare task changes. They do not save to the database. The orchestrator commits stale outputs before provider calls, then saves the completed turn with an optimistic version check. A late result cannot overwrite a newer correction.
 

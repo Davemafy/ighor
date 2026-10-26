@@ -80,6 +80,9 @@ export function applyConversationActions(
 
     for (const action of actions) {
       switch (action.kind) {
+        case "profile":
+          applyProfile(edit, action);
+          break;
         case "constraints":
           applyConstraintCorrection(edit, action);
           break;
@@ -254,7 +257,7 @@ function applyPreferenceCorrection(
   );
 
   if (
-    !(participant.id === "you" && /^i\s/i.test(text)) &&
+    !(participant.id === "you" && /\b(?:I|my|me)\b/i.test(text)) &&
     !normalize(text).includes(normalize(participant.id))
   ) {
     requireExplicitText(text, participant.name);
@@ -292,6 +295,81 @@ function applyPreferenceCorrection(
   changed.add(`preferences:${participant.id}`);
   changed.add("selection");
   edit.needsDiscovery = true;
+}
+
+function applyProfile(
+  edit: EditContext,
+  action: Extract<ConversationAction, { kind: "profile" }>,
+) {
+  const { task, text, changed } = edit;
+  const personal = normalize(action.participant) === "you";
+
+  if (personal) {
+    if (!/\b(?:I|my|me)\b/i.test(text)) {
+      throw new Error(
+        "Whose taste should Igor use? State your own preferences or name the person.",
+      );
+    }
+  } else {
+    requireExplicitText(text, action.participant);
+  }
+
+  // A real opening profile replaces demo people; it never inherits their taste.
+  if (
+    task.brief.participants.length &&
+    task.brief.participants.every((person) => person.sample)
+  ) {
+    for (const person of task.brief.participants) {
+      changed.add(`preferences:${person.id}`);
+    }
+
+    task.brief.participants = [];
+    task.brief.suppliedFacts = task.brief.suppliedFacts.filter(
+      (fact) => !(/profiles/i.test(fact) && /sample|illustrative/i.test(fact)),
+    );
+    task.brief.suppliedFacts.push(
+      "Taste profiles supplied in this conversation; not saved to persistent memory.",
+    );
+    task.entities = [];
+    changed.add("catalogue");
+  }
+
+  const matches = task.brief.participants.filter(
+    (person) =>
+      normalize(person.id) === normalize(action.participant) ||
+      normalize(person.name) === normalize(action.participant),
+  );
+
+  if (matches.length > 1) {
+    throw new Error(
+      "More than one participant matches. Use an unambiguous name or ID.",
+    );
+  }
+
+  let person = matches[0];
+
+  if (!person) {
+    if (task.brief.participants.length >= 12) {
+      throw new Error("This workspace supports up to twelve participants.");
+    }
+
+    person = {
+      id: personal ? "you" : randomUUID(),
+      name: personal ? "You" : action.participant,
+      preferences: [],
+      sample: false,
+    };
+    task.brief.participants.push(person);
+  }
+
+  for (const preference of action.preferences) {
+    // Profile creation shares correction grounding, attribution and limits.
+    applyPreferenceCorrection(edit, {
+      kind: "preference",
+      participant: person.id,
+      ...preference,
+    });
+  }
 }
 
 function applyPracticalFacts(

@@ -25,6 +25,7 @@ import { applyStructuredTurn } from "./apply-turn";
 import { interpretMessage } from "./interpret-message";
 import { compareModelRankings } from "./compare-model";
 import { executeTaskPlan } from "./execute-plan";
+import { turnReply } from "./turn-reply";
 
 export { ExecutionBudget } from "./execution";
 
@@ -214,13 +215,7 @@ export async function runTurn(
   task.trace = task.trace.slice(-100);
   task.messages.push({
     role: "assistant",
-    text:
-      task.error ??
-      (task.status === "clarification"
-        ? task.brief.unresolved.join(" ")
-        : localChangeOnly
-          ? "Your edit is saved. Discovery was preserved."
-          : `Compared the options for ${task.brief.participants.length} distinct profiles. ${task.brief.selected.length ? "The selection and editable drafts are ready." : "No feasible complete selection is available."} ${task.mode === "qloo-live" ? "Qloo-returned cultural evidence; supply practical facts before committing." : "All cultural data and sample costs are illustrative."}`),
+    text: turnReply(task, localChangeOnly),
     at: at(),
   });
   TaskSchema.parse(task);

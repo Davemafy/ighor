@@ -110,7 +110,7 @@ export function useWorkspace() {
       const response = await submitTurn(currentTask, action);
 
       for await (const event of readTurnEvents(response)) {
-        if (event.task) {
+        if (event.type === "state" || event.type === "done") {
           setTask(event.task);
         }
 

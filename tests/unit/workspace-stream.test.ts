@@ -44,7 +44,7 @@ describe("Workspace execution stream", () => {
     ]);
 
     for await (const event of readTurnEvents(response)) {
-      expect(event.message).toBe("Discovering");
+      expect(event.type === "action" && event.message).toBe("Discovering");
       break;
     }
 
@@ -66,4 +66,35 @@ describe("Workspace execution stream", () => {
       "No execution stream received.",
     );
   });
+});
+
+it("rejects schema-invalid events and cancels the response", async () => {
+  let cancelled = false;
+  const response = new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode('data: {"type":"done"}\n\n'),
+        );
+      },
+      cancel() {
+        cancelled = true;
+      },
+    }),
+  );
+  await expect(readTurnEvents(response).next()).rejects.toThrow();
+  expect(cancelled).toBe(true);
+  expect(response.body?.locked).toBe(false);
+});
+
+it("reports a dropped connection instead of implying completion", async () => {
+  const response = streamedResponse([
+    new TextEncoder().encode('data: {"type":"action","message":"Working"}\n\n'),
+  ]);
+  const events = readTurnEvents(response);
+  expect((await events.next()).value).toEqual({
+    type: "action",
+    message: "Working",
+  });
+  await expect(events.next()).rejects.toThrow("ended before completion");
 });

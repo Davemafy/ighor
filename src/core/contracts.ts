@@ -330,6 +330,20 @@ export const TaskSchema = z.object({
 
 export const ConversationActionSchema = z.discriminatedUnion("kind", [
   z.strictObject({
+    kind: z.literal("profile"),
+    participant: z.string().trim().min(1).max(60),
+    preferences: z
+      .array(
+        z.strictObject({
+          value: z.string().trim().min(1).max(100),
+          polarity: z.enum(["like", "dislike", "unknown", "not-now"]),
+          entityType: EntityType.optional(),
+        }),
+      )
+      .min(1)
+      .max(6),
+  }),
+  z.strictObject({
     kind: z.literal("constraints"),
     budget: z.number().min(0).max(1000000).optional(),
     duration: z.number().int().min(15).max(1440).optional(),
@@ -494,12 +508,18 @@ export type ToolResult<T> = Omit<z.infer<typeof ToolResultSchema>, "data"> & {
   data: T;
 };
 
-export type Event = {
-  type: "state" | "action" | "done" | "error";
-  task?: Task;
-  message?: string;
-  code?: string;
-};
+export const EventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("state"), task: TaskSchema }),
+  z.object({ type: z.literal("done"), task: TaskSchema }),
+  z.object({ type: z.literal("action"), message: z.string() }),
+  z.object({
+    type: z.literal("error"),
+    message: z.string(),
+    code: z.string().optional(),
+  }),
+]);
+
+export type Event = z.infer<typeof EventSchema>;
 
 export type TaskBrief = z.infer<typeof BriefSchema>;
 

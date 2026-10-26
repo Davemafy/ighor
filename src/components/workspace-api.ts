@@ -1,4 +1,10 @@
-import type { Event, Task, TaskAction } from "@/core/contracts";
+import {
+  EventSchema,
+  TaskSchema,
+  type Event,
+  type Task,
+  type TaskAction,
+} from "@/core/contracts";
 
 export type WorkspaceSummary = { id: string; goal: string };
 
@@ -18,13 +24,21 @@ export async function createWorkspace(): Promise<Task> {
     throw new Error("Could not create workspace.");
   }
 
-  return response.json();
+  return TaskSchema.parse(await response.json());
 }
 
 export async function fetchWorkspace(id: string): Promise<Task | null> {
   const response = await fetch(`/api/tasks/${id}`);
 
-  return response.ok ? response.json() : null;
+  if (response.status === 401 || response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error("Could not load workspace.");
+  }
+
+  return TaskSchema.parse(await response.json());
 }
 
 export async function fetchWorkspaceHistory(): Promise<
@@ -73,6 +87,7 @@ export async function* readTurnEvents(
 
   const decoder = new TextDecoder();
   let pending = "";
+  let completed = false;
 
   try {
     while (true) {
@@ -85,17 +100,29 @@ export async function* readTurnEvents(
         pending = pending.slice(boundary + 2);
 
         if (packet.startsWith("data: ")) {
-          yield JSON.parse(packet.slice(6)) as Event;
+          const event = EventSchema.parse(JSON.parse(packet.slice(6)));
+          completed = event.type === "done" || event.type === "error";
+          yield event;
+
+          if (completed) {
+            return;
+          }
         }
 
         boundary = pending.indexOf("\n\n");
       }
 
       if (done) {
-        return;
+        throw new Error(
+          "Execution stream ended before completion. Reload the workspace to check its saved state.",
+        );
       }
     }
   } finally {
-    reader.releaseLock();
+    try {
+      await reader.cancel();
+    } finally {
+      reader.releaseLock();
+    }
   }
 }
