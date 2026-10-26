@@ -206,10 +206,57 @@ test("composed work persists through edits, filtering, planning, maps and refres
     task.id,
   );
   await page.goto(`/app?view=conversation&task=${task.id}`);
+  const mobile = info.project.name.startsWith("mobile");
+  const evidence = async (name: string) => {
+    if (!mobile) return;
+    mkdirSync("test-results/canvas/mobile-quality", { recursive: true });
+    await page.screenshot({
+      path: `test-results/canvas/mobile-quality/${info.project.name}-${name}.png`,
+      fullPage: false,
+    });
+  };
   const canvas = page.getByRole("complementary", { name: "Task canvas" });
+  if (mobile) {
+    const transcriptTab = page.getByRole("tab", { name: "Conversation" });
+    const canvasTab = page.getByRole("tab", { name: "Your result" });
+    await transcriptTab.click();
+    await expect(transcriptTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText("Prepare a product launch plan using my supplied data.")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Product navigation" })).toBeHidden();
+    const composer = page.getByRole("textbox", { name: "Message Igor" });
+    await expect(composer).toBeVisible();
+    const inputBox = await composer.boundingBox();
+    expect(inputBox).not.toBeNull();
+    expect(inputBox!.y + inputBox!.height).toBeLessThanOrEqual(844);
+    await evidence("01-conversation");
+    await canvasTab.click();
+    await expect(canvasTab).toHaveAttribute("aria-selected", "true");
+    await expect(canvas).toBeVisible();
+    await evidence("02-result-morph");
+    // Simulate an occupied mobile keyboard viewport; the composer must reflow
+    // without covering the result. Real keyboard behavior requires device QA.
+    await page.evaluate(() =>
+      document.documentElement.style.setProperty("--igor-visible-height", "600px"),
+    );
+    await expect(composer).toBeVisible();
+    const composerFrame = await page.locator(".ip-conversation-composer").boundingBox();
+    expect(composerFrame).not.toBeNull();
+    expect(composerFrame!.y + composerFrame!.height).toBeLessThanOrEqual(601);
+    await page.evaluate(() =>
+      document.documentElement.style.removeProperty("--igor-visible-height"),
+    );
+  }
+  await expect(canvas).toBeVisible();
   await expect(
     canvas.getByRole("heading", { name: "A launch worth making" }),
   ).toBeVisible();
+  if (mobile) {
+    await canvas.getByRole("button", { name: "Expand canvas" }).click();
+    await expect(canvas).toHaveClass(/ic-fullscreen/);
+    await evidence("03-expanded-artifact");
+    await canvas.getByRole("button", { name: "Exit full screen canvas" }).click();
+    await expect(canvas).not.toHaveClass(/ic-fullscreen/);
+  }
   await canvas.getByRole("button", { name: "Edit draft", exact: true }).click();
   await canvas
     .getByRole("textbox", { name: "Edit Launch brief" })
@@ -223,6 +270,7 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await expect(
     canvas.getByText("Unsaved changes", { exact: true }),
   ).toHaveCount(0);
+  await evidence("04-saved-revision");
   await canvas
     .getByRole("button", { name: "Move Launch beta earlier" })
     .click();
@@ -251,6 +299,7 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await expect(canvas.locator(".ic-map-plan")).toContainText(
     "Supplied venue 2",
   );
+  await evidence("05-geographic-result");
   const saved = (await (
     await page.request.get(`/api/tasks/${task.id}`)
   ).json()) as Task;
