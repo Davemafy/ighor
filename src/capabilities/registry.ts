@@ -101,11 +101,17 @@ const discover = defineCapability({
 
         ctx.budget.take("resolve");
         const start = Date.now();
+        ctx.trace("tool.invoke:qloo.resolve", `Resolving ${term}.`);
         const result = ToolResultSchema.parse(
           await withToolDeadline(
             ctx.cultural.resolve(term, input.intendedTypes?.[term]),
             ctx.cultural.timeoutMs ?? 5000,
           ),
+        );
+        ctx.trace(
+          "tool.result:qloo.resolve",
+          `Identity lookup returned ${result.status}.`,
+          0,
         );
         requests += result.requestCount;
         warnings.push(...result.warnings);
@@ -173,11 +179,17 @@ const discover = defineCapability({
 
     ctx.budget.take("discover");
     const start = Date.now();
+    ctx.trace("tool.invoke:qloo.discover", "Requesting cultural associations.");
     const result = ToolResultSchema.parse(
       await withToolDeadline(
         ctx.cultural.discover(input),
         ctx.cultural.timeoutMs ?? 5000,
       ),
+    );
+    ctx.trace(
+      "tool.result:qloo.discover",
+      `Cultural retrieval returned ${result.status}.`,
+      0,
     );
     const warnings = JSON.parse(safeSerialize(result.warnings)) as string[];
     ctx.trace(

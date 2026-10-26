@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
+import { messageIds } from "../core/agent-events";
 import { TaskSchema, PreferenceSchema, type Task } from "../core/contracts";
 
 export class AccessError extends Error {
@@ -92,6 +93,7 @@ export class SqliteTaskStore implements TaskStore {
   }
 
   create(task: Task) {
+    messageIds(task);
     TaskSchema.parse(task);
     this.db
       .prepare("INSERT INTO tasks VALUES(?,?,?,?)")
@@ -115,14 +117,13 @@ export class SqliteTaskStore implements TaskStore {
 
   memory(owner: string) {
     return this.db
-      .prepare(
-        "SELECT state FROM memory WHERE owner=? ORDER BY rowid LIMIT 100",
-      )
+      .prepare("SELECT state FROM memory WHERE owner=? ORDER BY rowid")
       .all(owner)
       .map((r) => PreferenceSchema.parse(JSON.parse(String(r.state))));
   }
 
   save(task: Task, expected: number, owner: string, change?: MemoryChange) {
+    messageIds(task);
     TaskSchema.parse(task);
 
     if (task.brief.owner !== owner) {
@@ -143,7 +144,7 @@ export class SqliteTaskStore implements TaskStore {
 
         if (
           count.length >= 100 &&
-          !count.some((preference) => preference.id === preference.id)
+          !count.some((saved) => saved.id === preference.id)
         ) {
           throw new Error("Memory limit reached.");
         }
@@ -243,7 +244,10 @@ function readStoredState(text: string): Task {
       "This saved workspace uses an earlier evidence schema. Refresh its decisions before use.";
   }
 
-  return TaskSchema.parse(raw);
+  const task = TaskSchema.parse(raw);
+  messageIds(task);
+
+  return task;
 }
 
 const globalStore = globalThis as typeof globalThis & {

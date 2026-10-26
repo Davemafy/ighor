@@ -53,5 +53,16 @@ export function runtimeModelProvider(mode: Task["mode"]) {
       )
     : process.env.LLM_API_KEY && process.env.LLM_MODEL
       ? new ToolCallingModel(process.env.LLM_API_KEY, process.env.LLM_MODEL)
-      : new DevelopmentModel();
+      : process.env.IGOR_TEST_FIXTURES === "1" ||
+          process.env.IGOR_QLOO_RECORDING ||
+          process.env.NODE_ENV === "test"
+        ? new DevelopmentModel()
+        : {
+            executionMode: "tool-calling" as const,
+            async interpret(): Promise<never> {
+              throw new Error(
+                "No production model configured. Configure GEMINI_API_KEY or LLM_API_KEY and LLM_MODEL.",
+              );
+            },
+          };
 }

@@ -1,3 +1,4 @@
+import { mergeArtifacts } from "./preserve-artifacts";
 import type { Task } from "./contracts";
 import type { ArtifactEdit, TurnUpdate } from "./apply-turn";
 import { planCapabilities } from "./capability-plan";
@@ -449,7 +450,7 @@ async function composeOutcome(task: Task, context: CapabilityContext) {
       context,
     ),
   );
-  task.artifacts = output.artifacts;
+  task.artifacts = mergeArtifacts(task.artifacts, output.artifacts);
   task.schedule = output.schedule ?? [];
   task.brief.selected = output.selected ?? [];
   task.status = output.status;

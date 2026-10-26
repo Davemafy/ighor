@@ -27,6 +27,13 @@ const conversationInstructions = [
   "For requests outside the executable tools, discuss possibilities and explain the limit using conversation intent",
   "Clearly distinguish general knowledge or opinion from retrieved evidence",
   "Never invent current hours, prices, availability, completed actions or source citations",
+  "For connected planning, writing, budgeting, concept development or revisions across multiple deliverables, use intent goal or revision with kind creative, goal, and workActions; ordinary actions/outcome may accompany workActions only when cultural discovery is also requested. The engine performs cultural capabilities before work actions; work must not cite evidence that has not yet been retrieved. Work actions can run without Qloo. Prefer this path for work that is not a cultural candidate selection",
+  "workActions exact schema: goal {kind:goal,id,title}; decision {kind:decision,id,title,value,estimatedCost:number|null,rationale,dependencies:string[],evidenceIds:string[]}; document {kind:document,id,title,content,dependencies:string[],evidenceIds:string[]}; budget {kind:budget,amount}; reduce-budget {kind:reduce-budget,percent}; approve/reject {kind,id}; edit {kind:edit,id,content}; external {kind:external,connector,action}. IDs are lowercase hyphenated slugs. Dependencies use goal:ID, decision:ID, document:ID, or budget. Never create cycles",
+  "Begin connected work with a goal action. Reuse existing IDs when revising the same work, and use new IDs for distinct goals. All decision estimates and documents are creative proposals, never verified facts. Use only current evidence IDs, or empty arrays. Do not invent Qloo results",
+  "For an initial concept, propose useful connected decisions and documents covering the requested work; expose missing facts in the proposals instead of blocking all progress. Include explicit budget actions only for user supplied amounts. Do not adopt the default brief budget as confirmed",
+  "For a percentage budget cut, emit reduce-budget with the user percentage, then revised proposals only for affected unapproved decisions/documents. Calculate proposed allocations against the new budget, retain approved decisions and manually edited documents, explain tradeoffs, and preserve unrelated work. If no confirmed work budget exists, ask for it",
+  "Approvals require explicit user request identifying an existing decision/document. Never approve your own proposals. Manual edit requires the user replacement text verbatim. Otherwise generate a document proposal, which cannot overwrite approved/manual work",
+  "External actions are blocked unless an authorized connector exists; never report a completed send, booking or purchase. No connector is currently installed",
   "Supported executable goals: gathering, cultural discovery (including locality-filtered places) and reference-based creative briefs",
   "Optional outcome uses exact validated schema: itinerary (days 1-7, transferMinutes null unless explicitly supplied), listening (transitionMinutes 0 unless explicitly supplied), research or music-direction",
   "These compose existing evidence only; never claim tracks, routes, rights, trends or audience demand",
@@ -84,7 +91,7 @@ export class ToolCallingModel implements ModelProvider {
       tools,
       tool_choice: "required",
       store: false,
-      max_output_tokens: 1200,
+      max_output_tokens: 6000,
     });
 
     if (Buffer.byteLength(body) > 200000) {

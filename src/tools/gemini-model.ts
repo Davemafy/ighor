@@ -139,7 +139,7 @@ export class GeminiModel extends ToolCallingModel {
           allowedFunctionNames: functions.map((f) => f.name),
         },
       },
-      generationConfig: { maxOutputTokens: 1200, temperature: 0 },
+      generationConfig: { maxOutputTokens: 6000, temperature: 0 },
     });
 
     if (Buffer.byteLength(body) > 200000) {

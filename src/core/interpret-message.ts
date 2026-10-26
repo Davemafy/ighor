@@ -141,6 +141,14 @@ export async function interpretMessage(
     return { ...update, task, conversationOnly: true };
   }
 
+  if (
+    parsed.workActions?.length &&
+    !parsed.actions?.length &&
+    !parsed.outcome
+  ) {
+    return { ...update, task, workActions: parsed.workActions };
+  }
+
   // Validate extraction again; a future model cannot bypass the input contract.
   const patch = TurnSchema.parse({
     type: "constraints",
@@ -264,6 +272,8 @@ export async function interpretMessage(
   return {
     ...update,
     task,
+    workActions: parsed.workActions,
+    workAfterDiscovery: !!parsed.workActions?.length,
     changedDependencies,
     needsDiscovery,
     localChangeOnly,

@@ -59,6 +59,11 @@ export default defineConfig({
   ],
   projects: [
     {
+      name: "connected-work",
+      testMatch: "connected-work.e2e.ts",
+      use: { baseURL: "http://127.0.0.1:3100" },
+    },
+    {
       name: "home",
       testMatch: "home.e2e.ts",
       use: { baseURL: "http://127.0.0.1:3100" },

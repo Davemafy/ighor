@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { OutcomeSpecSchema, OutcomeDetailsSchema } from "./outcome-spec";
+import { WorkStateSchema, WorkActionSchema } from "./work-contracts";
+import { AgentActivitySchema } from "./agent-events";
 
 export const Source = z.enum([
   "user-supplied",
@@ -259,6 +261,17 @@ export const ScheduleSchema = z.object({
 });
 
 export const TaskSchema = z.object({
+  work: WorkStateSchema.optional(),
+  evidenceArchive: z.array(EvidenceSchema).optional(),
+  artifactHistory: z
+    .array(
+      z.object({
+        artifact: ArtifactSchema,
+        at: z.string(),
+        reason: z.string(),
+      }),
+    )
+    .optional(),
   reviewEffects: z.array(z.string().uuid()).max(100).optional(),
   receipts: z
     .array(
@@ -290,6 +303,7 @@ export const TaskSchema = z.object({
   trace: z.array(TraceSchema),
   messages: z.array(
     z.object({
+      id: z.string().optional(),
       role: z.enum(["user", "assistant"]),
       kind: z.literal("conversation").optional(),
       evidenceIds: z.array(z.string()).optional(),
@@ -382,6 +396,7 @@ export const ConversationActionSchema = z.discriminatedUnion("kind", [
 ]);
 
 const ActionInterpretationSchema = z.object({
+  workActions: z.array(WorkActionSchema).min(1).max(16).optional(),
   outcome: OutcomeSpecSchema.optional(),
   targetType: z.enum(["movie", "tv_show", "artist", "place"]).optional(),
   actions: z.array(ConversationActionSchema).max(8).optional(),
@@ -405,6 +420,7 @@ const ConversationInterpretationSchema = z
     supported: true,
     kind: "discovery" as const,
     goal: "",
+    workActions: undefined,
     actions: undefined,
     outcome: undefined,
     targetType: undefined,
@@ -426,6 +442,11 @@ export const InterpretationSchema = z.union([
 ]);
 
 export const TurnSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("work"),
+    actions: z.array(WorkActionSchema).min(1).max(16),
+    version: z.number().int().nonnegative(),
+  }),
   z.strictObject({
     type: z.literal("outcome"),
     outcome: OutcomeSpecSchema,
@@ -544,7 +565,11 @@ export type ToolResult<T> = Omit<z.infer<typeof ToolResultSchema>, "data"> & {
 export const EventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("state"), task: TaskSchema }),
   z.object({ type: z.literal("done"), task: TaskSchema }),
-  z.object({ type: z.literal("action"), message: z.string() }),
+  z.object({
+    type: z.literal("action"),
+    message: z.string(),
+    activity: AgentActivitySchema.optional(),
+  }),
   z.object({
     type: z.literal("error"),
     message: z.string(),
