@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import {
   createWorkspace as requestNewWorkspace,
@@ -15,6 +15,8 @@ import {
 export type WorkspaceView =
   "programme" | "options" | "invitation" | "evidence" | "connections" | "keep";
 
+import type { TurnFeedback } from "./turn-feedback";
+
 const savedWorkspaceKey = "igor-task";
 
 export function useWorkspace() {
@@ -23,6 +25,8 @@ export function useWorkspace() {
   const [errorMessage, setErrorMessage] = useState("");
   const [activeView, setActiveView] = useState<WorkspaceView>("programme");
   const [executionMessage, setExecutionMessage] = useState("");
+  const sending = useRef(false);
+  const [feedback, setFeedback] = useState<TurnFeedback | null>(null);
   const [history, setHistory] = useState<WorkspaceSummary[]>([]);
 
   useEffect(() => {
@@ -55,14 +59,17 @@ export function useWorkspace() {
   }, []);
 
   async function createWorkspace() {
+    if (sending.current) return;
     setIsBusy(true);
     setErrorMessage("");
 
     try {
       const workspace = await requestNewWorkspace();
       setTask(workspace);
+      setFeedback(null);
       localStorage.setItem(savedWorkspaceKey, workspace.id);
       setActiveView("programme");
+      return workspace;
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Could not load.",
@@ -73,6 +80,7 @@ export function useWorkspace() {
   }
 
   async function openWorkspace(id: string) {
+    if (sending.current) return false;
     const workspace = await fetchWorkspace(id);
 
     if (!workspace) {
@@ -80,6 +88,7 @@ export function useWorkspace() {
     }
 
     setTask(workspace);
+    setFeedback(null);
     localStorage.setItem(savedWorkspaceKey, id);
 
     return true;
@@ -95,16 +104,29 @@ export function useWorkspace() {
     setHistory(workspaces);
   }
 
-  async function sendTurn(action: TaskAction) {
-    const currentTask = task;
+  async function sendTurn(action: TaskAction, targetTask?: Task) {
+    const currentTask = targetTask ?? task;
 
-    if (!currentTask || isBusy) {
+    if (!currentTask || sending.current) {
       return;
     }
 
+    sending.current = true;
     setIsBusy(true);
     setErrorMessage("");
-    setExecutionMessage("Validating the brief…");
+    const input = action.type === "message" ? action.text : "";
+    const startedAt = Date.now();
+    setFeedback({
+      input,
+      action,
+      startedAt,
+      messageCount: currentTask.messages.length,
+      state: "running",
+      steps: [],
+    });
+    setExecutionMessage("Waiting for Igor");
+    let failed = false;
+    let receivedState = false;
 
     try {
       const response = await submitTurn(currentTask, action);
@@ -112,6 +134,19 @@ export function useWorkspace() {
       for await (const event of readTurnEvents(response)) {
         if (event.type === "state" || event.type === "done") {
           setTask(event.task);
+          receivedState = true;
+          if (event.type === "done" && event.task.status === "error") {
+            failed = true;
+            setFeedback((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    state: "error",
+                    error: event.task.error || "This reply could not finish.",
+                  }
+                : previous,
+            );
+          }
         }
 
         if (event.type === "done" && event.task?.brief.outcome) {
@@ -125,32 +160,71 @@ export function useWorkspace() {
 
         if (event.type === "action") {
           setExecutionMessage(event.message ?? "");
+          if (event.message)
+            setFeedback((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    steps:
+                      previous.steps.at(-1) === event.message
+                        ? previous.steps
+                        : [...previous.steps, event.message],
+                  }
+                : previous,
+            );
         }
 
         if (event.type === "error") {
+          failed = true;
+          setFeedback((previous) =>
+            previous
+              ? { ...previous, state: "error", error: event.message }
+              : previous,
+          );
           if (event.code === "conflict") {
-            await openWorkspace(currentTask.id);
+            const latest = await fetchWorkspace(currentTask.id);
+            if (latest) setTask(latest);
           }
 
           setErrorMessage(event.message ?? "Action rejected.");
         }
       }
     } catch (error) {
+      failed = true;
       let message =
         error instanceof Error ? error.message : "The action could not finish.";
 
       if (error instanceof TurnRequestError && error.needsRefresh) {
         try {
-          await openWorkspace(currentTask.id);
+          const latest = await fetchWorkspace(currentTask.id);
+          if (latest) setTask(latest);
         } catch {
           message += " Refresh the page to load the latest workspace.";
         }
       }
 
       setErrorMessage(message);
+      setFeedback((previous) =>
+        previous ? { ...previous, state: "error", error: message } : previous,
+      );
     } finally {
-      setIsBusy(false);
       setExecutionMessage("");
+      if (!failed)
+        setFeedback((previous) =>
+          previous ? { ...previous, state: "complete" } : previous,
+        );
+      // A transport error can happen after the server saved a turn. Reconcile
+      // before allowing a retry, so messages and optimistic versions stay aligned.
+      if (failed && !receivedState) {
+        try {
+          const latest = await fetchWorkspace(currentTask.id);
+          if (latest) setTask(latest);
+        } catch {
+          /* Keep the visible input and retry available. */
+        }
+      }
+      sending.current = false;
+      setIsBusy(false);
     }
   }
 
@@ -163,6 +237,7 @@ export function useWorkspace() {
     activeView,
     setActiveView,
     executionMessage,
+    feedback,
     history,
     loadHistory,
     createWorkspace,

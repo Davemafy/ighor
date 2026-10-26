@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Igor | Follow your curiosity",
+  title: "Igor | Your agent. With taste.",
   description:
-    "Discover unexpected connections between music, film, places and people, powered by Qloo taste intelligence.",
+    "Bring a goal. Igor helps you research, plan, compare and create with your taste in mind.",
 };
 
 export default function RootLayout({

@@ -62,6 +62,15 @@ export async function POST(
         };
 
         try {
+          send({
+            type: "action",
+            message:
+              input.type === "message"
+                ? "Reading your message"
+                : input.type === "artifact"
+                  ? "Saving your changes"
+                  : "Working on your request",
+          });
           await runTurn(store, id, owner, input, send);
         } catch (error) {
           const conflict =
