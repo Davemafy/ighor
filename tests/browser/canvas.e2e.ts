@@ -410,7 +410,8 @@ test("composed work persists through edits, filtering, planning, maps and refres
   expect(saved.canvas?.itineraryDays["venue-one"]).toBeUndefined();
   expect(saved.canvas?.itineraryDays["venue-two"]).toBe(1);
   expect(saved.canvas?.chartAxes["chart"]).toBe(2);
-  expect(saved.canvas?.selectedCandidateId).toBe("venue-two");
+  // Removing a stop from the plan preserves the independently selected place.
+  expect(saved.canvas?.selectedCandidateId).toBe("venue-one");
   expect(
     saved.canvas?.surface.nodes.find((n) => n.id === "draft"),
   ).toMatchObject({ content: "# Invite-only launch\n\nStart with 20 users." });
