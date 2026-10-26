@@ -143,7 +143,7 @@ export class SqliteTaskStore implements TaskStore {
 
         if (
           count.length >= 100 &&
-          !count.some((preference) => preference.id === preference.id)
+          !count.some((saved) => saved.id === preference.id)
         ) {
           throw new Error("Memory limit reached.");
         }
