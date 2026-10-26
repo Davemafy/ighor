@@ -43,7 +43,7 @@ export default defineConfig({
         viewport: {width: 320, height: 740},
         isMobile: true,
         hasTouch: true,
-        reducedMotion: "reduce",
+        contextOptions: { reducedMotion: "reduce" },
       },
     },
     {
@@ -52,7 +52,7 @@ export default defineConfig({
         viewport: {width: 430, height: 932},
         isMobile: true,
         hasTouch: true,
-        reducedMotion: "reduce",
+        contextOptions: { reducedMotion: "reduce" },
       },
     },
     {
@@ -61,7 +61,7 @@ export default defineConfig({
         viewport: { width: 390, height: 844 },
         isMobile: true,
         hasTouch: true,
-        reducedMotion: "no-preference",
+        contextOptions: { reducedMotion: "no-preference" },
         video: "on",
       },
     },
