@@ -259,6 +259,8 @@ export async function runTurn(
       trace("work.rejected", question);
     }
 
+    // Connected-work turns return early; bind their latest documents before saving.
+    ensureBoundPresentation(task);
     task.brief.version++;
     task.trace = task.trace.slice(-100);
     appendReceipt(
