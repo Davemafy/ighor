@@ -31,6 +31,7 @@ import {
   type RefObject,
 } from "react";
 import { TaskCanvas } from "./task-canvas";
+import { ConnectedWorkCanvas } from "./connected-work-canvas";
 import { morphLayout } from "./mobile-transitions";
 import { hasPendingInput, type TurnFeedback } from "./turn-feedback";
 import type { Task, TaskAction, Candidate } from "@/core/contracts";
@@ -328,11 +329,14 @@ export function ProductResults({
   } | null>(null);
   // A new persisted canvas revision automatically opens the updated result.
   // A user's Conversation/Result selection remains in effect for that revision.
-  const surfaceId = task.canvas?.surface.id ?? "";
+  const hasWorkDocuments = Boolean(task.work?.documents.length);
+  const hasVisual = Boolean(task.canvas || hasWorkDocuments);
+  const surfaceId = task.canvas?.surface.id ??
+    (hasWorkDocuments ? `connected:${task.work!.activeGoalId ?? task.id}` : "");
   const pane =
     paneChoice?.surfaceId === surfaceId
       ? paneChoice.pane
-      : task.canvas
+      : hasVisual
         ? "canvas"
         : "thread";
   const candidates = task.candidates.filter((c) => c.freshness === "current"),
@@ -408,10 +412,10 @@ export function ProductResults({
   }, [task.messages.length, feedback?.startedAt, busy, pane]);
   return (
     <div
-      className={`pp-conversation ${task.canvas ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
+      className={`pp-conversation ${hasVisual ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
       data-pane={pane}
     >
-      {task.canvas && (
+      {hasVisual && (
         <div
           className="pp-mobile-switch"
           role="tablist"
@@ -437,7 +441,7 @@ export function ProductResults({
           </button>
         </div>
       )}
-      {task.canvas && pane === "canvas" && feedback?.state === "error" && (
+      {hasVisual && pane === "canvas" && feedback?.state === "error" && (
         <div className="pp-mobile-result-error" role="alert">
           <span>
             {feedback.error ||
@@ -525,7 +529,7 @@ export function ProductResults({
               ))}
           </div>
         )}
-        {!task.canvas && candidates.length > 0 && (
+        {!hasVisual && candidates.length > 0 && (
           <section className="pp-results">
             <header>
               <div>
@@ -606,8 +610,12 @@ export function ProductResults({
           </section>
         )}
       </div>
-      {task.canvas && <TaskCanvas task={task} busy={busy} onTurn={onTurn} />}
-      {!task.canvas && artifacts.length > 0 && (
+      {task.canvas ? (
+        <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
+      ) : hasWorkDocuments ? (
+        <ConnectedWorkCanvas key={task.id} task={task} busy={busy} onTurn={onTurn} />
+      ) : null}
+      {!hasVisual && artifacts.length > 0 && (
         <aside className="pp-work-pane" aria-label="Your work">
           <div className="pp-work-pane-heading">
             <span>

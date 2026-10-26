@@ -194,6 +194,8 @@ export const CanvasStateSchema = z.object({
   selectedCandidateId: z.string().nullable().default(null),
   itineraryIds: refs.default([]),
   filters: z.record(z.string(), z.string().max(200)).default({}),
+  chartAxes: z.record(z.string(), z.number().int().min(0).max(11)).default({}),
+  itineraryDays: z.record(z.string(), z.number().int().min(1).max(14)).default({}),
   completed: z.array(z.string().max(180)).max(100).default([]),
 });
 export type CanvasState = z.infer<typeof CanvasStateSchema>;
@@ -209,6 +211,11 @@ export const CanvasMutationSchema = z.discriminatedUnion("operation", [
     value: z.string().max(200),
   }),
   z.strictObject({
+    operation: z.literal("chart-axis"),
+    nodeId: id,
+    valueColumn: z.number().int().min(0).max(11),
+  }),
+  z.strictObject({
     operation: z.literal("select"),
     nodeId: id,
     candidateId: z.string(),
@@ -222,6 +229,12 @@ export const CanvasMutationSchema = z.discriminatedUnion("operation", [
     operation: z.literal("reorder"),
     nodeId: id,
     itemIds: refs,
+  }),
+  z.strictObject({
+    operation: z.literal("itinerary-day"),
+    nodeId: id,
+    candidateId: z.string().min(1).max(150),
+    day: z.number().int().min(0).max(14),
   }),
   z.strictObject({ operation: z.literal("toggle"), nodeId: id, itemId: id }),
 ]);
@@ -326,6 +339,28 @@ export function mutateCanvas(
 
       canvas.filters[node.id] = mutation.value;
       break;
+    case "chart-axis": {
+      if (node.type !== "chart") {
+        throw new Error("Only a chart can change its measure.");
+      }
+
+      const table = canvas.surface.nodes.find((n) => n.id === node.tableId);
+      if (
+        table?.type !== "table" ||
+        mutation.valueColumn >= table.columns.length ||
+        mutation.valueColumn === node.labelColumn ||
+        table.rows.length === 0 ||
+        table.rows.some((row) =>
+          !row.cells[mutation.valueColumn]?.trim() ||
+          !Number.isFinite(Number(row.cells[mutation.valueColumn])),
+        )
+      ) {
+        throw new Error("Choose an existing numeric comparison column.");
+      }
+
+      canvas.chartAxes[node.id] = mutation.valueColumn;
+      break;
+    }
     case "select":
       if (!(
         (node.type === "spatial" || node.type === "discovery") &&
@@ -366,6 +401,32 @@ export function mutateCanvas(
       }
 
       canvas.itineraryIds = mutation.candidateIds;
+      for (const key of Object.keys(canvas.itineraryDays)) {
+        if (!mutation.candidateIds.includes(key)) {
+          delete canvas.itineraryDays[key];
+        }
+      }
+      break;
+    }
+
+    case "itinerary-day": {
+      if (
+        (node.type !== "spatial" && node.type !== "discovery") ||
+        !canvas.itineraryIds.includes(mutation.candidateId) ||
+        !context.candidates.some(
+          (candidate) =>
+            candidate.id === mutation.candidateId &&
+            candidate.freshness === "current",
+        )
+      ) {
+        throw new Error("Assign days only to current itinerary stops.");
+      }
+
+      if (mutation.day === 0) {
+        delete canvas.itineraryDays[mutation.candidateId];
+      } else {
+        canvas.itineraryDays[mutation.candidateId] = mutation.day;
+      }
       break;
     }
 

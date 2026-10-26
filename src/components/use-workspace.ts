@@ -16,6 +16,7 @@ export type WorkspaceView =
   "programme" | "options" | "invitation" | "evidence" | "connections" | "keep";
 
 import type { TurnFeedback } from "./turn-feedback";
+import { morphLayout } from "./mobile-transitions";
 
 const savedWorkspaceKey = "igor-task";
 
@@ -127,13 +128,33 @@ export function useWorkspace() {
     setExecutionMessage("Waiting for Igor");
     let failed = false;
     let receivedState = false;
+    let morphed = false;
 
     try {
       const response = await submitTurn(currentTask, action);
 
       for await (const event of readTurnEvents(response)) {
         if (event.type === "state" || event.type === "done") {
-          setTask(event.task);
+          const previousVisual = Boolean(currentTask.canvas ||
+            currentTask.work?.documents.length);
+          const nextVisual = Boolean(event.task.canvas ||
+            event.task.work?.documents.length);
+          const newSurface = Boolean(event.task.canvas &&
+            event.task.canvas.surface.id !== currentTask.canvas?.surface.id);
+          const significantCanvasEdit = action.type === "canvas" &&
+            ["edit", "filter", "chart-axis", "reorder"].includes(action.mutation.operation);
+          const significantWorkEdit = action.type === "work" &&
+            action.actions.some((change) => change.kind === "edit");
+          // State comes from the server; a UI transition never predicts a
+          // completed operation or impersonates a backend result.
+          if (!morphed && nextVisual &&
+            (!previousVisual || newSurface ||
+              significantCanvasEdit || significantWorkEdit)) {
+            morphed = true;
+            morphLayout(() => setTask(event.task));
+          } else {
+            setTask(event.task);
+          }
           receivedState = true;
           if (event.type === "done" && event.task.status === "error") {
             failed = true;

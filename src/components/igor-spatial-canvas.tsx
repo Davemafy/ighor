@@ -7,6 +7,9 @@ import {
   Check,
   ExternalLink,
   MapPin,
+  Map as MapIcon,
+  List,
+  RefreshCw,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -95,8 +98,12 @@ function loadMaps(): Promise<MapsAPI> {
     });
   })();
 
-  // No automatic retries or duplicate loads after a provider failure.
-  return mapsPromise;
+  // Rejection must not poison later explicit retries. A failure never
+  // fabricates an available map or silently switches the provider.
+  return mapsPromise.catch((error: unknown) => {
+    mapsPromise = undefined;
+    throw error;
+  });
 }
 
 const position = (c: Candidate): Position => ({
@@ -119,25 +126,32 @@ export default function IgorSpatialCanvas({
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<MapElement | null>(null);
   const flatMap = useRef<{ panTo: (p: Position) => void } | null>(null);
+  const markers = useRef(new Map<string, {
+    element?: HTMLElement;
+    flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
+  }>());
   const mutationRef = useRef(mutate);
   const busyRef = useRef(busy);
   useEffect(() => {
     mutationRef.current = mutate;
     busyRef.current = busy;
   }, [mutate, busy]);
-  const places = useMemo(
-    () =>
-      node.candidateIds
-        .map((id) => task.candidates.find((c) => c.id === id))
-        .filter(
-          (c): c is Candidate =>
-            !!c &&
-            c.type === "place" &&
-            c.freshness === "current" &&
-            c.place?.latitude != null &&
-            c.place?.longitude != null,
-        ),
+  const candidates = useMemo(
+    () => node.candidateIds
+      .map((id) => task.candidates.find((c) => c.id === id))
+      .filter((c): c is Candidate =>
+        !!c && c.type === "place" && c.freshness === "current"),
     [node.candidateIds, task.candidates],
+  );
+  const places = useMemo(
+    () => candidates.filter((c) => {
+      const lat = c.place?.latitude;
+      const lng = c.place?.longitude;
+      return lat != null && lng != null &&
+        Number.isFinite(lat) && Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    }),
+    [candidates],
   );
   const signature = places
     .map((c) => `${c.id}:${c.place!.latitude}:${c.place!.longitude}`)
@@ -152,9 +166,40 @@ export default function IgorSpatialCanvas({
   const [error, setError] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [twoD, setTwoD] = useState(false);
+  const [requestedView, setRequestedView] = useState<"map" | "list">("map");
+  const viewMode = places.length ? requestedView : "list";
+  const [retryKey, setRetryKey] = useState(0);
   const selectedId = task.canvas?.selectedCandidateId;
-  const selected = places.find((c) => c.id === selectedId) || places[0];
+  const selected = candidates.find((c) => c.id === selectedId) || candidates[0];
   const itinerary = task.canvas?.itineraryIds || [];
+  // Selection is owned by the versioned Task, not by map-local state.
+  // Both map markers and the place list reflect the same persisted identity.
+  useEffect(() => {
+    for (const [id, marker] of markers.current) {
+      const active = id === selected?.id;
+      marker.element?.toggleAttribute("data-selected", active);
+      marker.element?.setAttribute("aria-pressed", String(active));
+      const label = candidates.find((item) => item.id === id)?.name ?? id;
+      marker.element?.setAttribute("aria-label", active
+        ? `${label} selected`
+        : label);
+      marker.flat?.setOpacity?.(active ? 1 : 0.72);
+      marker.flat?.setZIndex?.(active ? 1000 : 1);
+    }
+  }, [selected?.id, state, candidates]);
+  useEffect(() => {
+    const el = host.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      // The element itself is responsive. On 2D, Google Maps requires an
+      // explicit event-less pan after orientation or container size changes.
+      if (viewMode === "map" && flatMap.current && selected?.place) {
+        flatMap.current.panTo(position(selected));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [viewMode, selected?.id]);
   const camera = useRef<{
     center: Position;
     range: number;
@@ -191,13 +236,15 @@ export default function IgorSpatialCanvas({
         const lib = (await api.importLibrary("maps")) as {
           Map: new (el: HTMLElement, options: unknown) => FlatMap;
         };
-        const markers = (await api.importLibrary("marker")) as {
+        const markerLibrary = (await api.importLibrary("marker")) as {
           Marker: new (options: unknown) => {
             addListener: (
               event: string,
               callback: () => void,
             ) => { remove: () => void };
             setMap: (map: null) => void;
+            setOpacity?: (value: number) => void;
+            setZIndex?: (value: number) => void;
           };
         };
 
@@ -208,15 +255,18 @@ export default function IgorSpatialCanvas({
         const flat = new lib.Map(container, {
           center: position(placesRef.current[0]),
           zoom: 13,
+          gestureHandling: "cooperative",
+          zoomControl: true,
           mapTypeControl: false,
         });
         flatMap.current = flat;
         const stops = placesRef.current.map((c) => {
-          const marker = new markers.Marker({
+          const marker = new markerLibrary.Marker({
             map: flat,
             position: position(c),
             title: c.name,
           });
+          markersRefSet(c.id, { flat: marker });
           const listener = marker.addListener("click", () => {
             if (!busyRef.current) {
               mutationRef.current({
@@ -230,6 +280,7 @@ export default function IgorSpatialCanvas({
           return () => {
             listener.remove();
             marker.setMap(null);
+            markers.current.delete(c.id);
           };
         });
 
@@ -343,8 +394,23 @@ export default function IgorSpatialCanvas({
         };
 
         marker.addEventListener("gmp-click", select);
+        // Browser and test-double markers also support keyboard selection.
+        const keySelect = (event: KeyboardEvent) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            select();
+          }
+        };
+        marker.addEventListener("keydown", keySelect);
+        marker.setAttribute("aria-label", c.name);
+        marker.setAttribute("tabindex", "0");
+        markersRefSet(c.id, { element: marker });
         element.append(marker);
-        listeners.push(() => marker.removeEventListener("gmp-click", select));
+        listeners.push(() => {
+          marker.removeEventListener("gmp-click", select);
+          marker.removeEventListener("keydown", keySelect);
+          markers.current.delete(c.id);
+        });
       }
 
       container.replaceChildren(element);
@@ -391,7 +457,7 @@ export default function IgorSpatialCanvas({
       active = false;
       cleanup();
     };
-  }, [enabled, signature, twoD, node.id]);
+  }, [enabled, signature, twoD, node.id, retryKey]);
   const selectedLat = selected?.place?.latitude;
   const selectedLng = selected?.place?.longitude;
   useEffect(() => {
@@ -425,22 +491,67 @@ export default function IgorSpatialCanvas({
     }
   }, [selectedLat, selectedLng, state]);
 
+  function markersRefSet(
+    id: string,
+    marker: {
+      element?: HTMLElement;
+      flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
+    },
+  ) {
+    markers.current.set(id, marker);
+    const active = id === selectedId || (!selectedId && id === places[0]?.id);
+    marker.element?.toggleAttribute("data-selected", active);
+    marker.element?.setAttribute("aria-pressed", String(active));
+    marker.flat?.setOpacity?.(active ? 1 : 0.72);
+    marker.flat?.setZIndex?.(active ? 1000 : 1);
+  }
+
   function updateItinerary(ids: string[]) {
     mutate({ operation: "itinerary", nodeId: node.id, candidateIds: ids });
   }
 
-  if (!places.length) {
+  if (!candidates.length) {
     return (
       <p className="ic-note">
-        No current places with confirmed coordinates are available. Igor will
-        keep coordinates unknown until a source supplies them.
+        No current places are available. Igor will not invent coordinates or
+        reuse stale locations to fill a map.
       </p>
     );
   }
 
   return (
-    <div className="ic-spatial">
-      <div className="ic-map-stage">
+    <div className="ic-spatial" data-map-mode={viewMode}>
+      <div className="ic-spatial-heading">
+        <div>
+          <span className="ic-eyebrow">Places in this task</span>
+          <strong>{candidates.length} {candidates.length === 1 ? "place" : "places"} · {places.length} mappable</strong>
+        </div>
+        <div className="ic-spatial-view-switch" role="group" aria-label="Geographic result view">
+          <button
+            type="button"
+            aria-pressed={viewMode === "map"}
+            onClick={() => setRequestedView("map")}
+            disabled={!places.length}
+            title={!places.length ? "No current places have valid coordinates" : undefined}
+          >
+            <MapIcon /> Map
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "list"}
+            onClick={() => setRequestedView("list")}
+          >
+            <List /> List
+          </button>
+        </div>
+      </div>
+      {!places.length && (
+        <p className="ic-note" role="status">
+          No current coordinates are available. Place cards and your itinerary
+          remain editable; mapping must wait for real location data.
+        </p>
+      )}
+      <div className="ic-map-stage" hidden={viewMode === "list" || !places.length}>
         <div
           className="ic-map-host"
           ref={host}
@@ -454,9 +565,26 @@ export default function IgorSpatialCanvas({
               Open the map when you want to explore. Your plan stays in this
               conversation.
             </p>
-            <button onClick={() => setEnabled(true)}>
-              Explore in 3D <ExternalLink />
-            </button>
+            <div className="ic-map-start-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoD(false);
+                  setEnabled(true);
+                }}
+              >
+                Explore in 3D <ExternalLink />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoD(true);
+                  setEnabled(true);
+                }}
+              >
+                Use 2D map
+              </button>
+            </div>
           </div>
         )}
         {enabled && state === "loading" && (
@@ -467,22 +595,32 @@ export default function IgorSpatialCanvas({
         {enabled && state === "error" && (
           <div className="ic-map-status" role="status">
             <p>{error}</p>
-            {!twoD && (
+            <div className="ic-map-error-actions">
+              {!twoD && (
+                <button type="button" onClick={() => setTwoD(true)}>
+                  Use 2D map
+                </button>
+              )}
               <button
-                onClick={() => {
-                  setTwoD(true);
-                }}
+                type="button"
+                onClick={() => setRetryKey((value) => value + 1)}
               >
-                Use 2D map
+                <RefreshCw /> Retry map
               </button>
-            )}
+              <button type="button" onClick={() => setRequestedView("list")}>
+                Use place list
+              </button>
+            </div>
           </div>
         )}
       </div>
-      <div className="ic-place-selector" aria-label="Choose a place">
-        {places.map((c) => (
+      <div className="ic-place-selector" role="group" aria-label="Choose a place">
+        {candidates.map((c) => (
           <button
             key={c.id}
+            type="button"
+            className="ic-place-card"
+            data-selected={selected?.id === c.id}
             disabled={busy}
             aria-pressed={selected?.id === c.id}
             onClick={() =>
@@ -493,19 +631,37 @@ export default function IgorSpatialCanvas({
               })
             }
           >
-            {c.name}
+            {c.imageUrl ? (
+              <img src={c.imageUrl} alt="" loading="lazy" />
+            ) : (
+              <span className="ic-place-card-fallback" aria-hidden="true">
+                <MapPin />
+              </span>
+            )}
+            <span className="ic-place-card-copy">
+              <strong>{c.name}</strong>
+              <small>{c.place?.address || "Location not confirmed"}</small>
+            </span>
+            {selected?.id === c.id && <Check aria-hidden="true" />}
           </button>
         ))}
       </div>
       {selected && (
-        <article className="ic-place-preview">
+        <article className="ic-place-preview" aria-label="Selected place detail">
           {selected.imageUrl && <img src={selected.imageUrl} alt="" />}
           <div>
             <small>{selected.place?.address}</small>
-            <h4>{selected.name}</h4>
+            <h4 aria-live="polite">{selected.name}</h4>
+            {!places.some((place) => place.id === selected.id) && (
+              <p className="ic-note" role="status">
+                This place has no usable coordinates. It can remain in the
+                itinerary, but the map cannot focus on it.
+              </p>
+            )}
             <p>{selected.description}</p>
             <p className="ic-note">
-              Opening hours, routes and availability are unconfirmed.
+              Qloo taste associations do not verify hours, routes, prices
+              or availability.
             </p>
             <div className="ic-place-actions">
               <button
@@ -517,13 +673,15 @@ export default function IgorSpatialCanvas({
                   ? "Added to your plan"
                   : "Add to your plan"}
               </button>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${selected.place!.latitude},${selected.place!.longitude}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open map <ExternalLink />
-              </a>
+              {places.some((place) => place.id === selected.id) && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${selected.place!.latitude!},${selected.place!.longitude!}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open map <ExternalLink />
+                </a>
+              )}
             </div>
           </div>
         </article>
@@ -542,6 +700,29 @@ export default function IgorSpatialCanvas({
                     {c?.name || "Previously selected place"}
                     {c?.freshness !== "current" && <small> Needs review</small>}
                   </strong>
+                  <label className="ic-itinerary-day">
+                    <span className="pp-visually-hidden">Day for {c?.name || "place"}</span>
+                    <select
+                      aria-label={`Day for ${c?.name || "place"}`}
+                      value={task.canvas?.itineraryDays?.[id] ?? 0}
+                      disabled={busy || c?.freshness !== "current"}
+                      onChange={(event) =>
+                        mutate({
+                          operation: "itinerary-day",
+                          nodeId: node.id,
+                          candidateId: id,
+                          day: Number(event.target.value),
+                        })
+                      }
+                    >
+                      <option value={0}>Day unset</option>
+                      {Array.from({length: 14}, (_, day) => (
+                        <option key={day + 1} value={day + 1}>
+                          Day {day + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     disabled={busy || i === 0}
                     aria-label={`Move ${c?.name || "place"} earlier`}
