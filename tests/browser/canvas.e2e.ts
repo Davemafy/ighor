@@ -51,15 +51,45 @@ test("composed work persists through edits, filtering, planning, maps and refres
         );
       }
     }
+    class Map2DMock {
+      constructor(private host: HTMLElement) {
+        host.setAttribute("data-google-2d-test-double", "true");
+      }
+      panTo(center: {lat: number; lng: number}) {
+        this.host.setAttribute("data-pan-lat", String(center.lat));
+      }
+    }
+    class Marker2DMock {
+      private button = document.createElement("button");
+      private handler: (() => void) | null = null;
+      constructor(options: {map: Map2DMock; title: string}) {
+        this.button.textContent = options.title;
+        this.button.setAttribute("aria-label", options.title);
+        (options.map as unknown as {host: HTMLElement}).host.append(this.button);
+        this.button.addEventListener("click", () => this.handler?.());
+      }
+      addListener(_event: string, cb: () => void) {
+        this.handler = cb;
+        return {remove: () => {this.handler = null;}};
+      }
+      setMap(_map: null) {this.button.remove();}
+      setOpacity(value: number) {this.button.dataset.opacity = String(value);}
+      setZIndex(value: number) {this.button.dataset.zIndex = String(value);}
+    }
     customElements.define("igor-map-mock", MapMock);
     customElements.define("igor-marker-mock", MarkerMock);
     Object.assign(window, {
       google: {
         maps: {
-          importLibrary: async () => ({
-            Map3DElement: MapMock,
-            Marker3DInteractiveElement: MarkerMock,
-          }),
+          importLibrary: async (name: string) =>
+            name === "maps3d"
+              ? {
+                  Map3DElement: MapMock,
+                  Marker3DInteractiveElement: MarkerMock,
+                }
+              : name === "maps"
+                ? {Map: Map2DMock}
+                : {Marker: Marker2DMock},
         },
       },
     });
@@ -227,12 +257,17 @@ test("composed work persists through edits, filtering, planning, maps and refres
     await expect(composer).toBeVisible();
     const inputBox = await composer.boundingBox();
     expect(inputBox).not.toBeNull();
-    expect(inputBox!.y + inputBox!.height).toBeLessThanOrEqual(844);
+    expect(inputBox!.y + inputBox!.height).toBeLessThanOrEqual(
+      page.viewportSize()!.height + 1,
+    );
     await evidence("01-conversation");
     await canvasTab.click();
     await expect(canvasTab).toHaveAttribute("aria-selected", "true");
     await expect(canvas).toBeVisible();
     await evidence("02-result-morph");
+    if (info.project.name === "mobile") {
+      await evidence("07-reduced-motion");
+    }
     // Simulate an occupied mobile keyboard viewport; the composer must reflow
     // without covering the result. Real keyboard behavior requires device QA.
     await page.evaluate(() =>
@@ -242,6 +277,7 @@ test("composed work persists through edits, filtering, planning, maps and refres
     const composerFrame = await page.locator(".ip-conversation-composer").boundingBox();
     expect(composerFrame).not.toBeNull();
     expect(composerFrame!.y + composerFrame!.height).toBeLessThanOrEqual(601);
+    await evidence("06-keyboard-viewport-simulated");
     await page.evaluate(() =>
       document.documentElement.style.removeProperty("--igor-visible-height"),
     );
@@ -285,21 +321,50 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await canvas.getByRole("button", { name: "Apply", exact: true }).click();
   await expect(canvas.locator("tbody tr")).toHaveCount(1);
   await expect(canvas.locator(".ic-chart>div")).toHaveCount(1);
+  const spatialViews = canvas.getByRole("group", { name: "Geographic result view" });
+  await spatialViews.getByRole("button", { name: "List" }).click();
+  await expect(canvas.locator(".ic-map-stage")).toBeHidden();
+  await expect(canvas.getByRole("group", { name: "Choose a place" })).toBeVisible();
+  await spatialViews.getByRole("button", { name: "Map" }).click();
   await canvas.getByRole("button", { name: "Explore in 3D" }).click();
   await expect(page.locator("[data-google-map-test-double]")).toBeVisible();
-  await canvas
-    .getByRole("button", { name: "Supplied venue 2", exact: true })
-    .click();
+  // This click invokes the actual gmp-click listener on the test-double
+  // marker; the selection itself goes through the live task mutation API.
+  await page.locator("igor-marker-mock").filter({
+    hasText: "Supplied venue 2",
+  }).click();
   await expect(
-    canvas.getByRole("button", { name: "Supplied venue 2", exact: true }),
+    canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 2"}),
   ).toHaveAttribute("aria-pressed", "true");
+  await expect(canvas.getByLabel("Selected place detail")).toContainText("Supplied venue 2");
+  await expect
+    .poll(() => page.locator("[data-google-map-test-double]").evaluate(
+      (el) => String((el as unknown as {center: {lat: number}}).center.lat),
+    ))
+    .toBe(String(40.732));
+  await evidence("05-marker-detail-synced");
   await canvas
     .getByRole("button", { name: "Add to your plan", exact: true })
     .click();
   await expect(canvas.locator(".ic-map-plan")).toContainText(
     "Supplied venue 2",
   );
-  await evidence("05-geographic-result");
+  await evidence("08-itinerary-added");
+  await canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 1"}).click();
+  await canvas.getByRole("button", {name: "Add to your plan", exact: true}).click();
+  await canvas.getByRole("button", {name: "Move Supplied venue 1 earlier"}).click();
+  await expect(canvas.locator(".ic-map-plan li").first()).toContainText("Supplied venue 1");
+  await evidence("09-itinerary-reordered");
+  await canvas.getByRole("button", {name: "Remove Supplied venue 1"}).click();
+  await expect(canvas.locator(".ic-map-plan li")).toHaveCount(1);
+  // Force a provider failure and verify that the selected place and itinerary
+  // remain usable as the user changes to the 2D provider adapter.
+  await page.locator("[data-google-map-test-double]").evaluate(
+    (el) => el.dispatchEvent(new Event("gmp-error")),
+  );
+  await canvas.getByRole("button", {name: "Use 2D map"}).click();
+  await expect(canvas.locator("[data-google-2d-test-double]")).toBeVisible();
+  await evidence("10-2d-fallback");
   const saved = (await (
     await page.request.get(`/api/tasks/${task.id}`)
   ).json()) as Task;
