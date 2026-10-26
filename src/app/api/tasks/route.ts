@@ -58,6 +58,11 @@ export async function GET() {
           .map((t) => ({
             id: t.id,
             goal: t.brief.goal,
+            title: (
+              t.brief.goal ||
+              t.messages.find((message) => message.role === "user")?.text ||
+              "A new conversation"
+            ).slice(0, 120),
             version: t.brief.version,
           })),
       },

@@ -226,7 +226,7 @@ export function Home() {
                 onClick={() => void resume(item.id)}
               >
                 <History size={18} />
-                <span>{item.goal || "A new discovery"}</span>
+                <span>{item.title || item.goal || "A new conversation"}</span>
                 <ArrowUpRight size={18} />
               </button>
             ))}

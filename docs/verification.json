@@ -110,5 +110,41 @@
       "Recommendation and explanation quality has not been independently assessed.",
       "Full recorded-data CI verification remains pending."
     ]
+  },
+  "workspace_context_release": {
+    "at": "2026-10-26T13:14:30.625683+00:00",
+    "engine_commit": "c7ef059e5aa7189b53686bb6c066c59f7a19bdfc",
+    "railway_deployment": "success",
+    "local": {
+      "unit_tests": 203,
+      "suites": 22,
+      "format": "passed",
+      "types": "passed",
+      "lint": "passed",
+      "build": "passed",
+      "browser_checks": 11,
+      "browser_projects": ["home", "workspace", "provider-boundary"]
+    },
+    "full_suite": {
+      "complete": false,
+      "reason": "Six suites depend on tests/fixtures/qloo-cultural.json.gz, unavailable in this checkout but preserved remotely. A full attempt failed only on that missing file."
+    },
+    "production": {
+      "fresh_workspace_has_no_sample_people": true,
+      "weekend_request_replied": true,
+      "browser_reload_and_followup_recalled_request": true,
+      "mobile_horizontal_overflow": false,
+      "shared_taste_profile_created": true,
+      "cultural_insights_delivery": "CACHED",
+      "opening_cultural_requests": 2,
+      "budget_revision_cultural_requests": 0,
+      "budget_revision_value": 25,
+      "shared_taste_film_discovery": "passed"
+    },
+    "limits": [
+      "Incomplete requests were tested as clarifications, not complete travel plans.",
+      "These checks do not establish general agent coverage or human preference quality.",
+      "The complete product and visual acceptance brief remains unfinished."
+    ]
   }
 }

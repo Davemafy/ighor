@@ -195,7 +195,9 @@ export function Workspace() {
                     }
                   }}
                 >
-                  {savedWorkspace.goal || "Untitled exploration"}
+                  {savedWorkspace.title ||
+                    savedWorkspace.goal ||
+                    "A new conversation"}
                   <ArrowUpRight size={14} />
                 </button>
               ))

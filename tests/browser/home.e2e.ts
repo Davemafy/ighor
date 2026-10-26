@@ -223,4 +223,12 @@ test("a greeting gets a reply without discovery failure or an empty-results warn
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await page.getByRole("button", { name: "Your spaces", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "hey", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Igor’s reply" }),
+  ).toContainText("Hey! I’m Igor.");
 });

@@ -44,3 +44,13 @@ The same thread then accepted a Portishead/Arrival film request and returned ten
 A separate live browser check discussed options, refreshed the page, restored the reply, and correctly answered "Remind me what I just asked." No error alerts appeared. An owner-scoped task created before deployment remained accessible after deployment. These checks use synthetic test conversations, not the user's personal preferences or private messages.
 
 Local checks passed 195 tests across twenty available suites, eleven browser checks, formatting, types, lint and build. The six recording-dependent suites and the blocked Actions runner remain outside this latest validation scope.
+
+## Workspace context check, 26 October 2026
+
+Engine commit `c7ef059e5aa7189b53686bb6c066c59f7a19bdfc` was deployed successfully on Railway. A fresh workspace had no illustrative participants. The exact message `planning a weekend trip with friends` received a useful follow-up; the browser restored the conversation after reload and recalled the request in a later reply. Desktop and mobile checks found no nonempty error alert or horizontal overflow.
+
+A separate live-runtime thread supplied shared Radiohead and Arrival preferences, returned film references and applied a $25 budget correction while retaining the reference pool. The opening used two cultural requests; its insight evidence was cached Qloo data. The correction used zero cultural requests. This verifies the application path, not fresh live insights or human recommendation quality.
+
+The broader check first found that repeating unchanged budget/time defaults could reject an otherwise grounded preference update. Unchanged constraints now produce no edits; new values still require explicit grounding. Fresh workspaces and explicitly selected examples use separate constructors. The readable transcript retains earlier source references and shows their current freshness.
+
+Local checks passed 203 tests across 22 suites, 11 browser checks, formatting, types, lint and production build. A complete test attempt remained blocked by the missing local `qloo-cultural.json.gz` recording. That recording remains in the remote tree; it was not replaced with synthetic data. The full product acceptance brief remains unfinished.
