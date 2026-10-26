@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowLeft, ArrowUpRight, History, Plus } from "lucide-react";
-import Link from "next/link";
 import { useRef, useState } from "react";
 import type { TaskAction } from "@/core/contracts";
 import { useWorkspace } from "./use-workspace";
@@ -200,9 +199,6 @@ export function Home() {
         <span>
           Powered by Qloo <span aria-hidden="true">↗</span>
         </span>
-        <Link href="/workspace">
-          Advanced workspace <ArrowUpRight size={12} />
-        </Link>
       </footer>
       <DiscoveryDialog
         open={historyVisible}

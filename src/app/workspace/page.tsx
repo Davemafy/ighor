@@ -1,5 +1,5 @@
-import { Workspace } from "@/components/workspace";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return <Workspace />;
+export default function LegacyWorkspacePage() {
+  redirect("/app");
 }
