@@ -7,6 +7,7 @@ import {
 import { SqliteTaskStore } from "../../src/data/store";
 import { freshTask } from "../../src/data/fixtures";
 import { runTurn } from "../../src/core/orchestrator";
+import { compose } from "../../src/capabilities/compose";
 import type { Artifact } from "../../src/core/contracts";
 
 const original: Artifact = {
@@ -141,6 +142,39 @@ describe("connected artifact approvals", () => {
       [lockedSound],
     );
     expect(result.find((a) => a.id === "invitation")?.freshness).toBe("stale");
+  });
+
+  it("produces evidence-backed provisional creative direction without invented prices", async () => {
+    const store = new SqliteTaskStore(":memory:");
+    try {
+      store.create(freshTask("provisional", "owner"));
+      const task = await runTurn(store, "provisional", "owner", {
+        type: "sample", version: 0,
+      });
+      task.brief.kind = "creative";
+      task.brief.outcome = undefined;
+      task.candidates = task.candidates.map((candidate) => ({
+        ...candidate,
+        eligibility: "needs-review" as const,
+        cost: { ...candidate.cost, value: null },
+      }));
+
+      const output = compose({
+        brief: task.brief,
+        candidates: task.candidates,
+        evidence: task.evidence,
+        artifacts: [],
+      });
+      expect(output.status).toBe("partial");
+      const sound = output.artifacts.find((artifact) => artifact.id === "sound");
+      expect(sound).toBeDefined();
+      expect(sound?.evidenceIds.length).toBeGreaterThan(0);
+      expect(output.artifacts.find((artifact) => artifact.id === "main")?.content)
+        .toContain("provisional");
+      expect(sound?.content).toContain("licensing");
+    } finally {
+      store.close();
+    }
   });
 
 });
