@@ -513,8 +513,30 @@ export default function IgorSpatialCanvas({
   }
 
   return (
-    <div className="ic-spatial">
-      <div className="ic-map-stage">
+    <div className="ic-spatial" data-map-mode={viewMode}>
+      <div className="ic-spatial-heading">
+        <div>
+          <span className="ic-eyebrow">Places in this task</span>
+          <strong>{places.length} mapped {places.length === 1 ? "place" : "places"}</strong>
+        </div>
+        <div className="ic-spatial-view-switch" role="group" aria-label="Geographic result view">
+          <button
+            type="button"
+            aria-pressed={viewMode === "map"}
+            onClick={() => setViewMode("map")}
+          >
+            <MapIcon /> Map
+          </button>
+          <button
+            type="button"
+            aria-pressed={viewMode === "list"}
+            onClick={() => setViewMode("list")}
+          >
+            <List /> List
+          </button>
+        </div>
+      </div>
+      <div className="ic-map-stage" hidden={viewMode === "list"}>
         <div
           className="ic-map-host"
           ref={host}
@@ -528,9 +550,26 @@ export default function IgorSpatialCanvas({
               Open the map when you want to explore. Your plan stays in this
               conversation.
             </p>
-            <button onClick={() => setEnabled(true)}>
-              Explore in 3D <ExternalLink />
-            </button>
+            <div className="ic-map-start-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoD(false);
+                  setEnabled(true);
+                }}
+              >
+                Explore in 3D <ExternalLink />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoD(true);
+                  setEnabled(true);
+                }}
+              >
+                Use 2D map
+              </button>
+            </div>
           </div>
         )}
         {enabled && state === "loading" && (
@@ -541,22 +580,32 @@ export default function IgorSpatialCanvas({
         {enabled && state === "error" && (
           <div className="ic-map-status" role="status">
             <p>{error}</p>
-            {!twoD && (
+            <div className="ic-map-error-actions">
+              {!twoD && (
+                <button type="button" onClick={() => setTwoD(true)}>
+                  Use 2D map
+                </button>
+              )}
               <button
-                onClick={() => {
-                  setTwoD(true);
-                }}
+                type="button"
+                onClick={() => setRetryKey((value) => value + 1)}
               >
-                Use 2D map
+                <RefreshCw /> Retry map
               </button>
-            )}
+              <button type="button" onClick={() => setViewMode("list")}>
+                Use place list
+              </button>
+            </div>
           </div>
         )}
       </div>
-      <div className="ic-place-selector" aria-label="Choose a place">
+      <div className="ic-place-selector" role="group" aria-label="Choose a place">
         {places.map((c) => (
           <button
             key={c.id}
+            type="button"
+            className="ic-place-card"
+            data-selected={selected?.id === c.id}
             disabled={busy}
             aria-pressed={selected?.id === c.id}
             onClick={() =>
@@ -567,19 +616,31 @@ export default function IgorSpatialCanvas({
               })
             }
           >
-            {c.name}
+            {c.imageUrl ? (
+              <img src={c.imageUrl} alt="" loading="lazy" />
+            ) : (
+              <span className="ic-place-card-fallback" aria-hidden="true">
+                <MapPin />
+              </span>
+            )}
+            <span className="ic-place-card-copy">
+              <strong>{c.name}</strong>
+              <small>{c.place?.address || "Location supplied"}</small>
+            </span>
+            {selected?.id === c.id && <Check aria-hidden="true" />}
           </button>
         ))}
       </div>
       {selected && (
-        <article className="ic-place-preview">
+        <article className="ic-place-preview" aria-label="Selected place detail">
           {selected.imageUrl && <img src={selected.imageUrl} alt="" />}
           <div>
             <small>{selected.place?.address}</small>
-            <h4>{selected.name}</h4>
+            <h4 aria-live="polite">{selected.name}</h4>
             <p>{selected.description}</p>
             <p className="ic-note">
-              Opening hours, routes and availability are unconfirmed.
+              Qloo taste associations do not verify hours, routes, prices
+              or availability.
             </p>
             <div className="ic-place-actions">
               <button
