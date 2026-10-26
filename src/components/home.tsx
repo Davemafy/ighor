@@ -23,6 +23,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { TaskCanvas } from "./task-canvas";
+import { ConnectedWorkCanvas } from "./connected-work-canvas";
 import { useWorkspace } from "./use-workspace";
 import {
   ProductText,
@@ -37,6 +38,7 @@ import "../app/product.css";
 import "../app/canvas.css";
 import "../app/mobile-gate.css";
 import "../app/spatial-morph.css";
+import "../app/connected-work.css";
 
 type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
 const asset = "/marketing/assets/";
@@ -333,14 +335,17 @@ export function Home() {
                 disabled={
                   view !== "editor" &&
                   !currentWork.length &&
-                  !workspace.task?.canvas
+                  !workspace.task?.canvas &&
+                  !workspace.task?.work?.documents.length
                 }
                 title={
                   view === "editor"
                     ? "Return to your conversation"
                     : currentWork.length
                       ? "Open your plans and drafts"
-                      : "Your plans and drafts will appear here"
+                      : workspace.task?.work?.documents.length
+                        ? "Open connected documents and decisions"
+                        : "Your plans and drafts will appear here"
                 }
               >
                 {view === "editor" ? <MessageCircle /> : <FileText />}
@@ -565,7 +570,9 @@ export function Home() {
               </div>
             </section>
           )}
-          {view === "editor" && workspace.task?.canvas && (
+          {view === "editor" &&
+            workspace.task &&
+            (workspace.task.canvas || workspace.task.work?.documents.length) && (
             <section className="ip-conversation">
               {workspace.errorMessage && (
                 <p role="alert" className="ip-error">
@@ -573,11 +580,19 @@ export function Home() {
                   to retry.
                 </p>
               )}
-              <TaskCanvas
-                task={workspace.task}
-                busy={workspace.isBusy}
-                onTurn={(a) => void begin(a)}
-              />
+              {workspace.task.canvas ? (
+                <TaskCanvas
+                  task={workspace.task}
+                  busy={workspace.isBusy}
+                  onTurn={(a) => void begin(a)}
+                />
+              ) : (
+                <ConnectedWorkCanvas
+                  task={workspace.task}
+                  busy={workspace.isBusy}
+                  onTurn={(a) => void begin(a)}
+                />
+              )}
               <div className="ip-conversation-composer">
                 <ProductComposer
                   value={prompt}
@@ -593,7 +608,10 @@ export function Home() {
               </div>
             </section>
           )}
-          {view === "editor" && workspace.task && !workspace.task.canvas && (
+          {view === "editor" &&
+            workspace.task &&
+            !workspace.task.canvas &&
+            !workspace.task.work?.documents.length && (
             <ProductEditor
               key={workspace.task.id}
               task={workspace.task}
