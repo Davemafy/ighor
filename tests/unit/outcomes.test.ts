@@ -468,6 +468,74 @@ describe("Outcomes, memory and controlled collaboration", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  it("enforces owner memory capacity without blocking updates or other owners", () => {
+    const store = new SqliteTaskStore(":memory:");
+
+    try {
+      const task = freshTask("capacity", "owner");
+      store.create(task);
+
+      for (let index = 0; index < 100; index++) {
+        task.brief.version = index + 1;
+        const preference = {
+          ...task.brief.participants[0].preferences[0],
+          id: `memory-${index}`,
+          value: `saved preference ${index}`,
+          scope: "persistent" as const,
+          confirmed: true,
+        };
+        store.save(task, index, "owner", {
+          operation: "save",
+          preference,
+        });
+      }
+
+      expect(store.memory("owner")).toHaveLength(100);
+
+      task.brief.version = 101;
+      const newPreference = {
+        ...task.brief.participants[0].preferences[0],
+        id: "memory-101",
+        scope: "persistent" as const,
+        confirmed: true,
+      };
+      expect(() =>
+        store.save(task, 100, "owner", {
+          operation: "save",
+          preference: newPreference,
+        }),
+      ).toThrow("Memory limit reached.");
+      expect(store.load("capacity", "owner").brief.version).toBe(100);
+      expect(store.memory("owner")).toHaveLength(100);
+
+      const updatedPreference = {
+        ...newPreference,
+        id: "memory-0",
+        value: "updated at capacity",
+      };
+      store.save(task, 100, "owner", {
+        operation: "save",
+        preference: updatedPreference,
+      });
+      expect(store.load("capacity", "owner").brief.version).toBe(101);
+      expect(store.memory("owner")).toHaveLength(100);
+      expect(
+        store.memory("owner").find((preference) => preference.id === "memory-0")
+          ?.value,
+      ).toBe("updated at capacity");
+
+      const otherTask = freshTask("other-capacity", "another-owner");
+      store.create(otherTask);
+      otherTask.brief.version = 1;
+      store.save(otherTask, 0, "another-owner", {
+        operation: "save",
+        preference: newPreference,
+      });
+      expect(store.memory("another-owner")).toHaveLength(1);
+    } finally {
+      store.close();
+    }
+  });
   it("rolls memory changes back when a task version loses a concurrency race", () => {
     const store = new SqliteTaskStore(":memory:");
 
