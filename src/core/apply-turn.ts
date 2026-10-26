@@ -493,7 +493,14 @@ function changeArtifactLock(
     throw new Error("Only current work can be approved.");
   }
   artifact.locked = input.locked;
-  update.localChangeOnly = true;
+  if (!input.locked && artifact.freshness === "stale") {
+    // Unlocking an invalidated artifact requests a real recomposition;
+    // merely flipping the lock cannot make old evidence current.
+    update.changedDependencies.push(artifact.id);
+    update.localChangeOnly = false;
+  } else {
+    update.localChangeOnly = true;
+  }
 }
 
 function editDocument(
