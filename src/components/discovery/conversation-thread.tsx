@@ -8,7 +8,10 @@ export function ConversationThread({ task }: { task: Task }) {
 
   return (
     <details className="ig-conversation">
-      <summary>Conversation · {task.messages.length} messages</summary>
+      <summary>
+        Conversation · {task.messages.length}{" "}
+        {task.messages.length === 1 ? "message" : "messages"}
+      </summary>
       <ol aria-label="Saved conversation">
         {task.messages.map((message, index) => (
           <li key={`${message.at}:${index}`}>
