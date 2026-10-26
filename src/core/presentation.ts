@@ -194,6 +194,7 @@ export const CanvasStateSchema = z.object({
   selectedCandidateId: z.string().nullable().default(null),
   itineraryIds: refs.default([]),
   filters: z.record(z.string(), z.string().max(200)).default({}),
+  chartAxes: z.record(z.string(), z.number().int().min(0).max(11)).default({}),
   completed: z.array(z.string().max(180)).max(100).default([]),
 });
 export type CanvasState = z.infer<typeof CanvasStateSchema>;
@@ -207,6 +208,11 @@ export const CanvasMutationSchema = z.discriminatedUnion("operation", [
     operation: z.literal("filter"),
     nodeId: id,
     value: z.string().max(200),
+  }),
+  z.strictObject({
+    operation: z.literal("chart-axis"),
+    nodeId: id,
+    valueColumn: z.number().int().min(0).max(11),
   }),
   z.strictObject({
     operation: z.literal("select"),
@@ -326,6 +332,28 @@ export function mutateCanvas(
 
       canvas.filters[node.id] = mutation.value;
       break;
+    case "chart-axis": {
+      if (node.type !== "chart") {
+        throw new Error("Only a chart can change its measure.");
+      }
+
+      const table = canvas.surface.nodes.find((n) => n.id === node.tableId);
+      if (
+        table?.type !== "table" ||
+        mutation.valueColumn >= table.columns.length ||
+        mutation.valueColumn === node.labelColumn ||
+        table.rows.length === 0 ||
+        table.rows.some((row) =>
+          !row.cells[mutation.valueColumn]?.trim() ||
+          !Number.isFinite(Number(row.cells[mutation.valueColumn])),
+        )
+      ) {
+        throw new Error("Choose an existing numeric comparison column.");
+      }
+
+      canvas.chartAxes[node.id] = mutation.valueColumn;
+      break;
+    }
     case "select":
       if (!(
         (node.type === "spatial" || node.type === "discovery") &&
