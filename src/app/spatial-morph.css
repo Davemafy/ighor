@@ -189,3 +189,28 @@
 @media (prefers-reduced-motion: reduce) {
   .ic-place-selector { scroll-behavior: auto; }
 }
+
+.ic-itinerary-day { flex: none; min-width: 0; }
+.ic-itinerary-day select {
+  max-width: 108px;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: #f3eee4;
+  background: #29272d;
+  border: 1px solid #ffffff25;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 11px;
+}
+@media (max-width: 390px) {
+  .ic-map-plan li {
+    flex-wrap: wrap;
+  }
+  .ic-map-plan li strong {
+    flex-basis: calc(100% - 32px);
+  }
+  .ic-itinerary-day {
+    margin-left: 18px;
+    margin-right: auto;
+  }
+}
