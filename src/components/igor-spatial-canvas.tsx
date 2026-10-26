@@ -255,6 +255,8 @@ export default function IgorSpatialCanvas({
         const flat = new lib.Map(container, {
           center: position(placesRef.current[0]),
           zoom: 13,
+          gestureHandling: "cooperative",
+          zoomControl: true,
           mapTypeControl: false,
         });
         flatMap.current = flat;
