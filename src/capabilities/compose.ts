@@ -3,6 +3,7 @@ import { reconcileGeneratedArtifact, hasLockedConflict, finalizeConnectedArtifac
 import { goalPolicies } from "../core/goals";
 import { composeOutcome } from "./outcome-composer";
 import { groupUtility } from "./collaborate";
+import { isEvidenceKind } from "../core/evidence";
 
 export type CompositionInput = Pick<
   Task,
@@ -23,6 +24,23 @@ export function compose(input: CompositionInput) {
     (candidate) =>
       candidate.eligibility === "eligible" && candidate.freshness === "current",
   );
+  const culturalEvidenceIds = new Set(
+    task.evidence
+      .filter((evidence) =>
+        evidence.freshness === "current" &&
+        isEvidenceKind(evidence, "cultural"),
+      )
+      .map((evidence) => evidence.id),
+  );
+  const culturalReferences = task.candidates.filter(
+    (candidate) =>
+      candidate.freshness === "current" &&
+      candidate.evidenceIds.some((id) => culturalEvidenceIds.has(id)),
+  );
+  const culturallyGroundedArtists = culturalReferences
+    .filter((candidate) => candidate.type === "artist")
+    .sort((a, b) => groupUtility(b.fit) - groupUtility(a.fit))
+    .slice(0, 3);
   let selected: Candidate[] = [];
 
   if (task.brief.kind === "gathering") {
@@ -133,7 +151,14 @@ export function compose(input: CompositionInput) {
     0,
   );
   const evidenceIds = [
-    ...new Set(selected.flatMap((candidate) => candidate.evidenceIds)),
+    ...new Set([
+      ...selected.flatMap((candidate) => candidate.evidenceIds),
+      ...(task.brief.kind === "creative" && !selected.length
+        ? culturalReferences.flatMap((candidate) =>
+            candidate.evidenceIds.filter((id) => culturalEvidenceIds.has(id)),
+          )
+        : []),
+    ]),
   ];
   const dependencies = [
     ...selected.map((candidate) => `candidate:${candidate.id}`),
@@ -161,7 +186,16 @@ export function compose(input: CompositionInput) {
   );
   let content: string;
 
-  if (!selected.length) {
+  if (!selected.length && task.brief.kind === "creative" && culturalReferences.length) {
+    content = [
+      "Cultural creative direction — provisional",
+      ...culturalReferences.slice(0, 5).map(
+        (candidate) => `${candidate.name}: ${candidate.description}`,
+      ),
+      "These are evidence-linked cultural references only. Costs, availability, licensing, and audience demand have not been established.",
+    ].join("\n\n");
+    task.status = "partial";
+  } else if (!selected.length) {
     content =
       "No complete selection satisfies the confirmed constraints. Review the catalogue, supply missing facts or adjust the budget and time. No availability or price has been invented.";
     task.status = "partial";
@@ -209,7 +243,7 @@ export function compose(input: CompositionInput) {
   ): Artifact => {
     const prior = previous.find((a) => a.id === id);
     const effectiveDependencies = id === "invitation"
-      ? [...new Set([...deps, "main", ...(task.brief.kind === "creative" && selected.some((candidate) => candidate.type === "artist") ? ["sound"] : [])])]
+      ? [...new Set([...deps, "main", ...(task.brief.kind === "creative" && culturallyGroundedArtists.length > 0 ? ["sound"] : [])])]
       : deps;
     return reconcileGeneratedArtifact({
       id,
@@ -274,9 +308,13 @@ export function compose(input: CompositionInput) {
   // An artist-backed sound direction is separate from the creative brief.
   // It is a cultural reference, not a real playlist or cleared music license.
   if (task.brief.kind === "creative") {
-    const artists = selected.filter((candidate) => candidate.type === "artist");
+    const artists = culturallyGroundedArtists;
     if (artists.length) {
-      const sources = [...new Set(artists.flatMap((artist) => artist.evidenceIds))];
+      const sources = [
+        ...new Set(artists.flatMap((artist) =>
+          artist.evidenceIds.filter((id) => culturalEvidenceIds.has(id)),
+        )),
+      ];
       task.artifacts.splice(1, 0, make(
         "sound",
         "music-direction",
