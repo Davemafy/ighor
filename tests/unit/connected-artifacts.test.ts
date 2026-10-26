@@ -177,4 +177,25 @@ describe("connected artifact approvals", () => {
     }
   });
 
+  it("invalidates a locked dependent when its upstream version changes", () => {
+    const earlier = [
+      { ...original, version: 1 },
+      {
+        ...original,
+        id: "invitation",
+        kind: "invitation" as const,
+        locked: true,
+        dependencies: ["main"],
+      },
+    ];
+    const regenerated = [
+      { ...original, version: 2, content: "Updated concept" },
+      { ...earlier[1] },
+    ];
+    const result = finalizeConnectedArtifacts(regenerated, earlier);
+    expect(result[1].content).toBe(earlier[1].content);
+    expect(result[1].locked).toBe(true);
+    expect(result[1].freshness).toBe("stale");
+  });
+
 });
