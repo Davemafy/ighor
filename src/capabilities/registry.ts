@@ -206,7 +206,13 @@ const discover = defineCapability({
         ...new Set([
           ...evidence.dependencies,
           "catalogue",
-          "location",
+          // Artist-only cultural discovery does not read the venue.
+          // Avoid invalidating a preserved soundtrack for a location edit.
+          ...(input.targetTypes?.length === 1 &&
+          input.targetTypes[0] === "artist" &&
+          !input.anchor
+            ? []
+            : ["location"]),
           // The provider owns attribution. Preserve per-person dependencies when supplied.
           ...(input.anchor ||
           evidence.dependencies.some((value) =>
