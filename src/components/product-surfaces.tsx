@@ -392,14 +392,19 @@ export function ProductResults({
     };
   }, []);
   useEffect(() => {
-    if (busy || follow.current)
-      end.current?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "instant"
-          : "smooth",
-        block: "end",
-      });
-  }, [task.messages.length, feedback?.startedAt]);
+    if (!busy && !follow.current) return;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? "instant"
+      : "smooth";
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      if (pane === "thread") {
+        const region = scrollRegion.current;
+        region?.scrollTo({ top: region.scrollHeight, behavior });
+      }
+    } else {
+      end.current?.scrollIntoView({ behavior, block: "end" });
+    }
+  }, [task.messages.length, feedback?.startedAt, busy, pane]);
   return (
     <div
       className={`pp-conversation ${task.canvas ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
