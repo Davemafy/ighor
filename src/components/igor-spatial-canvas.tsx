@@ -7,6 +7,9 @@ import {
   Check,
   ExternalLink,
   MapPin,
+  Map as MapIcon,
+  List,
+  RefreshCw,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -95,8 +98,12 @@ function loadMaps(): Promise<MapsAPI> {
     });
   })();
 
-  // No automatic retries or duplicate loads after a provider failure.
-  return mapsPromise;
+  // Rejection must not poison later explicit retries. A failure never
+  // fabricates an available map or silently switches the provider.
+  return mapsPromise.catch((error: unknown) => {
+    mapsPromise = undefined;
+    throw error;
+  });
 }
 
 const position = (c: Candidate): Position => ({
@@ -119,6 +126,10 @@ export default function IgorSpatialCanvas({
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<MapElement | null>(null);
   const flatMap = useRef<{ panTo: (p: Position) => void } | null>(null);
+  const markers = useRef(new Map<string, {
+    element?: HTMLElement;
+    flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
+  }>());
   const mutationRef = useRef(mutate);
   const busyRef = useRef(busy);
   useEffect(() => {
@@ -152,9 +163,38 @@ export default function IgorSpatialCanvas({
   const [error, setError] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [twoD, setTwoD] = useState(false);
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [retryKey, setRetryKey] = useState(0);
   const selectedId = task.canvas?.selectedCandidateId;
   const selected = places.find((c) => c.id === selectedId) || places[0];
   const itinerary = task.canvas?.itineraryIds || [];
+  // Selection is owned by the versioned Task, not by map-local state.
+  // Both map markers and the place list reflect the same persisted identity.
+  useEffect(() => {
+    for (const [id, marker] of markers.current) {
+      const active = id === selected?.id;
+      marker.element?.toggleAttribute("data-selected", active);
+      marker.element?.setAttribute("aria-pressed", String(active));
+      marker.element?.setAttribute("aria-label", active
+        ? `${id} selected`
+        : id);
+      marker.flat?.setOpacity?.(active ? 1 : 0.72);
+      marker.flat?.setZIndex?.(active ? 1000 : 1);
+    }
+  }, [selected?.id, state]);
+  useEffect(() => {
+    const el = host.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      // The element itself is responsive. On 2D, Google Maps requires an
+      // explicit event-less pan after orientation or container size changes.
+      if (viewMode === "map" && flatMap.current && selected?.place) {
+        flatMap.current.panTo(position(selected));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [viewMode, selected?.id]);
   const camera = useRef<{
     center: Position;
     range: number;
@@ -198,6 +238,8 @@ export default function IgorSpatialCanvas({
               callback: () => void,
             ) => { remove: () => void };
             setMap: (map: null) => void;
+            setOpacity?: (value: number) => void;
+            setZIndex?: (value: number) => void;
           };
         };
 
@@ -217,6 +259,7 @@ export default function IgorSpatialCanvas({
             position: position(c),
             title: c.name,
           });
+          markersRefSet(c.id, { flat: marker });
           const listener = marker.addListener("click", () => {
             if (!busyRef.current) {
               mutationRef.current({
@@ -230,6 +273,7 @@ export default function IgorSpatialCanvas({
           return () => {
             listener.remove();
             marker.setMap(null);
+            markers.current.delete(c.id);
           };
         });
 
@@ -343,8 +387,23 @@ export default function IgorSpatialCanvas({
         };
 
         marker.addEventListener("gmp-click", select);
+        // Browser and test-double markers also support keyboard selection.
+        const keySelect = (event: KeyboardEvent) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            select();
+          }
+        };
+        marker.addEventListener("keydown", keySelect);
+        marker.setAttribute("aria-label", c.name);
+        marker.setAttribute("tabindex", "0");
+        markersRefSet(c.id, { element: marker });
         element.append(marker);
-        listeners.push(() => marker.removeEventListener("gmp-click", select));
+        listeners.push(() => {
+          marker.removeEventListener("gmp-click", select);
+          marker.removeEventListener("keydown", keySelect);
+          markers.current.delete(c.id);
+        });
       }
 
       container.replaceChildren(element);
@@ -391,7 +450,7 @@ export default function IgorSpatialCanvas({
       active = false;
       cleanup();
     };
-  }, [enabled, signature, twoD, node.id]);
+  }, [enabled, signature, twoD, node.id, retryKey]);
   const selectedLat = selected?.place?.latitude;
   const selectedLng = selected?.place?.longitude;
   useEffect(() => {
@@ -424,6 +483,21 @@ export default function IgorSpatialCanvas({
       map.current.flyCameraTo({ endCamera, durationMillis: 1000 });
     }
   }, [selectedLat, selectedLng, state]);
+
+  function markersRefSet(
+    id: string,
+    marker: {
+      element?: HTMLElement;
+      flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
+    },
+  ) {
+    markers.current.set(id, marker);
+    const active = id === selectedId || (!selectedId && id === places[0]?.id);
+    marker.element?.toggleAttribute("data-selected", active);
+    marker.element?.setAttribute("aria-pressed", String(active));
+    marker.flat?.setOpacity?.(active ? 1 : 0.72);
+    marker.flat?.setZIndex?.(active ? 1000 : 1);
+  }
 
   function updateItinerary(ids: string[]) {
     mutate({ operation: "itinerary", nodeId: node.id, candidateIds: ids });
