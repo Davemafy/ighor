@@ -48,6 +48,20 @@ export function finalizeConnectedArtifacts(
       .filter((a) => a.locked && !ids.has(a.id))
       .map((a) => ({ ...a, freshness: "stale" as const })),
   ];
+  // Approval also binds to upstream artifact versions, not just visible text.
+  const before = new Map(previous.map((artifact) => [artifact.id, artifact]));
+  const after = new Map(combined.map((artifact) => [artifact.id, artifact]));
+  for (const artifact of combined) {
+    if (!artifact.locked || artifact.freshness !== "current") continue;
+    if (artifact.dependencies.some((dependency) => {
+      const oldInput = before.get(dependency);
+      const newInput = after.get(dependency);
+      return oldInput && (!newInput || newInput.version !== oldInput.version);
+    })) {
+      artifact.freshness = "stale";
+    }
+  }
+
   const staleLocks = new Set(
     combined
       .filter((a) => a.locked && a.freshness === "stale")
