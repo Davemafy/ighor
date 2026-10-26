@@ -136,19 +136,22 @@ export default function IgorSpatialCanvas({
     mutationRef.current = mutate;
     busyRef.current = busy;
   }, [mutate, busy]);
-  const places = useMemo(
-    () =>
-      node.candidateIds
-        .map((id) => task.candidates.find((c) => c.id === id))
-        .filter(
-          (c): c is Candidate =>
-            !!c &&
-            c.type === "place" &&
-            c.freshness === "current" &&
-            c.place?.latitude != null &&
-            c.place?.longitude != null,
-        ),
+  const candidates = useMemo(
+    () => node.candidateIds
+      .map((id) => task.candidates.find((c) => c.id === id))
+      .filter((c): c is Candidate =>
+        !!c && c.type === "place" && c.freshness === "current"),
     [node.candidateIds, task.candidates],
+  );
+  const places = useMemo(
+    () => candidates.filter((c) => {
+      const lat = c.place?.latitude;
+      const lng = c.place?.longitude;
+      return lat != null && lng != null &&
+        Number.isFinite(lat) && Number.isFinite(lng) &&
+        Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    }),
+    [candidates],
   );
   const signature = places
     .map((c) => `${c.id}:${c.place!.latitude}:${c.place!.longitude}`)
@@ -163,10 +166,11 @@ export default function IgorSpatialCanvas({
   const [error, setError] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [twoD, setTwoD] = useState(false);
-  const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [requestedView, setRequestedView] = useState<"map" | "list">("map");
+  const viewMode = places.length ? requestedView : "list";
   const [retryKey, setRetryKey] = useState(0);
   const selectedId = task.canvas?.selectedCandidateId;
-  const selected = places.find((c) => c.id === selectedId) || places[0];
+  const selected = candidates.find((c) => c.id === selectedId) || candidates[0];
   const itinerary = task.canvas?.itineraryIds || [];
   // Selection is owned by the versioned Task, not by map-local state.
   // Both map markers and the place list reflect the same persisted identity.
@@ -175,13 +179,14 @@ export default function IgorSpatialCanvas({
       const active = id === selected?.id;
       marker.element?.toggleAttribute("data-selected", active);
       marker.element?.setAttribute("aria-pressed", String(active));
+      const label = candidates.find((item) => item.id === id)?.name ?? id;
       marker.element?.setAttribute("aria-label", active
-        ? `${id} selected`
-        : id);
+        ? `${label} selected`
+        : label);
       marker.flat?.setOpacity?.(active ? 1 : 0.72);
       marker.flat?.setZIndex?.(active ? 1000 : 1);
     }
-  }, [selected?.id, state]);
+  }, [selected?.id, state, candidates]);
   useEffect(() => {
     const el = host.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -503,11 +508,11 @@ export default function IgorSpatialCanvas({
     mutate({ operation: "itinerary", nodeId: node.id, candidateIds: ids });
   }
 
-  if (!places.length) {
+  if (!candidates.length) {
     return (
       <p className="ic-note">
-        No current places with confirmed coordinates are available. Igor will
-        keep coordinates unknown until a source supplies them.
+        No current places are available. Igor will not invent coordinates or
+        reuse stale locations to fill a map.
       </p>
     );
   }
@@ -517,26 +522,34 @@ export default function IgorSpatialCanvas({
       <div className="ic-spatial-heading">
         <div>
           <span className="ic-eyebrow">Places in this task</span>
-          <strong>{places.length} mapped {places.length === 1 ? "place" : "places"}</strong>
+          <strong>{candidates.length} {candidates.length === 1 ? "place" : "places"} · {places.length} mappable</strong>
         </div>
         <div className="ic-spatial-view-switch" role="group" aria-label="Geographic result view">
           <button
             type="button"
             aria-pressed={viewMode === "map"}
-            onClick={() => setViewMode("map")}
+            onClick={() => setRequestedView("map")}
+            disabled={!places.length}
+            title={!places.length ? "No current places have valid coordinates" : undefined}
           >
             <MapIcon /> Map
           </button>
           <button
             type="button"
             aria-pressed={viewMode === "list"}
-            onClick={() => setViewMode("list")}
+            onClick={() => setRequestedView("list")}
           >
             <List /> List
           </button>
         </div>
       </div>
-      <div className="ic-map-stage" hidden={viewMode === "list"}>
+      {!places.length && (
+        <p className="ic-note" role="status">
+          No current coordinates are available. Place cards and your itinerary
+          remain editable; mapping must wait for real location data.
+        </p>
+      )}
+      <div className="ic-map-stage" hidden={viewMode === "list" || !places.length}>
         <div
           className="ic-map-host"
           ref={host}
@@ -592,7 +605,7 @@ export default function IgorSpatialCanvas({
               >
                 <RefreshCw /> Retry map
               </button>
-              <button type="button" onClick={() => setViewMode("list")}>
+              <button type="button" onClick={() => setRequestedView("list")}>
                 Use place list
               </button>
             </div>
@@ -600,7 +613,7 @@ export default function IgorSpatialCanvas({
         )}
       </div>
       <div className="ic-place-selector" role="group" aria-label="Choose a place">
-        {places.map((c) => (
+        {candidates.map((c) => (
           <button
             key={c.id}
             type="button"
@@ -625,7 +638,7 @@ export default function IgorSpatialCanvas({
             )}
             <span className="ic-place-card-copy">
               <strong>{c.name}</strong>
-              <small>{c.place?.address || "Location supplied"}</small>
+              <small>{c.place?.address || "Location not confirmed"}</small>
             </span>
             {selected?.id === c.id && <Check aria-hidden="true" />}
           </button>
@@ -652,13 +665,16 @@ export default function IgorSpatialCanvas({
                   ? "Added to your plan"
                   : "Add to your plan"}
               </button>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${selected.place!.latitude},${selected.place!.longitude}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open map <ExternalLink />
-              </a>
+              {selected.place?.latitude != null &&
+                selected.place?.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${selected.place.latitude},${selected.place.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open map <ExternalLink />
+                </a>
+              )}
             </div>
           </div>
         </article>
