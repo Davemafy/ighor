@@ -120,11 +120,9 @@ export function ProductComposer({
         ref={inputRef}
         value={value}
         maxLength={3000}
-        rows={2}
+        rows={1}
         placeholder={
-          continuing
-            ? "Tell Igor what to change…"
-            : "What would you like to do?"
+          continuing ? "Reply to Igor…" : "What would you like to do?"
         }
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -185,6 +183,9 @@ function ExecutionFeedback({
   }, [busy, feedback?.startedAt]);
   if (!feedback) return null;
   const last = feedback.steps.at(-1);
+  const showHistory =
+    feedback.steps.length > 1 || feedback.action.type === "canvas";
+  if (!busy && feedback.state !== "error" && !showHistory) return null;
   return (
     <div className={`pp-execution pp-execution-${feedback.state}`}>
       <div className="pp-execution-line" role="status" aria-live="polite">
@@ -213,10 +214,10 @@ function ExecutionFeedback({
           Still waiting for a response. Your message is here.
         </p>
       )}
-      {feedback.steps.length > 0 && (
+      {showHistory && (
         <details className="pp-execution-history">
           <summary>
-            {busy ? "View activity" : "What Igor did"}
+            {busy ? "Activity" : "View activity"}
             <ChevronDown />
           </summary>
           <ol>
@@ -331,7 +332,8 @@ export function ProductResults({
   // A user's Conversation/Result selection remains in effect for that revision.
   const hasWorkDocuments = Boolean(task.work?.documents.length);
   const hasVisual = Boolean(task.canvas || hasWorkDocuments);
-  const surfaceId = task.canvas?.surface.id ??
+  const surfaceId =
+    task.canvas?.surface.id ??
     (hasWorkDocuments ? `connected:${task.work!.activeGoalId ?? task.id}` : "");
   const pane =
     paneChoice?.surfaceId === surfaceId
@@ -613,7 +615,12 @@ export function ProductResults({
       {task.canvas ? (
         <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
       ) : hasWorkDocuments ? (
-        <ConnectedWorkCanvas key={task.id} task={task} busy={busy} onTurn={onTurn} />
+        <ConnectedWorkCanvas
+          key={task.id}
+          task={task}
+          busy={busy}
+          onTurn={onTurn}
+        />
       ) : null}
       {!hasVisual && artifacts.length > 0 && (
         <aside className="pp-work-pane" aria-label="Your work">

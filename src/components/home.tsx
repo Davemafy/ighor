@@ -39,6 +39,7 @@ import "../app/canvas.css";
 import "../app/mobile-gate.css";
 import "../app/spatial-morph.css";
 import "../app/connected-work.css";
+import "../app/studio.css";
 
 type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
 const asset = "/marketing/assets/";
