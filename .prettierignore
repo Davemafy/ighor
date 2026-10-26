@@ -1,0 +1,14 @@
+node_modules
+.next
+.igor
+package-lock.json
+test-results
+playwright-report
+next-env.d.ts
+__pycache__
+*.tsbuildinfo
+
+artifacts
+# Captured model payloads retain their original bytes.
+tests/fixtures/conversation-probe-live.json
+tests/fixtures/conversation-probe-revision-2.json

@@ -1,0 +1,406 @@
+import { test, expect, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import type { Task } from "../../src/core/contracts";
+
+async function turn(
+  page: Page,
+  task: Task,
+  action: Record<string, unknown>,
+): Promise<Task> {
+  const response = await page.request.post(`/api/tasks/${task.id}/turn`, {
+    data: { ...action, version: task.brief.version },
+  });
+  expect(response.ok()).toBe(true);
+  const events = (await response.text())
+    .split("\n\n")
+    .filter((s) => s.startsWith("data: "))
+    .map((s) => JSON.parse(s.slice(6)));
+  expect(events.some((e) => e.type === "error")).toBe(false);
+
+  return events.find((e) => e.type === "done").task;
+}
+
+async function gathering(page: Page) {
+  let task = (await (await page.request.post("/api/tasks")).json()) as Task;
+
+  for (const text of [
+    "Plan a gathering for six friends, budget $60 and 180 minutes.",
+    "Use Moonlight from 2016.",
+    "For Children of Men: cost $5, duration 80 minutes, access confirmed.",
+    "For Thom Yorke: cost $5, duration 15 minutes, access confirmed.",
+  ]) {
+    task = await turn(page, task, { type: "message", text });
+  }
+
+  expect(task.status).toBe("ready");
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
+  await page.goto("/workspace");
+
+  return task;
+}
+
+test("recorded cultural outcome → collection → export → independent review → owner acceptance → revocation", async ({
+  page,
+  browser,
+}) => {
+  const task = await gathering(page);
+  await page.getByRole("tab", { name: "Connections", exact: true }).click();
+  await expect(
+    page.getByText("From a taste to a new direction."),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Keep & share", exact: true }).click();
+  await page
+    .getByLabel("Collection name", { exact: true })
+    .fill("Screening references");
+  const checkSize = await page
+    .getByRole("checkbox", { name: /Children of Men/ })
+    .boundingBox();
+  expect(checkSize?.width).toBeLessThanOrEqual(20);
+  await page.getByRole("checkbox", { name: /Children of Men/ }).check();
+  await page.getByRole("checkbox", { name: /Thom Yorke/ }).check();
+  await page
+    .getByRole("button", { name: "Save collection", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Screening references", exact: true }),
+  ).toBeVisible();
+  await page.getByText("Edit reference board", { exact: true }).click();
+  await page
+    .getByLabel("Board title", { exact: true })
+    .fill("Screening references — revised");
+  await page
+    .getByLabel("Your creative interpretation", { exact: true })
+    .fill("Keep the opening intimate. This is an owner-authored direction.");
+  await page
+    .getByRole("button", { name: "Move down", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Save board changes", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Screening references — revised",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Your interpretation: Keep the opening intimate. This is an owner-authored direction.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  const savedBoards = await (
+    await page.request.get(`/api/tasks/${task.id}/outputs`)
+  ).json();
+  expect(savedBoards.collections[0].revision).toBe(2);
+  expect(savedBoards.collections[0].items[0].name).toBe("Thom Yorke");
+  await page.screenshot({
+    path: "/tmp/igor-current-desktop.png",
+    fullPage: true,
+  });
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download Markdown" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.md$/);
+  const text = await readFile((await download.path())!, "utf8");
+  expect(text).toContain("## Evidence");
+  expect(text).toContain("CACHED");
+  expect(text).not.toContain(task.brief.owner);
+  await page.getByLabel("Review permission").selectOption("amara");
+  await page.getByRole("checkbox", { name: /I reviewed this text/ }).check();
+  await page
+    .getByRole("button", { name: "Create review link", exact: true })
+    .click();
+  await expect(page.getByLabel("Private review URL")).toBeVisible();
+  const url = await page.getByLabel("Private review URL").inputValue();
+  const guestContext = await browser.newContext();
+  const guest = await guestContext.newPage();
+
+  try {
+    await guest.goto(url);
+    await expect(
+      guest.getByRole("heading", { name: "Your perspective", exact: true }),
+    ).toBeVisible();
+    await guest
+      .getByLabel("What works, or needs changing?")
+      .fill("Please retain the listening interlude.");
+    await guest
+      .getByRole("button", { name: "Send review", exact: true })
+      .click();
+    await expect(guest.getByRole("status")).toContainText(
+      "source plan has not changed",
+    );
+    await guest.getByLabel("Artist, film or interest").fill("Radiohead");
+    await guest
+      .getByLabel("Preference", { exact: true })
+      .selectOption("not-now");
+    await guest
+      .getByRole("button", { name: "Propose correction", exact: true })
+      .click();
+    await expect(
+      guest.getByRole("button", { name: "Propose correction", exact: true }),
+    ).toBeDisabled();
+    const before = (await (
+      await page.request.get(`/api/tasks/${task.id}`)
+    ).json()) as Task;
+    expect(
+      before.brief.participants[0].preferences.find(
+        (p) => p.value === "Radiohead",
+      )?.polarity,
+    ).toBe("like");
+    await page
+      .getByRole("button", {
+        name: "Refresh reviews & collections",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByText("Please retain the listening interlude.", { exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", {
+        name: "Accept this participant's correction",
+        exact: true,
+      })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Reviewed", exact: true }),
+    ).toBeVisible();
+    const after = (await (
+      await page.request.get(`/api/tasks/${task.id}`)
+    ).json()) as Task;
+    expect(
+      after.brief.participants[0].preferences.find(
+        (p) => p.value === "Radiohead",
+      )?.polarity,
+    ).toBe("not-now");
+    expect(after.brief.participants.slice(1)).toEqual(
+      before.brief.participants.slice(1),
+    );
+    expect(after.receipts?.at(-1)?.culturalRequests).toBe(0);
+    await page.getByRole("button", { name: "Revoke", exact: true }).click();
+    await guest.reload();
+    await expect(
+      guest.getByRole("alert").filter({ hasText: "unavailable or expired" }),
+    ).toContainText("unavailable or expired");
+  } finally {
+    await guestContext.close();
+  }
+});
+
+test("one-click Tokyo discovery renders actual mapped places and locality revision", async ({
+  page,
+}) => {
+  await page.goto("/workspace");
+  await page
+    .getByRole("button", {
+      name: "Explore Tokyo through Radiohead",
+      exact: false,
+    })
+    .click();
+  await expect(
+    page.getByRole("img", { name: /Geographic overview/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "1. Ghibli Museum", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/Matched locality: Tokyo/)).toBeVisible();
+  await page.getByLabel("Location", { exact: true }).fill("Amsterdam");
+  await page
+    .getByRole("button", { name: "Update brief", exact: false })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "1. Moco Museum | Amsterdam",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText(/Matched locality: Amsterdam/)).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("img", { name: /Geographic overview/ }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "/tmp/igor-current-mobile.png",
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+  ).toBe(true);
+});
+
+test("HTTP ownership, chunked bounds, memory continuity and share snapshots remain isolated", async ({
+  page,
+  browser,
+}) => {
+  let task = await gathering(page);
+  const pref = task.brief.participants[0].preferences.find(
+    (p) => p.value === "Radiohead",
+  )!;
+  task = await turn(page, task, {
+    type: "memory",
+    operation: "save",
+    preferenceId: pref.id,
+  });
+  const another = (await (
+    await page.request.post("/api/tasks")
+  ).json()) as Task;
+  expect(another.preferences.some((p) => p.id === pref.id)).toBe(true);
+  const foreign = await browser.newContext();
+
+  try {
+    expect(
+      (await foreign.request.get(`/api/tasks/${task.id}/outputs`)).status(),
+    ).toBe(404);
+    expect(
+      (await foreign.request.get(`/api/tasks/${task.id}/export`)).status(),
+    ).toBe(401);
+  } finally {
+    await foreign.close();
+  }
+
+  expect(
+    (
+      await page.request.post(`/api/tasks/${task.id}/outputs`, {
+        data: { type: "share", artifactIds: ["main"], version: 0 },
+      })
+    ).status(),
+  ).toBe(409);
+  const share = await (
+    await page.request.post(`/api/tasks/${task.id}/outputs`, {
+      data: {
+        type: "share",
+        artifactIds: ["main"],
+        version: task.brief.version,
+      },
+    })
+  ).json();
+  expect(share.token).toBeTruthy();
+  const snapshot = await (
+    await page.request.get(`/api/review/${share.token}`)
+  ).json();
+  task = await turn(page, task, { type: "constraints", budget: 1 });
+  const preserved = await (
+    await page.request.get(`/api/review/${share.token}`)
+  ).json();
+  expect(preserved.snapshot).toEqual(snapshot.snapshot);
+  expect(preserved.snapshot.sourceVersion).not.toBe(task.brief.version);
+  task = await turn(page, task, {
+    type: "memory",
+    operation: "delete",
+    preferenceId: pref.id,
+  });
+  expect(
+    (await (await page.request.get(`/api/tasks/${another.id}`)).json())
+      .preferences,
+  ).toEqual([]);
+});
+
+test("a geographic discovery continues into real artist references in the same conversation", async ({
+  page,
+}) => {
+  await page.goto("/workspace");
+  await page
+    .getByRole("button", {
+      name: "Explore Tokyo through Radiohead",
+      exact: false,
+    })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: "Explore artists connected to this place",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Explore artists connected to this place",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByText("Context: Ghibli Museum", { exact: true }).first(),
+  ).toBeVisible();
+  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
+  const task = (await (
+    await page.request.get(`/api/tasks/${id}`)
+  ).json()) as Task;
+  expect(task.brief.contextAnchor?.name).toBe("Ghibli Museum");
+  expect(task.candidates).toHaveLength(10);
+  expect(
+    task.candidates.every((c) => c.type === "artist" && c.available === null),
+  ).toBe(true);
+});
+
+test("local account registration preserves work, logout revokes access, and login restores saved workspaces", async ({
+  page,
+}) => {
+  const task = await gathering(page);
+  const username = `test_${Date.now().toString(36)}`;
+  await page.getByRole("button", { name: "Account", exact: true }).click();
+  await page.getByLabel("Username", { exact: true }).fill(username);
+  await page
+    .getByLabel("Password · at least 12 characters", { exact: true })
+    .fill("synthetic-browser-password-2026");
+  await page
+    .getByRole("button", { name: "Create private account", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: `Your account · ${username}` }),
+  ).toBeVisible();
+  expect((await page.request.get(`/api/tasks/${task.id}`)).ok()).toBe(true);
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Account", exact: true }),
+  ).not.toBeVisible();
+  expect([401, 404]).toContain(
+    (await page.request.get(`/api/tasks/${task.id}`)).status(),
+  );
+  await page.getByRole("button", { name: "Account", exact: true }).click();
+  await page.getByLabel("Account action").selectOption("login");
+  await page.getByLabel("Username", { exact: true }).fill(username);
+  await page
+    .getByLabel("Password · at least 12 characters", { exact: true })
+    .fill("synthetic-browser-password-2026");
+  await page
+    .getByRole("checkbox", { name: /I understand that signing in/ })
+    .check();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Account", exact: true }),
+  ).not.toBeVisible();
+  await expect
+    .poll(async () =>
+      (await page.request.get(`/api/tasks/${task.id}`)).status(),
+    )
+    .toBe(200);
+});
+
+test("a personal start uses only the user's supplied taste, without silently saving memory", async ({
+  page,
+}) => {
+  await page.goto("/workspace");
+  await page.getByText("Start from your own taste", { exact: true }).click();
+  await page
+    .getByLabel("An artist you love", { exact: true })
+    .fill("Radiohead");
+  await page
+    .getByRole("button", { name: "Explore from my taste", exact: true })
+    .click();
+  await expect(
+    page.getByRole("tab", { name: "Options · 30", exact: true }),
+  ).toBeVisible();
+  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
+  const task = (await (
+    await page.request.get(`/api/tasks/${id}`)
+  ).json()) as Task;
+  expect(task.brief.participants).toHaveLength(1);
+  expect(task.brief.participants[0].name).toBe("You");
+  expect(task.preferences).toEqual([]);
+});

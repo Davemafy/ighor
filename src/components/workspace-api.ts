@@ -1,0 +1,101 @@
+import type { Event, Task, TaskAction } from "@/core/contracts";
+
+export type WorkspaceSummary = { id: string; goal: string };
+
+export class TurnRequestError extends Error {
+  constructor(
+    message: string,
+    readonly needsRefresh: boolean,
+  ) {
+    super(message);
+  }
+}
+
+export async function createWorkspace(): Promise<Task> {
+  const response = await fetch("/api/tasks", { method: "POST" });
+
+  if (!response.ok) {
+    throw new Error("Could not create workspace.");
+  }
+
+  return response.json();
+}
+
+export async function fetchWorkspace(id: string): Promise<Task | null> {
+  const response = await fetch(`/api/tasks/${id}`);
+
+  return response.ok ? response.json() : null;
+}
+
+export async function fetchWorkspaceHistory(): Promise<
+  WorkspaceSummary[] | null
+> {
+  const response = await fetch("/api/tasks");
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const { tasks } = await response.json();
+
+  return tasks;
+}
+
+export async function submitTurn(
+  task: Task,
+  action: TaskAction,
+): Promise<Response> {
+  const response = await fetch(`/api/tasks/${task.id}/turn`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...action, version: task.brief.version }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json();
+    throw new TurnRequestError(
+      body.error ?? "Could not save the turn.",
+      response.status === 409,
+    );
+  }
+
+  return response;
+}
+
+export async function* readTurnEvents(
+  response: Response,
+): AsyncGenerator<Event> {
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("No execution stream received.");
+  }
+
+  const decoder = new TextDecoder();
+  let pending = "";
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      pending += decoder.decode(value, { stream: !done });
+      let boundary = pending.indexOf("\n\n");
+
+      while (boundary >= 0) {
+        const packet = pending.slice(0, boundary);
+        pending = pending.slice(boundary + 2);
+
+        if (packet.startsWith("data: ")) {
+          yield JSON.parse(packet.slice(6)) as Event;
+        }
+
+        boundary = pending.indexOf("\n\n");
+      }
+
+      if (done) {
+        return;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}

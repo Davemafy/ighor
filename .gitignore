@@ -1,0 +1,21 @@
+node_modules/
+.next/
+.igor/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env*
+
+__pycache__/
+*.pyc
+
+artifacts/
+
+next-env.d.ts
+
+# Generated development guidance
+AGENTS.md
+
+# Private internal research and strategic working notes; never publish with the application.
+docs/intelligence/
+docs/product-intelligence.md

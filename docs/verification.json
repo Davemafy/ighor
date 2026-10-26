@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-25T07:56:39.289634+00:00",
+  "checks": {
+    "format": "passed",
+    "typecheck": "passed",
+    "lint": "passed",
+    "unit_integration": {
+      "passed": 213,
+      "failed": 0
+    },
+    "production_build": "passed",
+    "browser": {
+      "passed": 15,
+      "failed": 0,
+      "configuration": "tests/playwright.config.mts; four named projects"
+    }
+  },
+  "recordings": "Lossless gzip; hashes checked against original bytes; canonical recording shared by demo and tests.",
+  "history": "Historical reports and raw responses remain in private commit 2c89e8fb9f23e20394fd47b50c8ed6a43c87270f. No history rewrite.",
+  "generated_outputs": "artifacts/ and test-results/ are ignored.",
+  "known_provider_issue": "The previous fresh Gemini correction run passed 3/4 cases; it omitted available=true in one practical-fact correction. See github-validation.md.",
+  "new_provider_calls": 0,
+  "notes": [
+    "The cleanup covers saved outcomes, conversation corrections, deterministic interpretation, Qloo discovery, composition, validation and storage queries.",
+    "Collections and reviews use schema-derived types and typed output actions. Qloo caching and response normalization have separate modules.",
+    "Provider adapters share a bounded response reader; four tests cover UTF-8 byte counts, oversize cancellation, transport failure and missing bodies.",
+    "All 213 unit/integration tests and 15 browser checks passed locally. Formatting, lint, type checking and the production build passed.",
+    "Existing long messages and prompts were compared across the source before and after the refactor. Fixture hashes remain unchanged."
+  ]
+}
