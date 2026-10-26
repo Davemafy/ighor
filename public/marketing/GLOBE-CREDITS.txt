@@ -1,0 +1,3 @@
+Globe land outlines: Natural Earth, public domain, 1:110m land dataset. https://www.naturalearthdata.com/
+Point distribution derived from ne_110m_land.geojson at https://github.com/nvkelso/natural-earth-vector .
+Globe city labels are illustrative cultural examples, not live Qloo results.
