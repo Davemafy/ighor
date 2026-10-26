@@ -38,6 +38,24 @@ export default defineConfig({
       },
     },
     {
+      name: "mobile-small",
+      use: {
+        viewport: {width: 320, height: 740},
+        isMobile: true,
+        hasTouch: true,
+        reducedMotion: "reduce",
+      },
+    },
+    {
+      name: "mobile-wide",
+      use: {
+        viewport: {width: 430, height: 932},
+        isMobile: true,
+        hasTouch: true,
+        reducedMotion: "reduce",
+      },
+    },
+    {
       name: "mobile-motion",
       use: {
         viewport: { width: 390, height: 844 },
