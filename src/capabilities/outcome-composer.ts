@@ -150,7 +150,7 @@ export function composeOutcome(input: Input) {
         `Build an intimate experience around the cultural references ${culturalLine}.`,
         `Proposed location: ${input.brief.constraints.location} (working brief value; confirm before using; suitability not verified).`,
         "Explore a cohesive visual and listening atmosphere, then validate real venues, budget, rights and guest preferences before publishing.",
-      ].join("\\n\\n"),
+      ].join("\n\n"),
       ["location"],
     );
     produce(
@@ -162,7 +162,7 @@ export function composeOutcome(input: Input) {
         `Cultural starting points: ${culturalLine}.`,
         `Location under consideration: ${input.brief.constraints.location}.`,
         "Date, availability, guests and practical arrangements to be confirmed.",
-      ].join("\\n\\n"),
+      ].join("\n\n"),
       ["location", "concept"],
     );
   }
