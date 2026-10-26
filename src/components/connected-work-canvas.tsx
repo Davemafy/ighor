@@ -49,13 +49,16 @@ export function ConnectedWorkCanvas({
       setVersion(selected.version);
       setEditing(false);
       setRevision("current");
-    } else if (!dirty && version !== selected.version) {
+    } else if (version !== selected.version &&
+      (!dirty || selected.content === draft.trim())) {
+      // A successful server save changes the authoritative version. A failed
+      // save does not: retain the local draft for a truthful retry.
       setDraft(selected.content);
       setBase(selected.content);
       setVersion(selected.version);
       setRevision("current");
     }
-  }, [selected, boundId, dirty, version]);
+  }, [selected, boundId, dirty, draft, version]);
 
   useEffect(() => {
     if (!dirty) return;
