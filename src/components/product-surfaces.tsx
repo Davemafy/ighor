@@ -428,6 +428,17 @@ export function ProductResults({
           </button>
         </div>
       )}
+      {task.canvas && pane === "canvas" && feedback?.state === "error" && (
+        <div className="pp-mobile-result-error" role="alert">
+          <span>{feedback.error || "Igor could not finish this reply. Your work is preserved."}</span>
+          <button
+            disabled={busy}
+            onClick={() => onTurn(feedback.action)}
+          >
+            Try again
+          </button>
+        </div>
+      )}
       <div className="pp-thread-body" ref={scrollRegion}>
         <div
           className="pp-transcript"
