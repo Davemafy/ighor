@@ -91,6 +91,27 @@ export function Home() {
     [historyError, setHistoryError] = useState(""),
     [help, setHelp] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // The visual viewport is shorter than the layout viewport when a mobile
+  // keyboard opens. Keep the task and composer in the visible area.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const sync = () => {
+      document.documentElement.style.setProperty(
+        "--igor-visible-height",
+        `${Math.round(viewport?.height ?? window.innerHeight)}px`,
+      );
+    };
+    sync();
+    viewport?.addEventListener("resize", sync);
+    viewport?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      viewport?.removeEventListener("resize", sync);
+      viewport?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      document.documentElement.style.removeProperty("--igor-visible-height");
+    };
+  }, []);
   function navigate(next: View, replace = false) {
     setView(next);
     const url = new URL(location.href);
@@ -264,6 +285,15 @@ export function Home() {
       </aside>
       <div className="ip-body">
         <header className="ip-topbar">
+          {(view === "conversation" || view === "editor") && (
+            <button
+              className="ip-mobile-back"
+              aria-label="Back to conversations"
+              onClick={() => navigate("conversations")}
+            >
+              <ArrowLeft />
+            </button>
+          )}
           <a href="/app" className="ip-wordmark" aria-label="Igor home">
             igor
             <span className="ip-brand-dot" />
