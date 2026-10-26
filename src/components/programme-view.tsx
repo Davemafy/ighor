@@ -234,7 +234,7 @@ export function ProgrammeView({
           </div>
         )
       )}
-      {main && (
+      {main && !main.locked && (
         <details className="editable-source">
           <summary>
             <NotebookPen size={14} /> Edit the working document
@@ -250,6 +250,50 @@ export function ProgrammeView({
             on the calculated selection.
           </p>
         </details>
+      )}
+      {main && (
+        <button
+          type="button"
+          className="secondary-button"
+          disabled={isBusy || (!main.locked && main.freshness !== "current")}
+          onClick={() => onTurn({ type: "artifact-lock", artifactId: main.id, locked: !main.locked })}
+        >
+          {main.locked ? "Unlock approved direction" : "Approve and lock this direction"}
+        </button>
+      )}
+      {task.artifacts.some((artifact) => artifact.id !== "main") && (
+        <section className="connected-work" aria-label="Connected work">
+          <h3>Connected work</h3>
+          <p className="micro muted">Each output keeps its own approval and revision state. Stale locked work needs review.</p>
+          {task.artifacts.filter((artifact) => artifact.id !== "main").map((artifact) => (
+            <details className="connected-artifact" key={artifact.id}>
+              <summary>
+                <strong>{artifact.title}</strong>
+                <span>{artifact.locked ? "Approved · locked" : artifact.freshness === "stale" ? "Needs review" : `Version ${artifact.version}`}</span>
+              </summary>
+              <div className="connected-artifact-body">
+                <div className="prose">{artifact.content}</div>
+                {artifact.freshness === "stale" && <p className="micro">Preserved for review, but dependent inputs changed. This is not a current recommendation.</p>}
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={isBusy || (!artifact.locked && artifact.freshness !== "current")}
+                  onClick={() => onTurn({ type: "artifact-lock", artifactId: artifact.id, locked: !artifact.locked })}
+                >
+                  {artifact.locked ? "Unlock" : "Approve and lock"}
+                </button>
+                {!artifact.locked && (
+                  <ArtifactEditor
+                    key={`${artifact.id}:${artifact.version}`}
+                    artifact={artifact}
+                    disabled={isBusy}
+                    save={onTurn}
+                  />
+                )}
+              </div>
+            </details>
+          ))}
+        </section>
       )}
       {main?.evidenceIds.length ? (
         <div className="evidence-footnote">
