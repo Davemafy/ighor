@@ -186,10 +186,10 @@ test("composed work persists through edits, filtering, planning, maps and refres
           id: "data",
           type: "table",
           title: "Supplied effort",
-          columns: ["Stage", "Hours"],
+          columns: ["Stage", "Hours", "Estimated cost"],
           rows: [
-            { id: "beta", cells: ["Beta", "8"] },
-            { id: "public", cells: ["Public launch", "12"] },
+            { id: "beta", cells: ["Beta", "8", "3"] },
+            { id: "public", cells: ["Public launch", "12", "5"] },
           ],
         },
         {
@@ -346,6 +346,14 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await canvas.getByRole("button", { name: "Apply", exact: true }).click();
   await expect(canvas.locator("tbody tr")).toHaveCount(1);
   await expect(canvas.locator(".ic-chart>div")).toHaveCount(1);
+  await canvas.getByRole("combobox", {
+    name: "Comparison measure for Effort by stage",
+  }).selectOption("2");
+  await expect(canvas.locator(".ic-chart > div strong")).toContainText(["3"]);
+  await expect.poll(async () => (await (
+    await page.request.get(`/api/tasks/${task.id}`)
+  ).json() as Task).canvas?.chartAxes["chart"]).toBe(2);
+  await evidence("04b-comparison-measure-changed");
   const spatialViews = canvas.getByRole("group", { name: "Geographic result view" });
   await spatialViews.getByRole("button", { name: "List" }).click();
   await expect(canvas.locator(".ic-map-stage")).toBeHidden();
@@ -394,6 +402,7 @@ test("composed work persists through edits, filtering, planning, maps and refres
     await page.request.get(`/api/tasks/${task.id}`)
   ).json()) as Task;
   expect(saved.canvas?.itineraryIds).toEqual(["venue-two"]);
+  expect(saved.canvas?.chartAxes["chart"]).toBe(2);
   expect(saved.canvas?.selectedCandidateId).toBe("venue-two");
   expect(
     saved.canvas?.surface.nodes.find((n) => n.id === "draft"),
