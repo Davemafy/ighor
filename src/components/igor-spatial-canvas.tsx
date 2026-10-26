@@ -650,6 +650,12 @@ export default function IgorSpatialCanvas({
           <div>
             <small>{selected.place?.address}</small>
             <h4 aria-live="polite">{selected.name}</h4>
+            {!places.some((place) => place.id === selected.id) && (
+              <p className="ic-note" role="status">
+                This place has no usable coordinates. It can remain in the
+                itinerary, but the map cannot focus on it.
+              </p>
+            )}
             <p>{selected.description}</p>
             <p className="ic-note">
               Qloo taste associations do not verify hours, routes, prices
@@ -665,8 +671,7 @@ export default function IgorSpatialCanvas({
                   ? "Added to your plan"
                   : "Add to your plan"}
               </button>
-              {selected.place?.latitude != null &&
-                selected.place?.longitude != null && (
+              {places.some((place) => place.id === selected.id) && (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${selected.place.latitude},${selected.place.longitude}`}
                   target="_blank"
