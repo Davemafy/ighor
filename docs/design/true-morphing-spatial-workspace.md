@@ -60,5 +60,5 @@ Release-device verification remains necessary on current Android Chrome and iOS 
 
 - Natural-language criteria/itinerary-day revisions depend on the existing configured LLM and validated state contract. The browser fixture cannot prove real model interpretation quality.
 - Direct `chart-axis` changes work for numeric columns already available in the stored table. The system does not invent new metrics.
-- Spatial itinerary stores an ordered set of stops; **day assignment and real routed travel times are not present in the existing spatial mutation contract** and must not be pretended to work. Timeline step reordering is supported separately.
+- Spatial itinerary now supports explicit **numbered day assignments (1–14)** per current stop through a validated `itinerary-day` mutation, alongside add/remove/reorder; removing a stop also removes its day. Calendar dates or labels such as “Sunday” require an actual start-date/timezone context, and real routed travel times still require an authorized route provider. These are not inferred.
 - Connected-work documents without model-authored presentation are shown through an application-owned fallback surface, not as an invented generated composition.
