@@ -399,7 +399,7 @@ export const TurnSchema = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     type: z.literal("place-example"),
-    city: z.enum(["Tokyo", "Amsterdam"]),
+    city: z.enum(["Tokyo", "Amsterdam", "Chicago"]),
     version: z.number().int().nonnegative(),
   }),
   z.strictObject({

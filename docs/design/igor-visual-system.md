@@ -1,45 +1,32 @@
-# Igor visual system
+# Discovery interface
 
-The product's starting point is a user's goal or confirmed taste. It should never require the user to pick a separate micro-tool.
+The home and result experience lives in `src/components/discovery/`. `home.tsx` connects it to the existing workspace hook and server routes. The advanced workspace remains at `/workspace`.
 
-## Reference study
+## Foundations
 
-The supplied Rainbow webpage archive and desktop recording show these useful patterns:
+The canvas is `#fafaf6`, the text is `#222421` and the primary action color is `#3e4ff0`. Bricolage Grotesque carries headings; DM Sans carries controls and body text. Both fonts are served locally from `public/fonts/` with their OFL license notices.
 
-- Oversized rounded display type carries the main message. Product screens, not marketing cards, carry the proof.
-- Simple, bright section backgrounds support a small number of focused controls.
-- High-contrast buttons have generous hit areas and a recognizable silhouette.
-- A small set of floating, tactile objects conveys movement and character. They do not compete with primary controls.
-- Motion is restrained around navigation, hover states and demonstrations.
+The supplied Rainbow capture informs hierarchy, spacing and tactile controls. No Rainbow fonts, images, logos or application screens are included.
 
-The archive includes Rainbow's own assets and licensed fonts. None are imported into Igor. Igor uses original CSS shapes, system font fallbacks and Qloo-provided image URLs where available.
+The Chicago starting-point photo is served from `public/images/chicago.webp`. Its source is `https://images.unsplash.com/photo-1519501025264-65ba15a82390`. The photograph illustrates an example prompt; it is not a provider recommendation. Record and check the location when replacing it. The record and film motifs are CSS artwork.
 
-## Igor tokens
+## Interaction
 
-| Role | Value | Use |
-| --- | --- | --- |
-| Ink | `#11111e` | Text, outlines and primary actions |
-| Canvas | `#f9f8f2` | Quiet interface background |
-| Sky | `#b5f5f8` | Starting point and refinement |
-| Lilac | `#e6dcff` | Active cultural result |
-| Peach | `#ffa681` | Group experience |
-| Lime | `#daffa0` | Personal taste |
-| Accent | `#f36e5b` | One expressive word or detail |
+The opening viewport contains the composer and direct starting points. On mobile the composer appears before the story tiles. Starting a request preserves the visual language in the result. Follow-up requests update the same versioned task.
 
-## UI contracts
+Results feature a leading reference and an adjacent list. Gathering schedules and structured outcomes render separately from cultural discovery. Candidate images are provider-returned; missing images use labelled typographic placeholders. Do not insert unrelated stock photography into results.
 
-- The first viewport must offer a text goal and at least one tap-to-start example.
-- The same composition should lead to a real result without switching visual languages.
-- All result names, descriptions, IDs and images come from the active task. Fallback artwork is decorative, not fake cultural content.
-- Show Qloo delivery as LIVE or CACHED based on returned signal records. Do not label a page LIVE just because the app is configured for live mode.
-- An association is not proof of personal preference, venue availability, cost or travel time.
-- Ambiguous identities require a choice; failed retrieval requires a truthful empty state.
-- All interactive controls need keyboard focus and a minimum comfortable tap area.
-- Honor reduced-motion settings. Never use required animations for essential information.
+Candidate details, evidence and saved spaces use native modal dialogs. Escape closes them, focus stays within an open dialog and closing returns focus to its trigger. Reduced-motion preferences disable animation and transitions.
 
-## Routes
+## Data boundaries
 
-- `/`: discovery, results, related cultural threads, refinements and saved-workspace access.
-- `/workspace`: advanced planning, evidence, collections, editing and export.
+- Render only candidates marked current. Never use stale results or raw catalogue entries as a fallback.
+- Derive LIVE and CACHED labels from returned signals. Synthetic candidates remain EXAMPLE even if a signal is mislabelled.
+- Query seeds describe search context. They are not causal explanations or proof of personal preference.
+- Show unverified cost and availability as unknown. Do not infer practical facts from cultural connections.
+- Saving a reference calls the existing collection endpoint. A saved reference is not a booking or an eligibility decision.
+- Surface startup failures on the home screen and provide a retry action.
 
-The legacy workspace remains accessible while its advanced views are redesigned. Both routes use the same server-owned tasks, permissions, Qloo provider and model adapter.
+## Validation
+
+`tests/browser/home.e2e.ts` covers responsive entry, refinement, saving, refresh, startup failure, modal focus and evidence integrity. `tests/unit/discovery.test.ts` covers stale filtering, source labels and resolved query seeds. The home browser project uses synthetic fixtures and does not call live providers.

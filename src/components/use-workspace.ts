@@ -88,9 +88,11 @@ export function useWorkspace() {
   async function loadHistory() {
     const workspaces = await fetchWorkspaceHistory();
 
-    if (workspaces) {
-      setHistory(workspaces);
+    if (!workspaces) {
+      throw new Error("Could not load saved discoveries.");
     }
+
+    setHistory(workspaces);
   }
 
   async function sendTurn(action: TaskAction) {
