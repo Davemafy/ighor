@@ -1,0 +1,282 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  ArrowLeft, Check, ChevronDown, FileText, History, Pencil,
+  ShieldCheck, X,
+} from "lucide-react";
+import type { Task, TaskAction } from "@/core/contracts";
+import { morphLayout } from "./mobile-transitions";
+
+type Document = NonNullable<Task["work"]>["documents"][number];
+
+/** A task-bound projection of the existing connected-work contract.
+ * No client-generated approvals, model code, or separate persistence.
+ */
+export function ConnectedWorkCanvas({
+  task,
+  busy,
+  onTurn,
+}: {
+  task: Task;
+  busy: boolean;
+  onTurn: (action: TaskAction) => void;
+}) {
+  const work = task.work;
+  const documents = work?.documents ?? [];
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const selected = documents.find((item) => item.id === activeId) ??
+    documents.find((item) => item.goalId === work?.activeGoalId) ??
+    documents[0];
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [base, setBase] = useState("");
+  const [boundId, setBoundId] = useState("");
+  const [version, setVersion] = useState<number | null>(null);
+  const [revision, setRevision] = useState<string>("current");
+  const [full, setFull] = useState(false);
+  const dirty = draft !== base;
+  const content = selected?.content ?? "";
+
+  // Server snapshots may arrive after any turn, reload or direct mutation.
+  // Never overwrite text the user is actively editing.
+  useEffect(() => {
+    if (!selected) return;
+    if (boundId !== selected.id) {
+      setBoundId(selected.id);
+      setDraft(selected.content);
+      setBase(selected.content);
+      setVersion(selected.version);
+      setEditing(false);
+      setRevision("current");
+    } else if (!dirty && version !== selected.version) {
+      setDraft(selected.content);
+      setBase(selected.content);
+      setVersion(selected.version);
+      setRevision("current");
+    }
+  }, [selected, boundId, dirty, version]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (!full) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFull(false);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [full]);
+
+  if (!work || !selected) return null;
+  const historical = revision === "current" ? null :
+    selected.history.find((r) => String(r.version) === revision);
+  const display = historical?.content ?? (editing ? draft : content);
+  const decisions = work.decisions.filter((d) => d.goalId === selected.goalId);
+  const send = (actions: Extract<TaskAction, {type: "work"}>["actions"]) =>
+    onTurn({ type: "work", actions });
+  const choose = (doc: Document) => {
+    if (dirty || busy || doc.id === selected.id) return;
+    morphLayout(() => setActiveId(doc.id));
+  };
+
+  return (
+    <aside
+      className={`ic-canvas ig-connected-work ${full ? "ic-fullscreen" : ""}`}
+      style={{ viewTransitionName: "igor-task-canvas" }}
+      aria-label="Connected work"
+      aria-busy={busy}
+    >
+      <header className="ic-canvas-header">
+        <div>
+          <span className="ic-eyebrow">Connected to your conversation</span>
+          <h2>{work.goals.find((g) => g.id === selected.goalId)?.title || "Your work"}</h2>
+        </div>
+        <button
+          type="button"
+          aria-label={full ? "Close expanded work" : "Expand connected work"}
+          onClick={() => morphLayout(() => setFull(!full))}
+        >
+          {full ? <X /> : <FileText />}
+        </button>
+      </header>
+      <div className="ig-connected-doc-tabs" role="group" aria-label="Connected documents">
+        {documents.map((doc) => (
+          <button
+            type="button"
+            key={doc.id}
+            disabled={dirty || busy}
+            aria-pressed={doc.id === selected.id}
+            onClick={() => choose(doc)}
+          >
+            {doc.title}
+            {doc.edited && <Pencil aria-label="Edited by you" />}
+          </button>
+        ))}
+      </div>
+      {dirty && (
+        <p className="ig-connected-warning" role="status">
+          Save or discard your edits before switching documents.
+        </p>
+      )}
+      <div className="ig-connected-document">
+        <div className="ig-connected-document-bar">
+          <span>
+            <FileText />
+            {selected.title}
+          </span>
+          <span>
+            Version {selected.version}
+            {selected.edited ? " · Edited by you" : " · Proposal"}
+          </span>
+        </div>
+        {(selected.freshness === "stale" || selected.conflict) && (
+          <p role="status" className="ig-connected-warning">
+            {selected.conflict ||
+              "An earlier decision changed. Review this document before approval."}
+            Your existing wording is preserved.
+          </p>
+        )}
+        <div className="ig-connected-tools">
+          <label>
+            <History />
+            Revisions
+            <select
+              value={revision}
+              onChange={(event) => setRevision(event.target.value)}
+              aria-label="Document revision"
+              disabled={dirty}
+            >
+              <option value="current">Current · v{selected.version}</option>
+              {[...selected.history].reverse().map((v, index) => (
+                <option value={String(v.version)} key={index}>
+                  Version {v.version}
+                </option>
+              ))}
+            </select>
+            <ChevronDown aria-hidden="true" />
+          </label>
+          <button
+            type="button"
+            disabled={busy || revision !== "current"}
+            aria-pressed={editing}
+            onClick={() => morphLayout(() => setEditing(!editing))}
+          >
+            {editing ? "Preview" : "Edit document"}
+          </button>
+        </div>
+        {editing && !historical ? (
+          <div className="ig-connected-edit">
+            <label htmlFor={`ig-doc-${selected.id}`}>Document text</label>
+            <textarea
+              id={`ig-doc-${selected.id}`}
+              aria-label={`Edit ${selected.title}`}
+              maxLength={12000}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <div className="ig-connected-edit-actions">
+              <button
+                type="button"
+                disabled={!dirty || !draft.trim() || busy ||
+                  selected.content !== base}
+                onClick={() => send([{
+                  kind: "edit",
+                  id: selected.id,
+                  content: draft.trim(),
+                }])}
+              >
+                <Check /> {busy ? "Saving…" : "Save changes"}
+              </button>
+              <button
+                type="button"
+                disabled={busy || !dirty}
+                onClick={() => {
+                  setDraft(content);
+                  setBase(content);
+                }}
+              >
+                Discard changes
+              </button>
+            </div>
+            {selected.content !== base && (
+              <p role="alert">
+                This document changed since you began editing.
+                Copy your draft and review the latest version before saving.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="ig-connected-paper" aria-label="Document preview">
+            <pre>{display}</pre>
+          </div>
+        )}
+        {historical && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setRevision("current");
+              setEditing(true);
+              setDraft(historical.content);
+              setBase(content);
+            }}
+          >
+            <ArrowLeft /> Restore as a new revision
+          </button>
+        )}
+        <div className="ig-connected-approval">
+          <span><ShieldCheck /> {selected.status === "approved" ? "Approved" : "Proposed · not yet approved"}</span>
+          {selected.status !== "approved" && (
+            <button
+              type="button"
+              disabled={busy || dirty ||
+                selected.freshness !== "current" || Boolean(selected.conflict)}
+              onClick={() => send([{ kind: "approve", id: selected.id }])}
+            >
+              Approve document
+            </button>
+          )}
+        </div>
+      </div>
+      {decisions.length > 0 && (
+        <section className="ig-connected-decisions" aria-label="Connected decisions">
+          <h3>Decisions connected to this work</h3>
+          {decisions.map((decision) => (
+            <article key={decision.id}>
+              <div>
+                <strong>{decision.title}</strong>
+                <small>{decision.status}</small>
+              </div>
+              <p>{decision.value}</p>
+              <details>
+                <summary>Why this was proposed <ChevronDown /></summary>
+                <p>{decision.rationale}</p>
+              </details>
+              {decision.conflict && <p role="status">{decision.conflict}</p>}
+              {decision.status === "proposed" && (
+                <div>
+                  <button type="button" disabled={busy} onClick={() =>
+                    send([{kind: "approve", id: decision.id}])
+                  }>Approve</button>
+                  <button type="button" disabled={busy} onClick={() =>
+                    send([{kind: "reject", id: decision.id}])
+                  }>Reject</button>
+                </div>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
+      <footer className="ic-canvas-footer">
+        <Check /> Connected work saves in this conversation. No external actions
+        are performed without a separate supported integration.
+      </footer>
+    </aside>
+  );
+}
