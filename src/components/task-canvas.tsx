@@ -22,6 +22,7 @@ import {
   type PresentationNode,
 } from "@/core/presentation";
 import { ProductText } from "./product-surfaces";
+import { morphLayout } from "./mobile-transitions";
 
 const SpatialCanvas = lazy(() => import("./igor-spatial-canvas"));
 type Props = {
@@ -71,6 +72,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
   return (
     <aside
       className={`ic-canvas ${full ? "ic-fullscreen" : ""}`}
+      style={{ viewTransitionName: "igor-task-canvas" }}
       aria-label="Task canvas"
       aria-busy={busy}
     >
@@ -80,7 +82,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
           <h2>{surface.title}</h2>
         </div>
         <button
-          onClick={() => setFull(!full)}
+          onClick={() => morphLayout(() => setFull(!full))}
           aria-label={full ? "Exit full screen canvas" : "Expand canvas"}
         >
           {full ? <Minimize /> : <Expand />}
