@@ -1,4 +1,5 @@
 import type { Artifact, Candidate, Task } from "../core/contracts";
+import { reconcileGeneratedArtifact, hasLockedConflict } from "../core/connected-artifacts";
 import { goalPolicies } from "../core/goals";
 import { composeOutcome } from "./outcome-composer";
 import { groupUtility } from "./collaborate";
@@ -204,25 +205,32 @@ export function compose(input: CompositionInput) {
     title: string,
     text: string,
     deps = dependencies,
-  ): Artifact => ({
-    id,
-    kind,
-    title,
-    content: text,
-    version: (previous.find((a) => a.id === id)?.version ?? 0) + 1,
-    dependencies: deps,
-    evidenceIds,
-    assumptions: [
-      live
-        ? "User-supplied planning facts; no booking or price verification."
-        : "Sample catalogue facts; no booking or live price verification.",
-      live
-        ? "Group compromise uses per-query ranks and coverage, not a comparison of raw scores across queries."
-        : "Group fit uses a disclosed tag-overlap heuristic.",
-    ],
-    freshness: "current",
-    edited: false,
-  });
+    sources = evidenceIds,
+  ): Artifact => {
+    const prior = previous.find((a) => a.id === id);
+    const effectiveDependencies = id === "invitation"
+      ? [...new Set([...deps, "main", ...(task.brief.kind === "creative" && selected.some((candidate) => candidate.type === "artist") ? ["sound"] : [])])]
+      : deps;
+    return reconcileGeneratedArtifact({
+      id,
+      kind,
+      title,
+      content: text,
+      version: (prior?.version ?? 0) + 1,
+      dependencies: effectiveDependencies,
+      evidenceIds: sources,
+      assumptions: [
+        live
+          ? "User-supplied planning facts; no booking or price verification."
+          : "Sample catalogue facts; no booking or live price verification.",
+        live
+          ? "Group compromise uses per-query ranks and coverage, not a comparison of raw scores across queries."
+          : "Group fit uses a disclosed tag-overlap heuristic.",
+      ],
+      freshness: "current",
+      edited: false,
+    }, prior);
+  };
   task.artifacts = [
     make(
       "main",
@@ -262,6 +270,36 @@ export function compose(input: CompositionInput) {
         ),
     ),
   ];
+
+  // An artist-backed sound direction is separate from the creative brief.
+  // It is a cultural reference, not a real playlist or cleared music license.
+  if (task.brief.kind === "creative") {
+    const artists = selected.filter((candidate) => candidate.type === "artist");
+    if (artists.length) {
+      const sources = [...new Set(artists.flatMap((artist) => artist.evidenceIds))];
+      task.artifacts.splice(1, 0, make(
+        "sound",
+        "music-direction",
+        "The sound direction",
+        [
+          "Cultural references for the sound direction",
+          ...artists.map((artist) => `${artist.name}: ${artist.description}`),
+          "Cultural associations are not proof of song availability, playback rights, or audience demand.",
+        ].join("\n\n"),
+        [
+          "goal",
+          "catalogue",
+          "selection",
+          ...artists.map((artist) => `candidate:${artist.id}`),
+          ...sources,
+          ...task.brief.participants.map((p) => `preferences:${p.id}`),
+        ],
+        sources,
+      ));
+    }
+  }
+
+  if (hasLockedConflict(task.artifacts)) task.status = "partial";
 
   return {
     selected: task.brief.selected,
