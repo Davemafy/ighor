@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "D01",
+      "dimension": "discover",
+      "qlooRelevant": true,
+      "goal": "I love Sufjan Stevens and the film Her. Help me discover a thoughtful design book connected to these tastes, and explain the less-obvious connection.",
+      "constraints": "No invented stock, availability, price or personal certainty."
+    },
+    {
+      "id": "D02",
+      "dimension": "discover",
+      "qlooRelevant": true,
+      "goal": "I love Little Simz but want to discover a film I might never have chosen. Suggest something not obvious, and why it could fit.",
+      "constraints": "Explain the cultural relationship with evidence, not streaming availability guesses."
+    },
+    {
+      "id": "C01",
+      "dimension": "decide",
+      "qlooRelevant": true,
+      "goal": "Three friends love jazz, surreal films and contemporary art. Help us choose a Saturday activity that balances our tastes.",
+      "constraints": "We haven't supplied a city or budget; identify missing facts and useful alternatives."
+    },
+    {
+      "id": "C02",
+      "dimension": "decide",
+      "qlooRelevant": true,
+      "goal": "I'm choosing between a photography book and a vinyl record for someone who likes Frank Ocean and design. Help me decide, not just list gifts.",
+      "constraints": "Our limit is $80; actual prices and stock remain unknown until checked."
+    },
+    {
+      "id": "M01",
+      "dimension": "create",
+      "qlooRelevant": true,
+      "goal": "I want a thoughtful gathering inspired by Portishead and the mood of Arrival. Make a cultural direction, an experience brief and an invitation.",
+      "constraints": "No venue is selected, and rights, availability and prices must not be invented."
+    },
+    {
+      "id": "M02",
+      "dimension": "create",
+      "qlooRelevant": true,
+      "goal": "Create a compact editorial direction for a small magazine whose readers love photography, indie music and contemplative cinema.",
+      "constraints": "Create a useful editable brief plus a separate related draft that can be revised."
+    },
+    {
+      "id": "N01",
+      "dimension": "control",
+      "qlooRelevant": false,
+      "goal": "Explain JavaScript Promises versus async/await with a simple example.",
+      "constraints": "Do not call Qloo; cultural associations are irrelevant."
+    },
+    {
+      "id": "N02",
+      "dimension": "control",
+      "qlooRelevant": false,
+      "goal": "Rewrite politely and concisely: 'Send the document now because I need it urgently.'",
+      "constraints": "Do not call Qloo or infer cultural tastes."
+    }
+  ]
+}
