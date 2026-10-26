@@ -139,7 +139,8 @@
       "opening_cultural_requests": 2,
       "budget_revision_cultural_requests": 0,
       "budget_revision_value": 25,
-      "shared_taste_film_discovery": "passed"
+      "shared_taste_film_discovery": "passed",
+      "shared_taste_repeat": "A repeat asked an unnecessary style clarification instead of retrieving. Immediate retrieval is not consistent yet."
     },
     "limits": [
       "Incomplete requests were tested as clarifications, not complete travel plans.",

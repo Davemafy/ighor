@@ -111,6 +111,7 @@ test("stale candidates are hidden and provider limitations stay inspectable", as
     ...task.catalogue[0],
     id: "current-film",
     name: "Synthetic film",
+    imageUrl: "https://images.qloo.com/igor-unavailable-test.jpg",
     sample: false,
     cultural: {
       test: {
@@ -165,7 +166,14 @@ test("stale candidates are hidden and provider limitations stay inspectable", as
     },
   ];
   await page.route("**/api/tasks", (route) => route.fulfill({ json: task }));
+  await page.route(
+    "https://images.qloo.com/igor-unavailable-test.jpg",
+    (route) => route.abort(),
+  );
   await page.goto("/");
+  await expect(page.locator(".ig-lead .ig-artwork-title")).toHaveText(
+    "Synthetic film",
+  );
   await expect(
     page.getByRole("button", { name: "Explore Synthetic film" }),
   ).toBeVisible();

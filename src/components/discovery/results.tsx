@@ -513,20 +513,28 @@ function CandidateVisual({
   candidate: DiscoveryCandidate;
   prominent?: boolean;
 }) {
+  const [unavailableImage, setUnavailableImage] = useState<string | null>(null);
+
   return (
     <span
       className={`ig-candidate-visual ig-visual-${candidate.type} ${prominent ? "ig-visual-prominent" : ""}`}
     >
-      {candidate.imageUrl ? (
+      {candidate.imageUrl && candidate.imageUrl !== unavailableImage ? (
         <Image
           src={candidate.imageUrl}
           alt=""
           fill
           sizes={prominent ? "(max-width: 760px) 90vw, 38vw" : "100px"}
           unoptimized
+          onError={() => setUnavailableImage(candidate.imageUrl ?? null)}
         />
       ) : (
-        <span aria-hidden="true">{candidate.name.slice(0, 1)}</span>
+        <span
+          className={prominent ? "ig-artwork-title" : undefined}
+          aria-hidden="true"
+        >
+          {prominent ? candidate.name : candidate.name.slice(0, 1)}
+        </span>
       )}
     </span>
   );
