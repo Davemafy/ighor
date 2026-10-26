@@ -236,7 +236,7 @@ export default function IgorSpatialCanvas({
         const lib = (await api.importLibrary("maps")) as {
           Map: new (el: HTMLElement, options: unknown) => FlatMap;
         };
-        const markers = (await api.importLibrary("marker")) as {
+        const markerLibrary = (await api.importLibrary("marker")) as {
           Marker: new (options: unknown) => {
             addListener: (
               event: string,
@@ -261,7 +261,7 @@ export default function IgorSpatialCanvas({
         });
         flatMap.current = flat;
         const stops = placesRef.current.map((c) => {
-          const marker = new markers.Marker({
+          const marker = new markerLibrary.Marker({
             map: flat,
             position: position(c),
             title: c.name,
