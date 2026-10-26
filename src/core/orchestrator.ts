@@ -1,3 +1,5 @@
+import { mutateCanvas } from "./presentation";
+import { ensureBoundPresentation } from "./presentation-default";
 import { randomUUID } from "node:crypto";
 import {
   TurnSchema,
@@ -26,6 +28,9 @@ import { interpretMessage } from "./interpret-message";
 import { compareModelRankings } from "./compare-model";
 import { executeTaskPlan } from "./execute-plan";
 import { turnReply } from "./turn-reply";
+import { applyWorkActions } from "./connected-work";
+import { recordArtifactChanges } from "./preserve-artifacts";
+import { agentEmitter } from "./agent-events";
 
 export { ExecutionBudget } from "./execution";
 
@@ -34,7 +39,7 @@ export async function runTurn(
   id: string,
   owner: string,
   raw: unknown,
-  emit: (event: Event) => void = () => {},
+  send: (event: Event) => void = () => {},
   provider?: CulturalProvider,
   model?: ModelProvider,
   factsProvider: PracticalFactsProvider = new SuppliedFactsProvider(),
@@ -44,6 +49,38 @@ export async function runTurn(
 
   if (task.brief.version !== input.version) {
     throw new ConflictError("A newer correction is already saved.");
+  }
+
+  const emit = agentEmitter(structuredClone(task), send);
+
+  if (input.type === "canvas") {
+    if (!task.canvas) {
+      throw new Error("No canvas exists for this task.");
+    }
+
+    task.canvas = mutateCanvas(
+      task.canvas,
+      input.surfaceId,
+      input.mutation,
+      task,
+    );
+    task.brief.version++;
+    task.trace.push({
+      id: randomUUID(),
+      version: task.brief.version,
+      action: "ui." + input.mutation.operation,
+      outcome: "Saved a direct canvas edit to the shared task.",
+      requests: 0,
+      durationMs: 0,
+      evidenceIds: [],
+      at: new Date().toISOString(),
+    });
+    task.trace = task.trace.slice(-100);
+    TaskSchema.parse(task);
+    store.save(task, input.version, owner);
+    emit({ type: "done", task: structuredClone(task) });
+
+    return task;
   }
 
   const wasInterpretationError =
@@ -106,7 +143,36 @@ export async function runTurn(
       at: at(),
     };
     task.trace.push(row);
-    emit({ type: "action", message: outcome });
+    const kind = action.startsWith("tool.invoke:")
+      ? "tool-invocation"
+      : action.startsWith("tool.result:")
+        ? "tool-result"
+        : action.includes("error")
+          ? "action-failed"
+          : "task-progress";
+    emit({
+      type: "action",
+      message: outcome,
+      activity: {
+        eventId: row.id,
+        threadId: task.id,
+        taskId: task.id,
+        sequence: task.trace.length,
+        kind,
+        actionStatus:
+          kind === "tool-invocation"
+            ? "executing"
+            : kind === "action-failed"
+              ? "failed"
+              : kind === "tool-result" && outcome.includes("returned blocked")
+                ? "blocked"
+                : kind === "tool-result" && outcome.includes("returned error")
+                  ? "failed"
+                  : "completed",
+        rendererType: "execution",
+        evidenceIds,
+      },
+    });
   };
 
   const update =
@@ -159,6 +225,57 @@ export async function runTurn(
     TaskSchema.parse(task);
     store.save(task, receiptFromVersion, owner);
     emit({ type: "done", task });
+
+    return task;
+  }
+
+  if (update.workActions && !update.workAfterDiscovery) {
+    const before = structuredClone(task);
+
+    try {
+      const summary = applyWorkActions(
+        task,
+        update.workActions,
+        input.type === "message" ? input.text : undefined,
+      );
+      trace(
+        "planner.work",
+        "Selected connected composition/revision. No cultural or external request was made.",
+      );
+      task.messages.push({ role: "assistant", text: summary, at: at() });
+    } catch (error) {
+      task = before;
+      task.status = "clarification";
+      const question =
+        error instanceof Error
+          ? error.message
+          : "This work update could not be applied.";
+      task.messages.push({
+        role: "assistant",
+        kind: "conversation",
+        text: question,
+        at: at(),
+      });
+      trace("work.rejected", question);
+    }
+
+    // Connected-work turns return early; bind their latest documents before saving.
+    ensureBoundPresentation(task);
+    task.brief.version++;
+    task.trace = task.trace.slice(-100);
+    appendReceipt(
+      task,
+      input,
+      receiptFromVersion,
+      ["work"],
+      receiptTraceIds,
+      (model.calls ?? 0) - initialModelCalls,
+      task.status,
+      0,
+    );
+    TaskSchema.parse(task);
+    store.save(task, receiptFromVersion, owner);
+    emit({ type: "done", task: structuredClone(task) });
 
     return task;
   }
@@ -230,6 +347,8 @@ export async function runTurn(
 
   const stageVersion = task.brief.version;
 
+  const previousArtifacts = structuredClone(task.artifacts);
+  const previousEvidence = structuredClone(task.evidence);
   task = await executeTaskPlan(
     task,
     update,
@@ -243,11 +362,113 @@ export async function runTurn(
     editedArtifactWasCurrent,
   );
 
+  let connectedReply = "";
+
+  if (update.workActions?.length && update.workAfterDiscovery) {
+    const culturalStatus = task.status;
+    const culturalNote = task.error ?? task.brief.unresolved.join(" ");
+
+    try {
+      connectedReply = applyWorkActions(
+        task,
+        update.workActions,
+        input.type === "message" ? input.text : undefined,
+      );
+      changedDependencies.push("work");
+      trace(
+        "planner.work",
+        "Applied connected proposals after the cultural capability. Unretrieved relationships remain proposals, not evidence.",
+      );
+
+      if (culturalStatus !== "ready") {
+        task.status = "partial";
+        connectedReply += `\n\nCultural step remains ${culturalStatus}: ${culturalNote || "Some cultural or practical evidence remains unresolved."}`;
+      }
+    } catch (error) {
+      task.status = "partial";
+      connectedReply =
+        error instanceof Error
+          ? error.message
+          : "Connected proposals could not be applied.";
+      trace("work.rejected", connectedReply);
+    }
+  }
+
+  recordArtifactChanges(task, previousArtifacts);
+  const archive = [...(task.evidenceArchive ?? [])];
+
+  for (const old of previousEvidence) {
+    const next = task.evidence.find((e) => e.id === old.id);
+
+    if (
+      (!next || next.at !== old.at || next.summary !== old.summary) &&
+      !archive.some(
+        (e) => e.id === old.id && e.at === old.at && e.summary === old.summary,
+      )
+    ) {
+      archive.push(old);
+    }
+  }
+
+  task.evidenceArchive = archive;
+
+  if (task.work) {
+    const affectedDecisions = task.work.decisions.filter((d) =>
+      d.evidenceIds.some(
+        (id) =>
+          !task.evidence.some((e) => e.id === id && e.freshness === "current"),
+      ),
+    );
+
+    for (const decision of affectedDecisions) {
+      decision.conflict =
+        "Cited evidence changed. Your decision is preserved; review its support.";
+    }
+
+    const staleIds = new Set<string>(
+      task.work.documents
+        .filter((d) =>
+          d.evidenceIds.some(
+            (id) =>
+              !task.evidence.some(
+                (e) => e.id === id && e.freshness === "current",
+              ),
+          ),
+        )
+        .map((d) => `document:${d.id}`),
+    );
+    affectedDecisions.forEach((d) => staleIds.add(`decision:${d.id}`));
+    let expanded = true;
+
+    while (expanded) {
+      expanded = false;
+
+      for (const doc of task.work.documents) {
+        if (
+          doc.dependencies.some((id) => staleIds.has(id)) &&
+          !staleIds.has(`document:${doc.id}`)
+        ) {
+          staleIds.add(`document:${doc.id}`);
+          expanded = true;
+        }
+      }
+    }
+
+    for (const doc of task.work.documents) {
+      if (staleIds.has(`document:${doc.id}`)) {
+        doc.freshness = "stale";
+        doc.conflict =
+          "Cited evidence or a dependent document changed. Review before reusing this proposal.";
+      }
+    }
+  }
+
+  ensureBoundPresentation(task);
   task.brief.version++;
   task.trace = task.trace.slice(-100);
   task.messages.push({
     role: "assistant",
-    text: turnReply(task, localChangeOnly),
+    text: connectedReply || turnReply(task, localChangeOnly),
     at: at(),
   });
   TaskSchema.parse(task);

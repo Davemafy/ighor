@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validatePresentation } from "../core/presentation";
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 
 /** One transport envelope for both providers; the engine owns the complete decision schema. */
@@ -59,6 +60,17 @@ export function readTurnDecision(argumentsText: string, context?: Task) {
   ]) {
     if (payload[field] === null) {
       delete payload[field];
+    }
+  }
+
+  if (payload.presentation && context) {
+    try {
+      payload.presentation = validatePresentation(
+        payload.presentation,
+        context,
+      );
+    } catch {
+      delete payload.presentation;
     }
   }
 

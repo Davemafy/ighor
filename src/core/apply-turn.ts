@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Task, Turn } from "./contracts";
+import type { WorkAction } from "./work-contracts";
 import { ConflictError, type MemoryChange } from "../data/store";
 import { freshTask } from "../data/fixtures";
 import { freshLiveExample } from "../data/live-task";
@@ -15,6 +16,8 @@ interface TurnInputContext {
 
 export interface TurnUpdate {
   task: Task;
+  workActions?: WorkAction[];
+  workAfterDiscovery?: boolean;
   changedDependencies: string[];
   needsDiscovery: boolean;
   localChangeOnly: boolean;
@@ -44,6 +47,9 @@ export function applyStructuredTurn(
   const update = unchangedTurn(task);
 
   switch (input.type) {
+    case "work":
+      update.workActions = input.actions;
+      break;
     case "outcome":
       changeOutcome(update, input);
       break;
@@ -223,6 +229,7 @@ function startPlaceExample(
   context: TurnInputContext,
 ) {
   const exampleTask = freshLiveExample(context.taskId, context.owner);
+  preserveThread(exampleTask, update.task);
   exampleTask.receipts = update.task.receipts ?? [];
   exampleTask.brief.version = update.task.brief.version;
   exampleTask.brief.participants = [exampleTask.brief.participants[0]];
@@ -248,6 +255,7 @@ function startGatheringExample(
       ? freshLiveExample(context.taskId, context.owner)
       : freshTask(context.taskId, context.owner);
   exampleTask.brief.version = update.task.brief.version;
+  preserveThread(exampleTask, update.task);
   exampleTask.receipts = update.task.receipts ?? [];
   update.task = exampleTask;
   update.task.brief.goal =
@@ -269,6 +277,10 @@ function reviseConstraints(
   input: Extract<Turn, { type: "constraints" }>,
 ) {
   const { task } = update;
+
+  if (task.work?.goals.length && input.budget !== undefined) {
+    update.workActions = [{ kind: "budget", amount: input.budget }];
+  }
 
   for (const key of ["budget", "duration", "location"] as const) {
     if (
@@ -486,4 +498,21 @@ function editDocument(
 ) {
   update.artifactEdit = input;
   update.localChangeOnly = true;
+}
+
+/** Switching an example changes the active brief, never the accumulated conversation/work. */
+function preserveThread(target: Task, source: Task) {
+  target.messages = source.messages;
+  target.trace = source.trace;
+  target.work = source.work;
+  target.preferences = source.preferences;
+  target.artifactHistory = source.artifactHistory;
+  target.evidenceArchive = [
+    ...(source.evidenceArchive ?? []),
+    ...source.evidence,
+  ];
+  target.artifacts = source.artifacts.map((a) => ({
+    ...a,
+    freshness: "stale",
+  }));
 }

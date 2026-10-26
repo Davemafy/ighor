@@ -286,7 +286,10 @@ function appendOutcomeClaims(
       ),
     });
 
-    if (selected.some((candidate) => candidate.id === candidate.id)) {
+    if (
+      selected.some((chosen) => chosen.id === candidate.id) &&
+      candidate.available === true
+    ) {
       details.claims.push({
         text: `${candidate.name}: $${candidate.cost.value}, ${candidate.duration.value} minutes, access supplied as available.`,
         basis: "supplied-fact",

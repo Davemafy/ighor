@@ -52,6 +52,54 @@ export function modelContext(task: Task, message: string) {
       totalMessages: messages.length,
       omittedMessages: messages.length - history.length,
     },
+    canvas: task.canvas
+      ? {
+          ...task.canvas,
+          previous: task.canvas.previous.map(({ id, title }) => ({
+            id,
+            title,
+          })),
+        }
+      : undefined,
+    schedule: task.schedule,
+    work: task.work
+      ? {
+          activeGoalId: task.work.activeGoalId,
+          goals: task.work.goals,
+          budget: task.work.budget,
+          decisions: task.work.decisions.map((d) => ({
+            id: d.id,
+            goalId: d.goalId,
+            title: d.title,
+            value: d.value.slice(0, 500),
+            rationale: d.rationale.slice(0, 300),
+            status: d.status,
+            estimatedCost: d.estimatedCost,
+            conflict: d.conflict?.slice(0, 500),
+            dependencies: d.dependencies,
+            evidenceIds: d.evidenceIds,
+            version: d.version,
+          })),
+          documents: task.work.documents.map((d) => ({
+            id: d.id,
+            goalId: d.goalId,
+            title: d.title,
+            content: d.content.slice(
+              0,
+              d.goalId === task.work?.activeGoalId ? 1200 : 120,
+            ),
+            status: d.status,
+            edited: d.edited,
+            freshness: d.freshness,
+            conflict: d.conflict?.slice(0, 500),
+            dependencies: d.dependencies,
+            evidenceIds: d.evidenceIds,
+            version: d.version,
+          })),
+          latestChange: task.work.changes.at(-1),
+          externalActions: task.work.externalActions.slice(-5),
+        }
+      : undefined,
     goal: task.brief.goal,
     kind: task.brief.kind,
     targetType: task.brief.targetType,
@@ -83,6 +131,7 @@ export function modelContext(task: Task, message: string) {
     evidence: task.evidence.slice(-80).map((evidence) => ({
       id: evidence.id,
       source: evidence.source,
+      reference: evidence.reference,
       delivery: evidence.delivery,
       at: evidence.at,
       entityIds: evidence.entityIds,
