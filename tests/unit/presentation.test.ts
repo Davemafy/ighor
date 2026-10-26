@@ -127,6 +127,39 @@ it("agent composes mixed interfaces via the existing provider transport without 
   expect(provider.calls).toBe(1);
 });
 
+it("only accepts numeric chart criteria and persists them into later model context", async () => {
+  const expanded = surface();
+  const data = expanded.nodes.find((n) => n.id === "data");
+  if (data?.type !== "table") throw Error("Missing fixture table");
+  data.columns.push("Cost");
+  data.rows[0].cells.push("3");
+  data.rows[1].cells.push("7");
+  const {task, store} = setup();
+  let current = await runTurn(
+    store,
+    task.id,
+    "owner",
+    {type: "message", text: "Compare supplied launch figures", version: 0},
+    undefined,
+    undefined,
+    model(PresentationSchema.parse(expanded)),
+  );
+  current = await runTurn(store, task.id, "owner", {
+    type: "canvas", surfaceId: "launch",
+    mutation: {operation: "chart-axis", nodeId: "chart", valueColumn: 2},
+    version: current.brief.version,
+  });
+  expect(current.canvas?.chartAxes.chart).toBe(2);
+  expect(modelContext(current, "Now use the other measure").canvas?.chartAxes)
+    .toMatchObject({chart: 2});
+  await expect(runTurn(store, task.id, "owner", {
+    type: "canvas", surfaceId: "launch",
+    mutation: {operation: "chart-axis", nodeId: "chart", valueColumn: 0},
+    version: current.brief.version,
+  })).rejects.toThrow(/numeric comparison column/);
+  expect(store.load(task.id, "owner").canvas?.chartAxes.chart).toBe(2);
+});
+
 it("persists direct edits and sends the same document, filters and reordered plan into the next agent turn", async () => {
   const { task, store } = setup();
   let saved = await runTurn(
