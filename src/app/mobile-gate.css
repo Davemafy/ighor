@@ -23,7 +23,6 @@
 ::view-transition-new(igor-result-artwork) {
   object-fit: cover;
 }
-.ic-canvas { contain: layout; }
 
 @media (max-width: 760px) {
   /* Do not stack fixed bottom navigation under a persistent composer. */
