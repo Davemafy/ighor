@@ -673,7 +673,7 @@ export default function IgorSpatialCanvas({
               </button>
               {places.some((place) => place.id === selected.id) && (
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${selected.place.latitude},${selected.place.longitude}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${selected.place!.latitude!},${selected.place!.longitude!}`}
                   target="_blank"
                   rel="noreferrer"
                 >
