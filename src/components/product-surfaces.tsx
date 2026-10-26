@@ -227,7 +227,7 @@ function ExecutionFeedback({
     </div>
   );
 }
-function MessageText({ text }: { text: string }) {
+export function ProductText({ text }: { text: string }) {
   return (
     <div className="pp-message-text">
       {text
@@ -379,13 +379,13 @@ export function ProductResults({
                   </>
                 )}
               </span>
-              <MessageText text={m.text} />
+              <ProductText text={m.text} />
             </article>
           ))}
           {pending && (
             <article className="pp-message pp-message-user pp-message-pending">
               <span>You</span>
-              <MessageText text={feedback?.input || ""} />
+              <ProductText text={feedback?.input || ""} />
             </article>
           )}
           <ExecutionFeedback
@@ -529,7 +529,7 @@ export function ProductResults({
               </span>
               <h2>{a.title}</h2>
               <div>
-                <MessageText text={a.content.slice(0, 1800)} />
+                <ProductText text={a.content.slice(0, 1800)} />
               </div>
               <span className="pp-document-open">
                 Keep shaping this

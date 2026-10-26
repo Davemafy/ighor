@@ -2800,3 +2800,21 @@ body {
     animation: none !important;
   }
 }
+
+.ip-paper .pp-message-text {
+  color: inherit;
+  font: inherit;
+  line-height: 1.75;
+}
+.ip-paper .pp-message-text strong {
+  color: inherit;
+}
+.ip-paper .pp-message-text h3 {
+  font-size: 19px;
+}
+.ip-paper .pp-message-text p {
+  white-space: pre-wrap;
+}
+.ip-paper > div:has(.pp-message-text) {
+  white-space: normal;
+}

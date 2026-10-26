@@ -24,6 +24,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { useWorkspace } from "./use-workspace";
 import {
+  ProductText,
   ProductComposer,
   ProductDialog,
   ProductResults,
@@ -659,7 +660,9 @@ function ProductEditor({
   onTask: (t: Task) => void;
   onBack: () => void;
 }) {
-  const artifacts = task.artifacts.filter((a) => a.freshness === "current");
+  const artifacts = task.artifacts.filter(
+    (a) => a.freshness === "current" || busy,
+  );
   const [selected, setSelected] = useState(artifacts[0]?.id || ""),
     [draft, setDraft] = useState(artifacts[0]?.content || ""),
     [mode, setMode] = useState<"edit" | "preview" | "share">("edit"),
@@ -808,7 +811,9 @@ function ProductEditor({
           <article className={`ip-paper ${serif ? "ip-serif" : ""}`}>
             <small>MADE WITH IGOR</small>
             <h2>{artifact.title}</h2>
-            <div>{draft}</div>
+            <div>
+              <ProductText text={draft} />
+            </div>
           </article>
           <p className="ip-preview-note">
             {artifact.assumptions.length > 0
