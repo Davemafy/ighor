@@ -669,7 +669,7 @@ function CanvasDocument({
               ? "Unsaved changes"
               : "Saved draft"}
         </span>
-        <button aria-pressed={editing} onClick={() => setEditing(!editing)}>
+        <button aria-pressed={editing} onClick={() => morphLayout(() => setEditing(!editing))}>
           {editing ? "Preview" : "Edit draft"}
         </button>
       </div>
