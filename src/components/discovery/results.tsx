@@ -514,21 +514,27 @@ function CandidateVisual({
   prominent?: boolean;
 }) {
   const [unavailableImage, setUnavailableImage] = useState<string | null>(null);
+  const [loadedImage, setLoadedImage] = useState<string | null>(null);
+  const canLoadImage =
+    candidate.imageUrl && candidate.imageUrl !== unavailableImage;
 
   return (
     <span
       className={`ig-candidate-visual ig-visual-${candidate.type} ${prominent ? "ig-visual-prominent" : ""}`}
     >
-      {candidate.imageUrl && candidate.imageUrl !== unavailableImage ? (
+      {canLoadImage && candidate.imageUrl && (
         <Image
           src={candidate.imageUrl}
           alt=""
           fill
           sizes={prominent ? "(max-width: 760px) 90vw, 38vw" : "100px"}
           unoptimized
+          style={{ opacity: loadedImage === candidate.imageUrl ? 1 : 0 }}
+          onLoad={() => setLoadedImage(candidate.imageUrl ?? null)}
           onError={() => setUnavailableImage(candidate.imageUrl ?? null)}
         />
-      ) : (
+      )}
+      {(!canLoadImage || loadedImage !== candidate.imageUrl) && (
         <span
           className={prominent ? "ig-artwork-title" : undefined}
           aria-hidden="true"

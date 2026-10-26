@@ -166,14 +166,26 @@ test("stale candidates are hidden and provider limitations stay inspectable", as
     },
   ];
   await page.route("**/api/tasks", (route) => route.fulfill({ json: task }));
+
+  let finishImage: () => void = () => {};
+
+  const pendingImage = new Promise<void>((resolve) => {
+    finishImage = resolve;
+  });
   await page.route(
     "https://images.qloo.com/igor-unavailable-test.jpg",
-    (route) => route.abort(),
+    async (route) => {
+      await pendingImage;
+      await route.abort();
+    },
   );
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".ig-lead .ig-artwork-title")).toHaveText(
     "Synthetic film",
   );
+  finishImage();
+  await expect(page.locator(".ig-lead img")).toHaveCount(0);
+  await expect(page.locator(".ig-lead .ig-artwork-title")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Explore Synthetic film" }),
   ).toBeVisible();
