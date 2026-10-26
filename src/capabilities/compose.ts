@@ -1,5 +1,5 @@
 import type { Artifact, Candidate, Task } from "../core/contracts";
-import { reconcileGeneratedArtifact, hasLockedConflict } from "../core/connected-artifacts";
+import { reconcileGeneratedArtifact, hasLockedConflict, finalizeConnectedArtifacts } from "../core/connected-artifacts";
 import { goalPolicies } from "../core/goals";
 import { composeOutcome } from "./outcome-composer";
 import { groupUtility } from "./collaborate";
@@ -288,9 +288,6 @@ export function compose(input: CompositionInput) {
         ].join("\n\n"),
         [
           "goal",
-          "catalogue",
-          "selection",
-          ...artists.map((artist) => `candidate:${artist.id}`),
           ...sources,
           ...task.brief.participants.map((p) => `preferences:${p.id}`),
         ],
@@ -299,6 +296,7 @@ export function compose(input: CompositionInput) {
     }
   }
 
+  task.artifacts = finalizeConnectedArtifacts(task.artifacts, previous);
   if (hasLockedConflict(task.artifacts)) task.status = "partial";
 
   return {
