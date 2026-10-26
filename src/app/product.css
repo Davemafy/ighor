@@ -2912,3 +2912,214 @@ body {
     animation: none !important;
   }
 }
+
+/* A single contextual header replaces the repeated conversation toolbar. */
+.ip-app .ip-topbar {
+  height: 84px;
+  padding: 0 42px;
+  gap: 28px;
+  background: #141413ec;
+  border-bottom: 1px solid #ffffff0b;
+}
+.ip-app .ip-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 31px;
+  letter-spacing: -1.8px;
+  flex: none;
+  line-height: 1;
+}
+.ip-brand-dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d1c1a9;
+  margin-left: 1px;
+}
+.ip-topbar > .ip-header-context {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding-left: 28px;
+  border-left: 1px solid #ffffff16;
+  min-width: 0;
+  margin: 0;
+  flex: 1;
+}
+.ip-header-label {
+  font-size: 9px;
+  line-height: 1.3;
+  color: #898983;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ip-header-title {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #deded6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  letter-spacing: -0.1px;
+}
+.ip-topbar > .ip-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  flex: none;
+}
+.ip-app .ip-work-button {
+  height: 38px;
+  border: 1px solid #ffffff16;
+  border-radius: 9px;
+  padding: 0 12px;
+  gap: 9px;
+  background: #ffffff03;
+  color: #c6c6bd;
+  font-size: 11px;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.ip-app .ip-work-button:not(:disabled):hover {
+  background: #ffffff0b;
+  border-color: #ffffff35;
+}
+.ip-app .ip-work-button:disabled {
+  opacity: 0.4;
+}
+.ip-app .ip-work-button > svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+.ip-work-count {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: #ffffff13;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.ip-topbar .ip-pill {
+  height: 38px;
+  padding: 0 16px;
+  gap: 8px;
+  background: #f1eee5;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 550;
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.ip-topbar .ip-pill:not(:disabled):hover {
+  background: #fff;
+}
+.ip-topbar .ip-pill:not(:disabled):active {
+  transform: scale(0.97);
+}
+.ip-topbar .ip-pill svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.9;
+}
+.ip-topbar .ip-working {
+  font-size: 10px;
+  color: #b4afa4;
+  margin-right: 6px;
+}
+.ip-conversation {
+  padding-top: 42px;
+  min-height: calc(100svh - 84px);
+}
+.ip-view-explore .ip-topbar {
+  background: linear-gradient(#1119, transparent);
+  border: 0;
+}
+.ip-view-explore .ip-header-title {
+  color: white;
+}
+.ip-view-explore .ip-header-label {
+  color: #ddd;
+}
+@media (max-width: 760px) {
+  .ip-app .ip-topbar {
+    height: 70px;
+    padding: 0 19px;
+    gap: 17px;
+  }
+  .ip-app .ip-wordmark {
+    font-size: 28px;
+  }
+  .ip-topbar > .ip-header-context {
+    padding-left: 17px;
+    gap: 3px;
+  }
+  .ip-header-label {
+    font-size: 8px;
+  }
+  .ip-header-title {
+    font-size: 11px;
+    max-width: 36vw;
+  }
+  .ip-topbar > .ip-header-actions {
+    gap: 7px;
+  }
+  .ip-app .ip-work-button {
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+    padding: 0;
+    border-radius: 8px;
+  }
+  .ip-work-button > span {
+    display: none !important;
+  }
+  .ip-topbar .ip-pill {
+    height: 34px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+  .ip-topbar .ip-pill span {
+    display: inline !important;
+  }
+  .ip-topbar .ip-working {
+    display: none;
+  }
+  .ip-conversation {
+    padding-top: 30px;
+    min-height: calc(100svh - 135px);
+  }
+  .ip-editor-top {
+    top: 70px;
+  }
+}
+@media (max-width: 410px) {
+  .ip-header-title {
+    max-width: 28vw;
+  }
+  .ip-topbar .ip-pill > span {
+    display: none !important;
+  }
+  .ip-topbar .ip-pill {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .ip-topbar .ip-pill:after {
+    content: none;
+  }
+}

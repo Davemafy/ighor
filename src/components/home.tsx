@@ -198,6 +198,15 @@ export function Home() {
           : view === "saved"
             ? "Saved"
             : "Explore";
+  const currentWork =
+    workspace.task?.artifacts.filter((a) => a.freshness === "current") || [];
+  const conversationTitle =
+    workspace.task?.brief.goal ||
+    workspace.task?.messages.find((m) => m.role === "user")?.text;
+  const headerTitle =
+    view === "conversation" || view === "editor"
+      ? conversationTitle || "New conversation"
+      : currentTitle;
   return (
     <div className={`ig-app ip-app ip-view-${view}`}>
       <a className="ip-skip" href="#igor-main">
@@ -251,30 +260,64 @@ export function Home() {
       </aside>
       <div className="ip-body">
         <header className="ip-topbar">
-          <a href="/app" className="ip-wordmark">
+          <a href="/app" className="ip-wordmark" aria-label="Igor home">
             igor
+            <span className="ip-brand-dot" />
           </a>
-          <span>{currentTitle}</span>
-          <div>
+          <div className="ip-header-context">
+            <span className="ip-header-label">
+              {view === "editor"
+                ? "Your work"
+                : view === "conversation"
+                  ? "Conversation"
+                  : "Your space"}
+            </span>
+            <span className="ip-header-title" title={headerTitle}>
+              {headerTitle}
+            </span>
+          </div>
+          <div className="ip-header-actions">
             {workspace.isBusy && (
-              <span className="ip-working">
+              <span className="ip-working" role="status">
                 <LoaderCircle className="ig-spin" />
-                Working
+                Igor is working
               </span>
             )}
-            {view === "conversation" && (
-              <button onClick={() => navigate("editor")}>
-                <FileText />
-                <span>Your work</span>
+            {(view === "conversation" || view === "editor") && (
+              <button
+                className="ip-work-button"
+                aria-label={
+                  view === "editor"
+                    ? "Return to conversation"
+                    : "Open your work"
+                }
+                onClick={() =>
+                  navigate(view === "editor" ? "conversation" : "editor")
+                }
+                disabled={view !== "editor" && !currentWork.length}
+                title={
+                  view === "editor"
+                    ? "Return to your conversation"
+                    : currentWork.length
+                      ? "Open your plans and drafts"
+                      : "Your plans and drafts will appear here"
+                }
+              >
+                {view === "editor" ? <MessageCircle /> : <FileText />}
+                <span>{view === "editor" ? "Conversation" : "Your work"}</span>
+                {view !== "editor" && currentWork.length > 0 && (
+                  <span className="ip-work-count">{currentWork.length}</span>
+                )}
               </button>
             )}
             <button
               className="ip-pill"
+              aria-label="New goal"
               onClick={() => void fresh()}
               disabled={workspace.isBusy}
             >
               <Plus />
-              New goal
+              <span>New goal</span>
             </button>
           </div>
         </header>
@@ -425,19 +468,6 @@ export function Home() {
           )}
           {view === "conversation" && (
             <section className="ip-conversation">
-              <div className="ip-conversation-header">
-                <button onClick={() => navigate("explore")}>
-                  <ArrowLeft />
-                  Explore
-                </button>
-                <span>
-                  {workspace.task?.brief.goal || "Your agent. With taste."}
-                </span>
-                <button onClick={() => navigate("editor")}>
-                  <FileText />
-                  Open work
-                </button>
-              </div>
               {workspace.task &&
               (workspace.task.messages.length > 0 ||
                 workspace.task.brief.goal ||
