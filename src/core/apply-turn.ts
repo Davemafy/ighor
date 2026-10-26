@@ -283,7 +283,12 @@ function reviseConstraints(
     }
   }
 
-  update.needsDiscovery = update.changedDependencies.includes("location");
+  // Artist-only cultural work doesn't depend on the physical venue.
+  // Re-evaluate practical facts and dependent output drafts, but retain
+  // cultural evidence and an independently approved sound direction.
+  update.needsDiscovery =
+    update.changedDependencies.includes("location") &&
+    (task.brief.targetType !== "artist" || task.brief.kind === "gathering");
 }
 
 function updateParticipant(
