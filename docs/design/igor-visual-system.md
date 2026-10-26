@@ -6,7 +6,7 @@ The home and result experience lives in `src/components/discovery/`. `home.tsx` 
 
 The canvas is `#fafaf6`, the text is `#222421` and the primary action color is `#3e4ff0`. Bricolage Grotesque carries headings; DM Sans carries controls and body text. Both fonts are served locally from `public/fonts/` with their OFL license notices.
 
-The supplied Rainbow capture informs hierarchy, spacing and tactile controls. No Rainbow fonts, images, logos or application screens are included.
+Partiful is the primary visual and interaction reference. Its live creation flow pairs an editable outcome with its preview, keeps optional details within reach and makes presentation part of creation. Igor should apply those principles to different kinds of outcomes. Its current interface has not yet met that reference bar. Do not copy Partiful assets or screens.
 
 The Chicago starting-point photo is served from `public/images/chicago.webp`. Its source is `https://images.unsplash.com/photo-1519501025264-65ba15a82390`. The photograph illustrates an example prompt; it is not a provider recommendation. Record and check the location when replacing it. The record and film motifs are CSS artwork.
 

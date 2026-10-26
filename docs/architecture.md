@@ -57,6 +57,10 @@ Acceptance requires more than a polished response: inspect a result's sources, c
 
 ## Turn lifecycle
 
+Fresh live workspaces contain no sample participants, tastes or results. The sample starting points explicitly create a labelled example instead. Before cultural retrieval, the planner requires a supplied cultural reference or an existing context anchor. Missing taste becomes a question while retaining the goal and supplied locality. Shared statements can create a group taste profile; that profile does not establish individual agreement or consent.
+
+The home result view exposes the persisted conversation transcript, including evidence attached to earlier replies. Later edits can make a cited source stale; the transcript displays its current freshness rather than treating the earlier answer as newly verified.
+
 `src/core/orchestrator.ts` owns the versioned lifecycle: load, apply the input, publish stale outputs, execute work and save the result. It is the place to start when following a request.
 
 | Module                 | Responsibility                                                                                   |
@@ -118,4 +122,3 @@ Local accounts use salted scrypt passwords and expiring server-mapped sessions. 
 Gemini and the optional OpenAI adapter share a bounded tool protocol. Credentials stay server-side. The current practical-facts provider checks supplied values; it does not verify live venues. Exact-runtime live integration and human relevance remain separate from local correctness tests.
 
 The Keep & share view composes collections, review sharing, approved memory and blinded assessments. `use-saved-outcomes.ts` owns those requests and their status. Client types for stored collections and reviews are derived from the storage schemas through type-only imports; server code stays out of the browser bundle.
-

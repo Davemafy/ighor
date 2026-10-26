@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { GeminiModel } from "../../src/tools/gemini-model";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import type { OutcomeSpec } from "../../src/core/outcome-spec";
 
 const response = (outcome: unknown, targetType = "place") =>
@@ -53,7 +53,7 @@ describe("Gemini boundary for typed broader outcomes (mock HTTP, not live execut
         "gemini-3.5-flash-lite",
         transport,
       );
-      const task = freshLiveTask("t", "o");
+      const task = freshLiveExample("t", "o");
       task.brief.outcome = outcome;
       const actual = await model.interpret("User request", task);
       expect(actual.outcome).toEqual(outcome);
@@ -86,7 +86,7 @@ describe("Gemini boundary for typed broader outcomes (mock HTTP, not live execut
         transport,
       );
       await expect(
-        model.interpret("User request", freshLiveTask("t", "o")),
+        model.interpret("User request", freshLiveExample("t", "o")),
       ).rejects.toThrow();
       expect(transport).toHaveBeenCalledTimes(2);
     },

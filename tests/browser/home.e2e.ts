@@ -209,8 +209,20 @@ test("a greeting gets a reply without discovery failure or an empty-results warn
   await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveCount(
     0,
   );
+  await page.getByText("Conversation · 2 messages", { exact: true }).click();
+  const transcript = page.getByRole("list", { name: "Saved conversation" });
+  await expect(transcript).toContainText("hey");
+  await expect(transcript).toContainText("Hey! I’m Igor.");
   await page.reload();
   await expect(
     page.getByRole("region", { name: "Igor’s reply" }),
   ).toContainText("Hey! I’m Igor.");
+  await page.getByText("Conversation · 2 messages", { exact: true }).click();
+  await expect(transcript).toContainText("hey");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

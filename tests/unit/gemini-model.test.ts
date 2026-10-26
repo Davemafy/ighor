@@ -1,7 +1,7 @@
 import { readRecordingText } from "../../src/tools/recording-file";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GeminiModel } from "../../src/tools/gemini-model";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import {
   LiveQlooProvider,
   MemoryResponseCache,
@@ -101,7 +101,7 @@ function qlooMock() {
 }
 
 async function providerTask() {
-  const t = freshLiveTask("t", "o");
+  const t = freshLiveExample("t", "o");
   const p = new LiveQlooProvider(key, new MemoryResponseCache(), qlooMock());
   const r = await p.discover({
     participants: t.brief.participants,
@@ -129,7 +129,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
   it("counts failed cultural requests in receipts even when resolution stops before a normal trace", async () => {
     const store = new SqliteTaskStore(":memory:");
     stores.push(store);
-    store.create(freshLiveTask("t", "o"));
+    store.create(freshLiveExample("t", "o"));
     const http = vi.fn(
       async () => new Response("private provider body", { status: 401 }),
     ) as typeof fetch;
@@ -147,7 +147,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     expect(JSON.stringify(task)).not.toContain("private provider body");
   });
   it("extracts typed conversational actions with bounded context and no owner or credentials in the prompt", async () => {
-    const context = freshLiveTask("private-task-id", "private-owner-marker");
+    const context = freshLiveExample("private-task-id", "private-owner-marker");
     const http = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body));
       expect(JSON.stringify(body)).not.toContain("private-owner-marker");
@@ -194,7 +194,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     const http = vi.fn(async () => Response.json(response)) as typeof fetch;
     const model = new GeminiModel(key, "gemini-3.5-flash-lite", http);
     await expect(
-      model.interpret("Use Moonlight from 2016.", freshLiveTask("t", "o")),
+      model.interpret("Use Moonlight from 2016.", freshLiveExample("t", "o")),
     ).rejects.toThrow();
     expect(model.calls).toBe(2);
   });
@@ -362,14 +362,14 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     vi.stubEnv("GEMINI_API_KEY", key);
     vi.stubEnv("GEMINI_MODEL", "gemini-3.5-flash-lite");
     expect(runtimeModelProvider("qloo-live")).toBeInstanceOf(GeminiModel);
-    const task = freshLiveTask("t", "o");
+    const task = freshLiveExample("t", "o");
     expect(task.modelMode).toBe("tool-calling");
     expect(JSON.stringify(task)).not.toContain(key);
   });
   it("runs goal → unknown facts → supplied facts → programme → corrections → baseline without model-controlled feasibility", async () => {
     const store = new SqliteTaskStore(":memory:");
     stores.push(store);
-    store.create(freshLiveTask("t", "o"));
+    store.create(freshLiveExample("t", "o"));
     const cache = new MemoryResponseCache();
     const qloo = qlooMock();
     const provider = () => new LiveQlooProvider(key, cache, qloo);

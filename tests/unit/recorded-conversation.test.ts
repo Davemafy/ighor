@@ -1,6 +1,6 @@
 import { readRecordingText } from "../../src/tools/recording-file";
 import { describe, expect, it } from "vitest";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import { SqliteTaskStore } from "../../src/data/store";
 import { RecordedQlooProvider } from "../../src/tools/recorded-qloo";
 import { GeminiModel } from "../../src/tools/gemini-model";
@@ -34,7 +34,7 @@ describe("Actual provider response replay (no live requests)", () => {
       const store = new SqliteTaskStore(":memory:");
 
       try {
-        store.create(freshLiveTask("references", "owner"));
+        store.create(freshLiveExample("references", "owner"));
         const provider = new RecordedQlooProvider(qloo);
         let task = store.load("references", "owner");
 
@@ -100,7 +100,7 @@ describe("Actual provider response replay (no live requests)", () => {
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("replay", "owner"));
+      store.create(freshLiveExample("replay", "owner"));
       const provider = new RecordedQlooProvider(qloo);
       const scripted = new DevelopmentModel();
       let task = store.load("replay", "owner");

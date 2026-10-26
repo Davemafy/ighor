@@ -5,7 +5,7 @@ import {
   explanationEntities,
 } from "../../src/tools/qloo-live";
 import { ToolCallingModel } from "../../src/tools/tool-model";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import { runTurn } from "../../src/core/orchestrator";
 import { SqliteTaskStore } from "../../src/data/store";
 import { fitFor } from "../../src/capabilities/collaborate";
@@ -77,7 +77,7 @@ function transport() {
 }
 
 function discovery() {
-  const t = freshLiveTask("t", "o");
+  const t = freshLiveExample("t", "o");
   t.brief.participants = t.brief.participants.slice(0, 1);
 
   return {
@@ -92,7 +92,7 @@ function discovery() {
 
 describe("live adapter contract with mocked HTTP, not live Qloo evidence", () => {
   it("production task has no fixture catalogue", () => {
-    const t = freshLiveTask("a", "b");
+    const t = freshLiveExample("a", "b");
     expect(t.mode).toBe("qloo-live");
     expect(t.catalogue).toEqual([]);
     expect(t.brief.participants).toHaveLength(6);
@@ -233,7 +233,7 @@ describe("live adapter contract with mocked HTTP, not live Qloo evidence", () =>
   it("only selects retrieved candidates; user facts enable a TV/movie programme and revisions reuse retrieval", async () => {
     const s = new SqliteTaskStore(":memory:");
     stores.push(s);
-    const t = freshLiveTask("t", "o");
+    const t = freshLiveExample("t", "o");
     t.brief.goal = "Gather";
     s.create(t);
     const cache = new MemoryResponseCache();
@@ -288,7 +288,7 @@ describe("live adapter contract with mocked HTTP, not live Qloo evidence", () =>
       transport(),
     ).discover(discovery());
     const c = r.data.options[0];
-    const ps = freshLiveTask("t", "o").brief.participants;
+    const ps = freshLiveExample("t", "o").brief.participants;
     expect(fitFor(c, ps).amara).toBe(1);
     expect(fitFor(c, ps).leo).toBe(0);
   });
@@ -335,7 +335,7 @@ describe("bounded tool-calling model and in-product baseline", () => {
     expect(http).toHaveBeenCalledTimes(1);
   });
   it("cannot select an entity the provider never returned", async () => {
-    const task = freshLiveTask("t", "o");
+    const task = freshLiveExample("t", "o");
     const result = await new LiveQlooProvider(
       "test-key",
       undefined,
@@ -392,7 +392,7 @@ describe("bounded tool-calling model and in-product baseline", () => {
     ).rejects.toThrow("Unauthorized");
   });
   it("baseline gets identical profiles and pool but no cultural ranking fields", async () => {
-    const t = freshLiveTask("t", "o");
+    const t = freshLiveExample("t", "o");
     const result = await new LiveQlooProvider(
       "test-key",
       undefined,
@@ -441,7 +441,7 @@ describe("bounded tool-calling model and in-product baseline", () => {
   it("unconfigured model cannot fabricate an in-product baseline", async () => {
     const s = new SqliteTaskStore(":memory:");
     stores.push(s);
-    s.create(freshLiveTask("t", "o"));
+    s.create(freshLiveExample("t", "o"));
     const t = await runTurn(s, "t", "o", { type: "baseline", version: 0 });
     expect(t.evaluation?.status).toBe("blocked");
     expect(t.evaluation?.baseline).toEqual([]);

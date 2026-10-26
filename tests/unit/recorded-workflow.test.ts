@@ -1,7 +1,7 @@
 import { readRecordingText } from "../../src/tools/recording-file";
 import { afterEach, describe, expect, it } from "vitest";
 import { RecordedQlooProvider } from "../../src/tools/recorded-qloo";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import { runTurn } from "../../src/core/orchestrator";
 import { SqliteTaskStore, ConflictError } from "../../src/data/store";
 import { DevelopmentModel } from "../../src/tools/development-model";
@@ -19,7 +19,7 @@ afterEach(() => stores.splice(0).forEach((s) => s.close()));
 function setup() {
   const store = new SqliteTaskStore(":memory:");
   stores.push(store);
-  store.create(freshLiveTask("t", "o"));
+  store.create(freshLiveExample("t", "o"));
 
   return { store, provider: new RecordedQlooProvider(raw) };
 }

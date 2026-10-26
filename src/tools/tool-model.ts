@@ -36,6 +36,7 @@ const conversationInstructions = [
   "For an existing task, changes to an offered identity, preference, practical fact, constraint, selection or document are intent revision; do not reissue the existing goal",
   "Use only these exact action kind values: profile, constraints, preference, facts, resolve, select, artifact",
   "For an opening request containing personal taste, create a profile action with participant you and only the explicitly stated preferences",
+  "For shared taste explicitly stated as we or our, use participant group; this is a shared profile, not proof each person agrees",
   "For a named new person, use a profile action with that exact name",
   "Never treat sample profiles as the user or infer taste from demographics",
   "A profile action can accompany a goal and constraints in one turn",

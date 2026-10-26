@@ -37,7 +37,7 @@ for (const [kind, goal, artifactKind] of [
   );
   const snapshots = [];
 
-  async function message(text) {
+  async function turn(input) {
     const response = await fetch(`${base}/api/tasks/${task.id}/turn`, {
       method: "POST",
       headers: {
@@ -46,8 +46,7 @@ for (const [kind, goal, artifactKind] of [
         Cookie: cookie,
       },
       body: JSON.stringify({
-        type: "message",
-        text,
+        ...input,
         version: task.brief.version,
       }),
     });
@@ -62,9 +61,14 @@ for (const [kind, goal, artifactKind] of [
     );
     task = events.find((e) => e.type === "done")?.task;
     assert.ok(task);
-    snapshots.push({ text, task: structuredClone(task) });
+    snapshots.push({ input, task: structuredClone(task) });
   }
 
+  async function message(text) {
+    await turn({ type: "message", text });
+  }
+
+  await turn({ type: "sample" });
   await message(goal);
   assert.equal(task.status, "clarification");
   await message("Use Moonlight from 2016.");

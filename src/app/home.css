@@ -1618,3 +1618,40 @@
     scroll-behavior: auto !important;
   }
 }
+
+.ig-conversation {
+  margin: 28px 0;
+  max-width: 780px;
+  border-block: 1px solid var(--ig-line);
+}
+.ig-conversation > summary {
+  padding: 18px 0;
+  cursor: pointer;
+  font-weight: 600;
+}
+.ig-conversation ol {
+  list-style: none;
+  padding: 0 0 24px;
+  margin: 0;
+  display: grid;
+  gap: 28px;
+}
+.ig-conversation li {
+  min-width: 0;
+}
+.ig-conversation p {
+  margin: 8px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ig-conversation li > strong {
+  color: var(--ig-muted);
+  font-size: 13px;
+}
+.ig-message-source {
+  margin-top: 12px;
+  font-size: 13px;
+}
+.ig-message-source summary {
+  cursor: pointer;
+}

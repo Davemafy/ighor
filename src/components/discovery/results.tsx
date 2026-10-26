@@ -22,6 +22,7 @@ import {
   type DiscoveryCandidate,
 } from "./model";
 import { DiscoveryOutcome } from "./outcome";
+import { ConversationThread } from "./conversation-thread";
 
 export function DiscoveryResults({
   task,
@@ -105,7 +106,7 @@ export function DiscoveryResults({
 
   return (
     <div className="ig-results" aria-busy={busy}>
-      {(!conversation || task.brief.goal) && (
+      {(task.brief.goal || candidates.length > 0) && (
         <header className="ig-result-heading">
           <div className="ig-eyebrow">
             <span className="ig-small-orbit" aria-hidden="true" />{" "}
@@ -137,6 +138,8 @@ export function DiscoveryResults({
           <p>{conversation}</p>
         </section>
       )}
+
+      <ConversationThread task={task} />
 
       {busy && (
         <div className="ig-progress" role="status">
@@ -331,6 +334,8 @@ export function DiscoveryResults({
 
       {!busy &&
         !conversation &&
+        !task.error &&
+        task.brief.goal &&
         !candidates.length &&
         !task.brief.unresolved.length && (
           <section className="ig-empty-result">

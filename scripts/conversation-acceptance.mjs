@@ -69,7 +69,7 @@ async function say(text, label = text) {
   await turn({ type: "message", text }, label);
 }
 
-await say("Plan a gathering for six friends, budget $60 and 180 minutes.");
+await turn({ type: "sample" }, "Start the labelled example group");
 
 assert.equal(task.status, "clarification");
 

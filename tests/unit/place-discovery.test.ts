@@ -1,7 +1,7 @@
 import { readRecordingText } from "../../src/tools/recording-file";
 import { describe, it, expect } from "vitest";
 import { RecordedQlooProvider } from "../../src/tools/recorded-qloo";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import { SqliteTaskStore } from "../../src/data/store";
 import { runTurn } from "../../src/core/orchestrator";
 import {
@@ -31,7 +31,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("t", "o"));
+      store.create(freshLiveExample("t", "o"));
       const provider = new RecordedQlooProvider(recording);
       let task = await runTurn(
         store,
@@ -100,7 +100,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("t", "o"));
+      store.create(freshLiveExample("t", "o"));
       const provider = new RecordedQlooProvider(recording);
       const task = await runTurn(
         store,
@@ -140,7 +140,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("t", "o"));
+      store.create(freshLiveExample("t", "o"));
       const provider = new RecordedQlooProvider(recording);
       let task = await runTurn(
         store,
@@ -195,7 +195,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("t", "o"));
+      store.create(freshLiveExample("t", "o"));
       const provider = new RecordedQlooProvider(recording);
       let task = await runTurn(
         store,
@@ -272,7 +272,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const store = new SqliteTaskStore(":memory:");
 
     try {
-      store.create(freshLiveTask("t", "o"));
+      store.create(freshLiveExample("t", "o"));
       const provider = new RecordedQlooProvider(recording);
       const task = await runTurn(
         store,
@@ -304,7 +304,7 @@ describe("Locality-filtered place discovery from actual provider records", () =>
     const body = structuredClone(source);
     body.query = {};
     const transport = (async () => Response.json(body)) as typeof fetch;
-    const seed = { ...freshLiveTask("t", "o").brief.participants[0] };
+    const seed = { ...freshLiveExample("t", "o").brief.participants[0] };
     const provider = new LiveQlooProvider(
       "test",
       new MemoryResponseCache(),

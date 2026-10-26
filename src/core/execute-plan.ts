@@ -34,6 +34,34 @@ export async function executeTaskPlan(
       task.brief.unresolved = [];
     }
 
+    const hasTaste = task.brief.participants.some((person) =>
+      person.preferences.some(
+        (preference) =>
+          preference.confirmed &&
+          preference.polarity === "like" &&
+          preference.entityType,
+      ),
+    );
+
+    if (
+      task.mode === "qloo-live" &&
+      !localChangeOnly &&
+      !task.catalogue.length &&
+      !task.brief.contextAnchor &&
+      !hasTaste
+    ) {
+      task.status = "clarification";
+      task.brief.unresolved = [
+        "What is one artist, film, book or place you enjoy that could guide this?",
+      ];
+      trace(
+        "planner.clarify",
+        "Cultural discovery needs a supplied taste reference.",
+      );
+
+      return task;
+    }
+
     const culturalCurrent =
       task.catalogue.length > 0 && hasCurrentEvidence(task, "cultural");
     const factsCurrent =

@@ -258,6 +258,7 @@ function applyPreferenceCorrection(
 
   if (
     !(participant.id === "you" && /\b(?:I|my|me)\b/i.test(text)) &&
+    !(participant.id === "group" && /\b(?:we|our|us)\b/i.test(text)) &&
     !normalize(text).includes(normalize(participant.id))
   ) {
     requireExplicitText(text, participant.name);
@@ -303,11 +304,18 @@ function applyProfile(
 ) {
   const { task, text, changed } = edit;
   const personal = normalize(action.participant) === "you";
+  const collective = normalize(action.participant) === "group";
 
   if (personal) {
     if (!/\b(?:I|my|me)\b/i.test(text)) {
       throw new Error(
         "Whose taste should Igor use? State your own preferences or name the person.",
+      );
+    }
+  } else if (collective) {
+    if (!/\b(?:we|our|us)\b/i.test(text)) {
+      throw new Error(
+        "Whose shared taste should Igor use? Name the people or state your group's preferences.",
       );
     }
   } else {
@@ -354,8 +362,8 @@ function applyProfile(
     }
 
     person = {
-      id: personal ? "you" : randomUUID(),
-      name: personal ? "You" : action.participant,
+      id: personal ? "you" : collective ? "group" : randomUUID(),
+      name: personal ? "You" : collective ? "Your group" : action.participant,
       preferences: [],
       sample: false,
     };

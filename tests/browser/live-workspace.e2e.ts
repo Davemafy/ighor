@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 
 test("default production path has no catalogue and reports blocked retrieval honestly", async ({
   page,
@@ -39,7 +39,7 @@ test("default production path has no catalogue and reports blocked retrieval hon
 test("cached evidence, practical-fact entry and blocked baseline render through mocked workspace HTTP", async ({
   page,
 }) => {
-  const task = freshLiveTask("mock", "owner");
+  const task = freshLiveExample("mock", "owner");
   task.brief.goal = "Synthetic UI test only";
   const at = "2026-10-24T00:00:00Z";
   const candidate = {

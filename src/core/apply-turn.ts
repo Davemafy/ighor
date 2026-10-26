@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Task, Turn } from "./contracts";
 import { ConflictError, type MemoryChange } from "../data/store";
 import { freshTask } from "../data/fixtures";
-import { freshLiveTask } from "../data/live-task";
+import { freshLiveExample } from "../data/live-task";
 
 export type ArtifactEdit = Extract<Turn, { type: "artifact" }>;
 type StructuredTurn = Exclude<Turn, { type: "message" | "baseline" }>;
@@ -222,7 +222,7 @@ function startPlaceExample(
   input: Extract<Turn, { type: "place-example" }>,
   context: TurnInputContext,
 ) {
-  const exampleTask = freshLiveTask(context.taskId, context.owner);
+  const exampleTask = freshLiveExample(context.taskId, context.owner);
   exampleTask.receipts = update.task.receipts ?? [];
   exampleTask.brief.version = update.task.brief.version;
   exampleTask.brief.participants = [exampleTask.brief.participants[0]];
@@ -245,7 +245,7 @@ function startGatheringExample(
 ) {
   const exampleTask =
     update.task.mode === "qloo-live"
-      ? freshLiveTask(context.taskId, context.owner)
+      ? freshLiveExample(context.taskId, context.owner)
       : freshTask(context.taskId, context.owner);
   exampleTask.brief.version = update.task.brief.version;
   exampleTask.receipts = update.task.receipts ?? [];

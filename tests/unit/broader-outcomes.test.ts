@@ -1,7 +1,7 @@
 import { readRecordingText } from "../../src/tools/recording-file";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SqliteTaskStore } from "../../src/data/store";
-import { freshLiveTask } from "../../src/data/live-task";
+import { freshLiveExample } from "../../src/data/live-task";
 import { runTurn } from "../../src/core/orchestrator";
 import { RecordedQlooProvider } from "../../src/tools/recorded-qloo";
 import { DevelopmentModel } from "../../src/tools/development-model";
@@ -25,7 +25,7 @@ afterEach(() => stores.splice(0).forEach((s) => s.close()));
 function setup() {
   const store = new SqliteTaskStore(":memory:");
   stores.push(store);
-  store.create(freshLiveTask("t", "o"));
+  store.create(freshLiveExample("t", "o"));
   const provider = new RecordedQlooProvider(records);
   const discovery = vi.spyOn(provider, "discover");
   const turn = (t: Task, a: Record<string, unknown>) =>
