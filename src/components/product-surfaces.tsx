@@ -79,6 +79,7 @@ export function ProductComposer({
   disabled,
   busy,
   compact = false,
+  continuing = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -87,6 +88,7 @@ export function ProductComposer({
   disabled: boolean;
   busy: boolean;
   compact?: boolean;
+  continuing?: boolean;
 }) {
   const id = useId();
   useEffect(() => {
@@ -99,6 +101,8 @@ export function ProductComposer({
   return (
     <form
       className={`pp-compose ${compact ? "pp-compose-compact" : ""}`}
+      data-filled={!!value.trim()}
+      data-busy={busy}
       onSubmit={(e) => {
         e.preventDefault();
         if (value.trim() && !disabled) onSubmit();
@@ -114,7 +118,9 @@ export function ProductComposer({
         maxLength={3000}
         rows={2}
         placeholder={
-          compact ? "Tell Igor what to change…" : "What would you like to do?"
+          continuing
+            ? "Tell Igor what to change…"
+            : "What would you like to do?"
         }
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -125,7 +131,8 @@ export function ProductComposer({
         }}
       />
       <div>
-        <span>
+        <span className="pp-compose-hint">
+          {busy && <span className="pp-compose-pulse" aria-hidden="true" />}
           {busy
             ? "Igor is responding. You can write your next message."
             : "Shift + Enter for a new line"}

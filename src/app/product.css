@@ -2818,3 +2818,97 @@ body {
 .ip-paper > div:has(.pp-message-text) {
   white-space: normal;
 }
+
+/* One focus surface: the composer responds as a whole, without an inner rectangle. */
+.ip-app :is(h1, h2, h3) {
+  font-family: inherit;
+}
+.ip-app .pp-compose textarea:focus,
+.ip-app .pp-compose textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.ip-app .pp-compose {
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  transform: translateY(0);
+}
+.ip-app .pp-compose:focus-within {
+  background: #2b2a27;
+  border-color: #aaa297;
+  box-shadow:
+    0 0 0 3px #d8c7b812,
+    0 10px 35px #0003;
+  transform: translateY(-2px);
+}
+.ip-app .pp-compose[data-filled="true"] {
+  border-color: #726c62;
+}
+.ip-app .pp-compose[data-filled="true"]:focus-within {
+  border-color: #b8afa1;
+}
+.ip-app .pp-compose textarea {
+  caret-color: #eee0c9;
+  line-height: 1.6;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #736d63 transparent;
+}
+.ip-app .pp-compose button {
+  transition:
+    background 0.18s,
+    color 0.18s,
+    transform 0.18s,
+    opacity 0.18s;
+  opacity: 1;
+  background: #eeebe3;
+  color: #23221f;
+}
+.ip-app .pp-compose button:disabled {
+  opacity: 0.25;
+}
+.ip-app .pp-compose[data-filled="true"] button:not(:disabled) {
+  background: #f8f4e9;
+  box-shadow: 0 2px 8px #0002;
+}
+.ip-app .pp-compose button:not(:disabled):hover {
+  background: white;
+  transform: translateY(-2px);
+}
+.ip-app .pp-compose button:not(:disabled):active {
+  transform: scale(0.92);
+}
+.ip-app .pp-compose[data-busy="true"] button {
+  opacity: 0.6;
+}
+.pp-compose-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 16px;
+}
+.pp-compose-pulse {
+  width: 5px;
+  height: 5px;
+  background: #d1c1a9;
+  border-radius: 50%;
+  flex: none;
+  animation: pp-response-breathe 1.6s ease-in-out infinite;
+}
+@keyframes pp-response-breathe {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ip-app .pp-compose {
+    transform: none !important;
+    transition: none !important;
+  }
+  .pp-compose-pulse {
+    animation: none !important;
+  }
+}

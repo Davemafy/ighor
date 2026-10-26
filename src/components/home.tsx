@@ -490,6 +490,7 @@ export function Home() {
                   disabled={workspace.isBusy || !workspace.task}
                   busy={workspace.isBusy}
                   compact
+                  continuing={!!workspace.task?.messages.length}
                 />
               </div>
             </section>
