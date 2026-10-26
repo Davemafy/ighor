@@ -35,6 +35,7 @@ import {
 import { useSavedOutcomes } from "./use-saved-outcomes";
 import "../app/product.css";
 import "../app/canvas.css";
+import "../app/mobile-gate.css";
 
 type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
 const asset = "/marketing/assets/";
