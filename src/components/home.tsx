@@ -62,7 +62,16 @@ function ProductSaved({task,onTask,onTurn,onLoad}:{task:Task;onTask:(t:Task)=>vo
 function ProductEditor({task,busy,error,onTurn,onTask,onBack}:{task:Task;busy:boolean;error:string;onTurn:(a:TaskAction)=>Promise<void>;onTask:(t:Task)=>void;onBack:()=>void}){
  const artifacts=task.artifacts;const [selected,setSelected]=useState(artifacts[0]?.id||""),[draft,setDraft]=useState(artifacts[0]?.content||""),[mode,setMode]=useState<"edit"|"preview"|"share">("edit"),[tone,setTone]=useState("paper"),[serif,setSerif]=useState(false),[saving,setSaving]=useState(false),[notice,setNotice]=useState("");
  const artifact=artifacts.find(a=>a.id===selected)||artifacts[0];const dirty=!!artifact&&draft!==artifact.content;const saved=useSavedOutcomes(task,onTask,onTurn);
- useEffect(()=>{if(artifact&&selected!==artifact.id){setSelected(artifact.id);setDraft(artifact.content);}},[artifact?.id,selected]);
+ const lastSeen=useRef({id:artifact?.id,version:artifact?.version,content:artifact?.content});
+ useEffect(()=>{
+   if(!artifact)return;
+   const previous=lastSeen.current;
+   if(previous.id!==artifact.id || ((previous.version!==artifact.version || previous.content!==artifact.content) && draft===previous.content)){
+     setDraft(artifact.content);
+   }
+   if(selected!==artifact.id)setSelected(artifact.id);
+   lastSeen.current={id:artifact.id,version:artifact.version,content:artifact.content};
+ },[artifact?.id,artifact?.version,artifact?.content,selected]);
  useEffect(()=>{if(artifact&&artifact.content===draft&&saving){setSaving(false);setNotice("Your draft is saved.");}},[artifact?.content,draft,saving]);
  async function save(){if(!artifact||busy||artifact.locked||artifact.freshness!=="current")return;setSaving(true);setNotice("");await onTurn({type:"artifact",artifactId:artifact.id,content:draft});setSaving(false);}
  function choose(id:string){if(dirty&&!window.confirm("Discard your unsaved edits and open another draft?"))return;const a=artifacts.find(x=>x.id===id);if(a){setSelected(a.id);setDraft(a.content);setNotice("");}}
