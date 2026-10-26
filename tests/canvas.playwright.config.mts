@@ -37,5 +37,15 @@ export default defineConfig({
         contextOptions: { reducedMotion: "reduce" },
       },
     },
+    {
+      name: "mobile-motion",
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        reducedMotion: "no-preference",
+        video: "on",
+      },
+    },
   ],
 });
