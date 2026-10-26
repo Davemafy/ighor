@@ -49,7 +49,9 @@ export function renderOutcomeDocument(
     details.status.replaceAll("-", " "),
     programme ||
       "No confirmed schedule. References below are for consideration.",
-    `${details.totalMinutes} of ${brief.constraints.duration} minutes · $${details.totalCost} of $${brief.constraints.budget} supplied total budget`,
+    details.kind === "music-direction" || details.kind === "research"
+      ? "Cultural references only · no costs, times or bookings inferred"
+      : `${details.totalMinutes} of ${brief.constraints.duration} minutes · ${details.totalCost} of ${brief.constraints.budget} supplied total budget`,
     referenceText,
     context,
     `Open questions\n${details.openQuestions.map((question) => `• ${question}`).join("\n")}`,

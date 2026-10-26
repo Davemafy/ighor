@@ -228,7 +228,9 @@ export function Home() {
             ? "Saved"
             : "Explore";
   const currentWork =
-    workspace.task?.artifacts.filter((a) => a.freshness === "current") || [];
+    workspace.task?.artifacts.filter(
+      (a) => a.freshness === "current" || a.locked,
+    ) || [];
   const conversationTitle =
     workspace.task?.brief.goal ||
     workspace.task?.messages.find((m) => m.role === "user")?.text;
@@ -572,57 +574,58 @@ export function Home() {
           )}
           {view === "editor" &&
             workspace.task &&
-            (workspace.task.canvas || workspace.task.work?.documents.length) && (
-            <section className="ip-conversation">
-              {workspace.errorMessage && (
-                <p role="alert" className="ip-error">
-                  {workspace.errorMessage} Your draft is still here. Save again
-                  to retry.
-                </p>
-              )}
-              {workspace.task.canvas ? (
-                <TaskCanvas
-                  task={workspace.task}
-                  busy={workspace.isBusy}
-                  onTurn={(a) => void begin(a)}
-                />
-              ) : (
-                <ConnectedWorkCanvas
-                  key={workspace.task.id}
-                  task={workspace.task}
-                  busy={workspace.isBusy}
-                  onTurn={(a) => void begin(a)}
-                />
-              )}
-              <div className="ip-conversation-composer">
-                <ProductComposer
-                  value={prompt}
-                  onChange={setPrompt}
-                  onSubmit={() =>
-                    void begin({ type: "message", text: prompt.trim() })
-                  }
-                  inputRef={inputRef}
-                  disabled={workspace.isBusy}
-                  busy={workspace.isBusy}
-                  continuing
-                />
-              </div>
-            </section>
-          )}
+            (workspace.task.canvas ||
+              workspace.task.work?.documents.length) && (
+              <section className="ip-conversation">
+                {workspace.errorMessage && (
+                  <p role="alert" className="ip-error">
+                    {workspace.errorMessage} Your draft is still here. Save
+                    again to retry.
+                  </p>
+                )}
+                {workspace.task.canvas ? (
+                  <TaskCanvas
+                    task={workspace.task}
+                    busy={workspace.isBusy}
+                    onTurn={(a) => void begin(a)}
+                  />
+                ) : (
+                  <ConnectedWorkCanvas
+                    key={workspace.task.id}
+                    task={workspace.task}
+                    busy={workspace.isBusy}
+                    onTurn={(a) => void begin(a)}
+                  />
+                )}
+                <div className="ip-conversation-composer">
+                  <ProductComposer
+                    value={prompt}
+                    onChange={setPrompt}
+                    onSubmit={() =>
+                      void begin({ type: "message", text: prompt.trim() })
+                    }
+                    inputRef={inputRef}
+                    disabled={workspace.isBusy}
+                    busy={workspace.isBusy}
+                    continuing
+                  />
+                </div>
+              </section>
+            )}
           {view === "editor" &&
             workspace.task &&
             !workspace.task.canvas &&
             !workspace.task.work?.documents.length && (
-            <ProductEditor
-              key={workspace.task.id}
-              task={workspace.task}
-              busy={workspace.isBusy}
-              error={workspace.errorMessage}
-              onTurn={workspace.sendTurn}
-              onTask={workspace.acceptTask}
-              onBack={() => navigate("conversation")}
-            />
-          )}
+              <ProductEditor
+                key={workspace.task.id}
+                task={workspace.task}
+                busy={workspace.isBusy}
+                error={workspace.errorMessage}
+                onTurn={workspace.sendTurn}
+                onTask={workspace.acceptTask}
+                onBack={() => navigate("conversation")}
+              />
+            )}
           {workspace.errorMessage &&
             view !== "editor" &&
             workspace.feedback?.state !== "error" && (
@@ -778,9 +781,7 @@ function ProductEditor({
   onTask: (t: Task) => void;
   onBack: () => void;
 }) {
-  const artifacts = task.artifacts.filter(
-    (a) => a.freshness === "current" || busy,
-  );
+  const artifacts = task.artifacts;
   const [selected, setSelected] = useState(artifacts[0]?.id || ""),
     [draft, setDraft] = useState(artifacts[0]?.content || ""),
     [mode, setMode] = useState<"edit" | "preview" | "share">("edit"),
@@ -791,12 +792,29 @@ function ProductEditor({
   const artifact = artifacts.find((a) => a.id === selected) || artifacts[0];
   const dirty = !!artifact && draft !== artifact.content;
   const saved = useSavedOutcomes(task, onTask, onTurn);
+  const lastSeen = useRef({
+    id: artifact?.id,
+    version: artifact?.version,
+    content: artifact?.content,
+  });
   useEffect(() => {
-    if (artifact && selected !== artifact.id) {
-      setSelected(artifact.id);
+    if (!artifact) return;
+    const previous = lastSeen.current;
+    if (
+      previous.id !== artifact.id ||
+      ((previous.version !== artifact.version ||
+        previous.content !== artifact.content) &&
+        draft === previous.content)
+    ) {
       setDraft(artifact.content);
     }
-  }, [artifact?.id, selected]);
+    if (selected !== artifact.id) setSelected(artifact.id);
+    lastSeen.current = {
+      id: artifact.id,
+      version: artifact.version,
+      content: artifact.content,
+    };
+  }, [artifact?.id, artifact?.version, artifact?.content, selected, draft]);
   useEffect(() => {
     if (artifact && artifact.content === draft && saving) {
       setSaving(false);
@@ -804,7 +822,13 @@ function ProductEditor({
     }
   }, [artifact?.content, draft, saving]);
   async function save() {
-    if (!artifact || busy) return;
+    if (
+      !artifact ||
+      busy ||
+      artifact.locked ||
+      artifact.freshness !== "current"
+    )
+      return;
     setSaving(true);
     setNotice("");
     await onTurn({ type: "artifact", artifactId: artifact.id, content: draft });
@@ -864,7 +888,14 @@ function ProductEditor({
         </span>
         <button
           className="ip-primary"
-          disabled={busy || saving || !dirty || !draft.trim()}
+          disabled={
+            busy ||
+            saving ||
+            !!artifact.locked ||
+            artifact.freshness !== "current" ||
+            !dirty ||
+            !draft.trim()
+          }
           onClick={() => void save()}
         >
           {saving ? <LoaderCircle className="ig-spin" /> : <Save />}
@@ -886,6 +917,39 @@ function ProductEditor({
               </button>
             ))}
           </div>
+          <div className="ip-approval">
+            <span>
+              {artifact.locked
+                ? artifact.freshness === "stale"
+                  ? "Approved version needs review"
+                  : "Approved direction · protected"
+                : artifact.freshness === "stale"
+                  ? "Inputs changed · review required"
+                  : "A working draft you can approve"}
+            </span>
+            <button
+              type="button"
+              disabled={
+                busy ||
+                saving ||
+                dirty ||
+                (!artifact.locked && artifact.freshness !== "current")
+              }
+              onClick={() =>
+                void onTurn({
+                  type: "artifact-lock",
+                  artifactId: artifact.id,
+                  locked: !artifact.locked,
+                })
+              }
+            >
+              {artifact.locked
+                ? artifact.freshness === "stale"
+                  ? "Unlock and regenerate"
+                  : "Unlock for editing"
+                : "Approve and lock"}
+            </button>
+          </div>
           {mode === "share" ? (
             <div className="ip-sharing">
               <ProductSharing
@@ -903,6 +967,7 @@ function ProductEditor({
               <textarea
                 id="ip-draft"
                 maxLength={10000}
+                readOnly={!!artifact.locked || artifact.freshness !== "current"}
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);

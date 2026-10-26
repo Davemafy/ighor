@@ -220,16 +220,18 @@ function CanvasTree({
         );
         const numericColumns = table.columns
           .map((_, index) => index)
-          .filter((index) =>
-            index !== node.labelColumn &&
-            table.rows.length > 0 &&
-            table.rows.every((r) =>
-              Boolean(r.cells[index]?.trim()) &&
-              Number.isFinite(Number(r.cells[index])),
-            ),
+          .filter(
+            (index) =>
+              index !== node.labelColumn &&
+              table.rows.length > 0 &&
+              table.rows.every(
+                (r) =>
+                  Boolean(r.cells[index]?.trim()) &&
+                  Number.isFinite(Number(r.cells[index])),
+              ),
           );
-        const candidateColumn = task.canvas?.chartAxes?.[node.id] ??
-          node.valueColumn;
+        const candidateColumn =
+          task.canvas?.chartAxes?.[node.id] ?? node.valueColumn;
         const valueColumn = numericColumns.includes(candidateColumn)
           ? candidateColumn
           : node.valueColumn;
@@ -702,13 +704,37 @@ function CanvasDocument({
       <div className="ic-document-toolbar">
         <span>
           <FileText />
-          {artifact?.freshness === "stale"
-            ? "Updating document"
-            : dirty
-              ? "Unsaved changes"
-              : "Saved draft"}
+          {artifact?.locked
+            ? "Approved direction · protected"
+            : artifact?.freshness === "stale"
+              ? "Updating document"
+              : dirty
+                ? "Unsaved changes"
+                : "Saved draft"}
         </span>
-        <button aria-pressed={editing} onClick={() => morphLayout(() => setEditing(!editing))}>
+        {artifact && (
+          <button
+            disabled={
+              busy ||
+              dirty ||
+              (!artifact.locked && artifact.freshness !== "current")
+            }
+            onClick={() =>
+              onTurn({
+                type: "artifact-lock",
+                artifactId: artifact.id,
+                locked: !artifact.locked,
+              })
+            }
+          >
+            {artifact.locked ? "Unlock for editing" : "Approve and lock"}
+          </button>
+        )}
+        <button
+          disabled={!!artifact?.locked}
+          aria-pressed={editing}
+          onClick={() => morphLayout(() => setEditing(!editing))}
+        >
           {editing ? "Preview" : "Edit draft"}
         </button>
       </div>
@@ -719,6 +745,7 @@ function CanvasDocument({
             <textarea
               aria-label={`Edit ${node.title || artifact?.title || "draft"}`}
               value={draft}
+              readOnly={!!artifact?.locked}
               maxLength={node.artifactId ? 10000 : 12000}
               onChange={(e) => setDraft(e.target.value)}
             />
@@ -737,6 +764,7 @@ function CanvasDocument({
           <button
             disabled={
               busy ||
+              !!artifact?.locked ||
               !draft.trim() ||
               conflict ||
               artifact?.freshness === "stale"

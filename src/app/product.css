@@ -3123,3 +3123,24 @@ body {
     content: none;
   }
 }
+
+
+
+/* Connected outputs are visible in the live conversation, not just marketing. */
+.pp-connected-work { display: grid; gap: 16px; align-items: stretch; }
+.pp-connected-heading { display: flex; gap: 14px; align-items: start; }
+.pp-connected-heading > svg { width: 22px; height: 22px; flex-shrink: 0; }
+.pp-connected-heading h3 { margin: 0; }
+.pp-connected-heading p { margin-top: 6px; }
+.pp-connected-list { display: grid; gap: 1px; overflow: hidden; border: 1px solid rgba(128,128,128,.2); border-radius: 16px; }
+.pp-connected-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; gap: 16px; background: var(--ip-surface, #fff); color: inherit; text-decoration: none; }
+.pp-connected-item + .pp-connected-item { border-top: 1px solid rgba(128,128,128,.15); }
+.pp-connected-item:hover { background: rgba(150,130,100,.07); }
+.pp-connected-item strong { font-size: 14px; }
+.pp-connected-item small { display: block; margin-top: 4px; opacity: .6; }
+.pp-connected-item > span { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12px; }
+.ip-approval { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0; padding: 14px 16px; border: 1px solid rgba(128,128,128,.25); border-radius: 12px; }
+.ip-approval span { font-size: 13px; }
+.ip-approval button { cursor: pointer; padding: 9px 12px; border-radius: 999px; border: 1px solid currentColor; background: transparent; font: inherit; font-size: 12px; }
+.ip-approval button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width:600px) { .pp-connected-item { align-items: flex-start; } .pp-connected-item > span { white-space: normal; text-align: right; } }

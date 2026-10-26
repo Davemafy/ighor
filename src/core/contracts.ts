@@ -200,6 +200,7 @@ export const ArtifactSchema = z.object({
   assumptions: z.array(z.string()),
   freshness: z.enum(["current", "stale"]),
   edited: z.boolean().default(false),
+  locked: z.boolean().optional(),
 });
 
 export const BriefSchema = z.object({
@@ -520,6 +521,12 @@ export const TurnSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("catalogue"),
     options: z.array(CandidateInputSchema).min(1).max(30),
+    version: z.number().int().nonnegative(),
+  }),
+  z.strictObject({
+    type: z.literal("artifact-lock"),
+    artifactId: z.string().min(1),
+    locked: z.boolean(),
     version: z.number().int().nonnegative(),
   }),
   z.object({
