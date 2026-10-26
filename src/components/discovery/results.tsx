@@ -145,9 +145,9 @@ export function DiscoveryResults({
         <div className="ig-progress" role="status">
           <LoaderCircle className="ig-spin" size={19} />
           <div>
-            <strong>Taking the scenic route.</strong>
+            <strong>Igor is working.</strong>
             <span>
-              {executionMessage || "Following your taste across culture..."}
+              {executionMessage || "Connecting your request with the available evidence…"}
             </span>
           </div>
           <span className="ig-progress-dots" aria-hidden="true">
@@ -210,7 +210,7 @@ export function DiscoveryResults({
               {task.brief.targetType === "place"
                 ? "The city, through another lens"
                 : "A few unexpected turns"}
-              <span>↴</span>
+              <ArrowDown size={22} aria-hidden="true" />
             </h2>
             <div
               className="ig-filters"
@@ -339,7 +339,7 @@ export function DiscoveryResults({
         !candidates.length &&
         !task.brief.unresolved.length && (
           <section className="ig-empty-result">
-            <span aria-hidden="true">↗</span>
+            <ArrowUpRight size={28} aria-hidden="true" />
             <h2>A new direction needs a starting point.</h2>
             <p>
               No current cultural results were returned. Try an artist, a film,

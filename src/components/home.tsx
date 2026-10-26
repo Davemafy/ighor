@@ -1,238 +1,79 @@
 "use client";
 
-import { ArrowLeft, ArrowUpRight, History, Plus } from "lucide-react";
-import { useRef, useState } from "react";
-import type { TaskAction } from "@/core/contracts";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Bookmark, ChevronLeft, ChevronRight, Compass, Download, Eye, FileText, History, Image as ImageIcon, LoaderCircle, MessageCircle, Plus, Save, Settings2, Share2 } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { Task, TaskAction } from "@/core/contracts";
 import { useWorkspace } from "./use-workspace";
 import { DiscoveryComposer } from "./discovery/composer";
-import { DiscoveryLaunchpad } from "./discovery/launchpad";
 import { DiscoveryResults } from "./discovery/results";
 import { DiscoveryDialog } from "./discovery/dialog";
+import { useSavedOutcomes } from "./use-saved-outcomes";
+import { ReviewSharing } from "./review-sharing";
+import { SavedCollections } from "./saved-collections";
+import "../app/product.css";
+
+type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
+const asset = "/marketing/assets/";
+const startingPoints: {title:string;copy:string;image:string;action:TaskAction}[] = [
+ {title:"Tokyo, through another lens",copy:"A Radiohead example taste",image:"posters/p04.svg",action:{type:"place-example",city:"Tokyo"}},
+ {title:"A little more Laufey",copy:"Follow a musical starting point",image:"generated/gift-record-640.webp",action:{type:"personal-profile",name:"You",artist:"Laufey"}},
+ {title:"An unexpected film",copy:"Connect music with cinema",image:"posters/p03.svg",action:{type:"message",text:"I love Radiohead and Spirited Away. Find connected film references."}},
+ {title:"Amsterdam, differently",copy:"Explore a Radiohead example taste",image:"photos/london-street-800.webp",action:{type:"place-example",city:"Amsterdam"}},
+];
+const makingIdeas = [
+ {title:"Make a night of it",copy:"Bring a few tastes into one evening",image:"photos/hero-dinner-a-800.webp",prompt:"Help me plan an evening with friends. Ask me what you need to know about our tastes."},
+ {title:"Find a creative direction",copy:"From a reference to a clear brief",image:"posters/p17.svg",prompt:"Help me develop a creative brief. Start by asking about the project and references."},
+ {title:"Take the long weekend",copy:"Give a loose idea some shape",image:"photos/gallery-800.webp",prompt:"Help me plan a weekend away. Ask about the destination, budget and interests first."},
+ {title:"Find common ground",copy:"A shared plan, with room for everyone",image:"posters/p09.svg",prompt:"Help me find common ground for a group plan. Ask whose preferences we need to include."},
+];
 
 export function Home() {
-  const workspace = useWorkspace();
-  const [screen, setScreen] = useState<"auto" | "home" | "result">("auto");
-  const [prompt, setPrompt] = useState("");
-  const [historyVisible, setHistoryVisible] = useState(false);
-  const [historyError, setHistoryError] = useState("");
-  const promptRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
-  const showingHome =
-    screen === "home" ||
-    (screen === "auto" &&
-      !workspace.task?.brief.goal &&
-      !workspace.task?.messages.length);
-
-  async function begin(action: TaskAction) {
-    if (!workspace.task || workspace.isBusy) {
-      return;
-    }
-
-    setScreen("result");
-    setPrompt("");
-    resultRef.current?.scrollIntoView({ behavior: "instant" });
-    await workspace.sendTurn(action);
-  }
-
-  async function startFresh() {
-    if (workspace.isBusy) {
-      return;
-    }
-
-    await workspace.createWorkspace();
-    setScreen("home");
-    setPrompt("");
-    promptRef.current?.focus();
-  }
-
-  async function openHistory() {
-    setHistoryVisible(true);
-    setHistoryError("");
-
-    try {
-      await workspace.loadHistory();
-    } catch {
-      setHistoryError(
-        "Your spaces could not load. Close this window and try again.",
-      );
-    }
-  }
-
-  async function resume(id: string) {
-    try {
-      if (!(await workspace.openWorkspace(id))) {
-        setHistoryError("This discovery is no longer available.");
-
-        return;
-      }
-
-      setHistoryVisible(false);
-      setScreen("result");
-    } catch {
-      setHistoryError("This discovery could not open. Please try again.");
-    }
-  }
-
-  return (
-    <div className="ig-app" ref={resultRef}>
-      <a className="ig-skip" href="#igor-main">
-        Skip to content
-      </a>
-      <header className="ig-header">
-        <button
-          className="ig-brand"
-          type="button"
-          onClick={() => void startFresh()}
-          aria-label="Igor home"
-          disabled={workspace.isBusy}
-        >
-          <span className="ig-emblem" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          igor<span className="ig-brand-dot">.</span>
-        </button>
-        <span className="ig-header-note">
-          A little taste. A whole new world.
-        </span>
-        <nav aria-label="Main navigation">
-          <button
-            className="ig-spaces-button"
-            type="button"
-            onClick={() => void openHistory()}
-            disabled={workspace.isBusy}
-          >
-            <History size={17} />
-            <span>Your spaces</span>
-          </button>
-          <button
-            className="ig-new-button"
-            type="button"
-            onClick={() => void startFresh()}
-            disabled={workspace.isBusy}
-          >
-            <Plus size={17} />
-            <span>New discovery</span>
-          </button>
-        </nav>
-      </header>
-      <main
-        id="igor-main"
-        className={showingHome ? "ig-launch-main" : "ig-result-main"}
-      >
-        {showingHome ? (
-          <DiscoveryLaunchpad
-            onBegin={(action) => void begin(action)}
-            disabled={workspace.isBusy || !workspace.task}
-            composer={
-              <DiscoveryComposer
-                value={prompt}
-                onChange={setPrompt}
-                onSubmit={() =>
-                  void begin({ type: "message", text: prompt.trim() })
-                }
-                inputRef={promptRef}
-                disabled={workspace.isBusy || !workspace.task}
-                busy={workspace.isBusy}
-              />
-            }
-          />
-        ) : (
-          <>
-            <div className="ig-result-toolbar">
-              <button
-                type="button"
-                onClick={() => void startFresh()}
-                disabled={workspace.isBusy}
-              >
-                <ArrowLeft size={16} /> Discover
-              </button>
-              <span>Saved in your space</span>
-            </div>
-            {workspace.task && (
-              <DiscoveryResults
-                key={workspace.task.id}
-                task={workspace.task}
-                busy={workspace.isBusy}
-                executionMessage={workspace.executionMessage}
-                onTurn={(action) => void begin(action)}
-              />
-            )}
-          </>
-        )}
-        {workspace.errorMessage && (
-          <div className="ig-error" role="alert">
-            <p>{workspace.errorMessage}</p>
-            <button
-              type="button"
-              onClick={() => void startFresh()}
-              disabled={workspace.isBusy}
-            >
-              Retry workspace
-            </button>
-          </div>
-        )}
-        {!workspace.task && !workspace.errorMessage && (
-          <p className="ig-connecting" role="status">
-            Opening your space...
-          </p>
-        )}
-      </main>
-      {!showingHome && (
-        <div className="ig-followup">
-          <DiscoveryComposer
-            value={prompt}
-            onChange={setPrompt}
-            onSubmit={() =>
-              void begin({ type: "message", text: prompt.trim() })
-            }
-            inputRef={promptRef}
-            disabled={workspace.isBusy || !workspace.task}
-            busy={workspace.isBusy}
-            compact
-          />
-        </div>
-      )}
-      <footer className="ig-footer">
-        <span>Curiosity, connected.</span>
-        <span>
-          Powered by Qloo <span aria-hidden="true">↗</span>
-        </span>
-      </footer>
-      <DiscoveryDialog
-        open={historyVisible}
-        onClose={() => setHistoryVisible(false)}
-        title="Your spaces"
-      >
-        <p className="ig-dialog-intro">
-          Good discoveries are worth coming back to.
-        </p>
-        {historyError && (
-          <p role="alert" className="ig-error">
-            {historyError}
-          </p>
-        )}
-        {workspace.history.length ? (
-          <div className="ig-history-list">
-            {workspace.history.map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                onClick={() => void resume(item.id)}
-              >
-                <History size={18} />
-                <span>{item.title || item.goal || "A new conversation"}</span>
-                <ArrowUpRight size={18} />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="ig-empty">
-            Your discoveries will appear here once you begin.
-          </p>
-        )}
-      </DiscoveryDialog>
-    </div>
-  );
+ const workspace=useWorkspace();
+ const [view,setView]=useState<View>("explore"),[prompt,setPrompt]=useState(""),[historyError,setHistoryError]=useState(""),[help,setHelp]=useState(false);
+ const inputRef=useRef<HTMLTextAreaElement>(null);
+ function navigate(next:View,replace=false){setView(next);const url=new URL(location.href);url.searchParams.set("view",next);if(workspace.task)url.searchParams.set("task",workspace.task.id);history[replace?"replaceState":"pushState"]({},"",url);window.scrollTo({top:0,behavior:"instant"});}
+ useEffect(()=>{const read=()=>{const v=new URL(location.href).searchParams.get("view");if(["explore","conversations","saved","conversation","editor"].includes(v||""))setView(v as View);};read();window.addEventListener("popstate",read);return()=>window.removeEventListener("popstate",read);},[]);
+ useEffect(()=>{void workspace.loadHistory().catch(()=>setHistoryError("Your conversations could not load. Try again."));},[]);
+ const restored=useRef(false);
+ useEffect(()=>{if(!workspace.task||restored.current)return;restored.current=true;const id=new URL(location.href).searchParams.get("task");if(id&&id!==workspace.task.id)void workspace.openWorkspace(id).catch(()=>workspace.setErrorMessage("This conversation could not be restored."));},[workspace.task]);
+ async function begin(action:TaskAction){if(!workspace.task||workspace.isBusy)return;navigate("conversation");setPrompt("");await workspace.sendTurn(action);void workspace.loadHistory().catch(()=>{});}
+ async function resume(id:string){try{if(await workspace.openWorkspace(id)){setView("conversation");const url=new URL(location.href);url.searchParams.set("task",id);url.searchParams.set("view","conversation");history.pushState({},"",url);window.scrollTo({top:0,behavior:"instant"});}else setHistoryError("That conversation is no longer available.");}catch{setHistoryError("This conversation could not open. Please try again.");}}
+ async function fresh(){await workspace.createWorkspace();setPrompt("");setView("conversation");const url=new URL(location.href);url.searchParams.set("view","conversation");url.searchParams.delete("task");history.pushState({},"",url);requestAnimationFrame(()=>inputRef.current?.focus());}
+ const tabs=[{view:"explore" as View,label:"Explore",Icon:Compass},{view:"conversations" as View,label:"Conversations",Icon:MessageCircle},{view:"saved" as View,label:"Saved",Icon:Bookmark}];
+ const currentTitle=view==="conversation"?"Your conversation":view==="editor"?"Your work":view==="conversations"?"Conversations":view==="saved"?"Saved":"Explore";
+ return <div className={`ig-app ip-app ip-view-${view}`}>
+  <a className="ip-skip" href="#igor-main">Skip to content</a>
+  <aside className="ip-rail"><a className="ip-mark" href="/" aria-label="Igor homepage"><img src={asset+"brand/igor-mark-white.svg"} alt="" width="30" height="30"/></a><nav aria-label="Product navigation">{tabs.map(({view:v,label,Icon})=><button key={v} className={view===v?"active":""} aria-label={label} aria-current={view===v?"page":undefined} onClick={()=>navigate(v)}><Icon/><span>{label}</span></button>)}<button onClick={()=>void fresh()} disabled={workspace.isBusy} aria-label="New goal"><Plus/><span>New goal</span></button></nav><button className="ip-help" onClick={()=>setHelp(true)} aria-label="About this space"><Settings2/><span>About</span></button></aside>
+  <div className="ip-body"><header className="ip-topbar"><a href="/app" className="ip-wordmark">igor</a><span>{currentTitle}</span><div>{workspace.isBusy&&<span className="ip-working"><LoaderCircle className="ig-spin"/>Working</span>}{view==="conversation"&&<button onClick={()=>navigate("editor")}><FileText/><span>Your work</span></button>}<button className="ip-pill" onClick={()=>void fresh()} disabled={workspace.isBusy}><Plus/>New goal</button></div></header>
+  <main id="igor-main">
+  {view==="explore"&&<><section className="ip-explore-hero"><img src={asset+"photos/hero-dinner-a-1200.webp"} alt="Friends making an evening together"/><div className="ip-hero-shade"/><div className="ip-hero-content"><span>YOUR AGENT. WITH TASTE.</span><h1>Make something<br/>worth making.</h1><p>Bring a thought. See where it takes you.</p><div className="ip-hero-composer"><DiscoveryComposer value={prompt} onChange={setPrompt} onSubmit={()=>void begin({type:"message",text:prompt.trim()})} inputRef={inputRef} disabled={workspace.isBusy||!workspace.task} busy={workspace.isBusy}/></div></div></section>
+  <div className="ip-explore-content"><CardRow title="Follow your taste" description="A starting point can take you somewhere unexpected.">{startingPoints.map(item=><button className="ip-story-card" key={item.title} disabled={workspace.isBusy||!workspace.task} onClick={()=>void begin(item.action)}><div className="ip-card-image"><img src={asset+item.image} alt=""/><span><ArrowUpRight/></span></div><h3>{item.title}</h3><p>{item.copy}</p></button>)}</CardRow>
+  <CardRow title="A thought, taking shape" description="A plan, a brief, an idea you can make your own.">{makingIdeas.map(item=><button className="ip-story-card" key={item.title} disabled={workspace.isBusy||!workspace.task} onClick={()=>{setPrompt(item.prompt);navigate("conversation");requestAnimationFrame(()=>inputRef.current?.focus());}}><div className="ip-card-image"><img src={asset+item.image} alt=""/><span><ArrowUpRight/></span></div><h3>{item.title}</h3><p>{item.copy}</p></button>)}</CardRow>
+  {workspace.history.length>0&&<section className="ip-continue"><div className="ip-section-heading"><div><h2>Pick up the thread</h2><p>Your conversations, right where you left them.</p></div><button onClick={()=>navigate("conversations")}>View all <ArrowRight/></button></div><div className="ip-history-grid">{workspace.history.slice(0,3).map(item=><button key={item.id} onClick={()=>void resume(item.id)}><MessageCircle/><h3>{item.title||item.goal||"A new conversation"}</h3><span>Continue <ArrowUpRight/></span></button>)}</div></section>}</div></>}
+  {view==="conversations"&&<section className="ip-page"><div className="ip-page-heading"><span>KEEP THE THREAD</span><h1>Your conversations.</h1><p>Good ideas are worth coming back to.</p></div>{historyError&&<p role="alert" className="ip-error">{historyError}<button onClick={()=>void workspace.loadHistory().then(()=>setHistoryError("")).catch(()=>setHistoryError("Please try again."))}>Retry</button></p>}{workspace.history.length?<div className="ip-conversation-list">{workspace.history.map(item=><button key={item.id} onClick={()=>void resume(item.id)}><span className="ip-list-icon"><MessageCircle/></span><strong>{item.title||item.goal||"A new conversation"}</strong><ArrowUpRight/></button>)}</div>:<Empty icon={<MessageCircle/>} title="Your next idea starts here." text="Conversations will appear here once you begin." action={()=>void fresh()} label="Start a conversation"/>}</section>}
+  {view==="saved"&&workspace.task&&<ProductSaved task={workspace.task} onTask={workspace.acceptTask} onTurn={workspace.sendTurn} onLoad={async id=>{await resume(id);return true;}}/>}
+  {view==="conversation"&&<section className="ip-conversation"><div className="ip-conversation-header"><button onClick={()=>navigate("explore")}><ArrowLeft/>Explore</button><span>{workspace.task?.brief.goal?"Your conversation":"A fresh starting point"}</span><button onClick={()=>navigate("editor")}><FileText/>Open work</button></div>{workspace.task&&(workspace.task.messages.length>0||workspace.task.brief.goal)?<DiscoveryResults task={workspace.task} busy={workspace.isBusy} executionMessage={workspace.executionMessage} onTurn={a=>void begin(a)}/>:<div className="ip-conversation-empty"><img src={asset+"brand/igor-mark-white.svg"} width="48" height="48" alt=""/><h1>What do you have in mind?</h1><p>A half formed idea is a good place to start.</p><div>{["Help me plan something","Find a new direction","Make something together"].map(text=><button key={text} onClick={()=>{setPrompt(text);inputRef.current?.focus();}}>{text}<ArrowUpRight/></button>)}</div></div>}<div className="ip-conversation-composer"><DiscoveryComposer value={prompt} onChange={setPrompt} onSubmit={()=>void begin({type:"message",text:prompt.trim()})} inputRef={inputRef} disabled={workspace.isBusy||!workspace.task} busy={workspace.isBusy} compact/></div></section>}
+  {view==="editor"&&workspace.task&&<ProductEditor key={workspace.task.id} task={workspace.task} busy={workspace.isBusy} error={workspace.errorMessage} onTurn={workspace.sendTurn} onTask={workspace.acceptTask} onBack={()=>navigate("conversation")}/>}
+  {workspace.errorMessage&&view!=="editor"&&<div className="ip-error" role="alert">{workspace.errorMessage}<button disabled={workspace.isBusy} onClick={()=>void workspace.createWorkspace()}>Start a fresh space</button></div>}
+  {!workspace.task&&!workspace.errorMessage&&<p className="ip-session" role="status"><LoaderCircle className="ig-spin"/>Opening your space</p>}
+  </main></div>
+  <DiscoveryDialog open={help} onClose={()=>setHelp(false)} title="Your space with Igor"><p>Explore cultural connections, develop an idea and keep the useful work. Your conversations and saved collections belong to this session.</p><p>Qloo supplies cultural associations. Practical details still need checking. Each result lets you inspect its source.</p></DiscoveryDialog>
+ </div>;
+}
+function Empty({icon,title,text,action,label}:{icon:ReactNode;title:string;text:string;action:()=>void;label:string}){return <div className="ip-empty">{icon}<h2>{title}</h2><p>{text}</p><button className="ip-primary" onClick={action}>{label}<ArrowRight/></button></div>;}
+function CardRow({title,description,children}:{title:string;description:string;children:ReactNode}){const ref=useRef<HTMLDivElement>(null);return <section className="ip-card-row"><div className="ip-section-heading"><div><h2>{title}</h2><p>{description}</p></div><div className="ip-row-controls"><button aria-label={`Previous ${title.toLowerCase()}`} onClick={()=>ref.current?.scrollBy({left:-340,behavior:"smooth"})}><ChevronLeft/></button><button aria-label={`More ${title.toLowerCase()}`} onClick={()=>ref.current?.scrollBy({left:340,behavior:"smooth"})}><ChevronRight/></button></div></div><div className="ip-card-track" ref={ref}>{children}</div></section>;}
+function ProductSaved({task,onTask,onTurn,onLoad}:{task:Task;onTask:(t:Task)=>void;onTurn:(a:TaskAction)=>Promise<void>;onLoad:(id:string)=>Promise<boolean>}){const saved=useSavedOutcomes(task,onTask,onTurn);return <section className="ip-page ip-saved"><div className="ip-page-heading"><span>KEEP WHAT MATTERS</span><h1>Saved inspiration.</h1><p>Your references, collected in one place.</p></div>{saved.errorMessage&&<p role="alert" className="ip-error">{saved.errorMessage}</p>}{saved.statusMessage&&<p role="status">{saved.statusMessage}</p>}<SavedCollections task={task} collections={saved.data.collections} isBusy={saved.isBusy} saveOutput={saved.saveOutput} onLoad={onLoad}/></section>;}
+function ProductEditor({task,busy,error,onTurn,onTask,onBack}:{task:Task;busy:boolean;error:string;onTurn:(a:TaskAction)=>Promise<void>;onTask:(t:Task)=>void;onBack:()=>void}){
+ const artifacts=task.artifacts.filter(a=>a.freshness==="current");const [selected,setSelected]=useState(artifacts[0]?.id||""),[draft,setDraft]=useState(artifacts[0]?.content||""),[mode,setMode]=useState<"edit"|"preview"|"share">("edit"),[tone,setTone]=useState("paper"),[serif,setSerif]=useState(false),[saving,setSaving]=useState(false),[notice,setNotice]=useState("");
+ const artifact=artifacts.find(a=>a.id===selected)||artifacts[0];const dirty=!!artifact&&draft!==artifact.content;const saved=useSavedOutcomes(task,onTask,onTurn);
+ useEffect(()=>{if(artifact&&selected!==artifact.id){setSelected(artifact.id);setDraft(artifact.content);}},[artifact?.id,selected]);
+ useEffect(()=>{if(artifact&&artifact.content===draft&&saving){setSaving(false);setNotice("Your draft is saved.");}},[artifact?.content,draft,saving]);
+ async function save(){if(!artifact||busy)return;setSaving(true);setNotice("");await onTurn({type:"artifact",artifactId:artifact.id,content:draft});setSaving(false);}
+ function choose(id:string){if(dirty&&!window.confirm("Discard your unsaved edits and open another draft?"))return;const a=artifacts.find(x=>x.id===id);if(a){setSelected(a.id);setDraft(a.content);setNotice("");}}
+ useEffect(()=>{if(!dirty)return;const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[dirty]);
+ if(!artifact)return <section className="ip-page"><Empty icon={<FileText/>} title="Give your idea a little shape." text="Ask Igor to create a plan, brief or draft in your conversation. Your editable work will appear here." action={onBack} label="Back to the conversation"/></section>;
+ return <section className={`ip-editor ip-tone-${tone} ip-mode-${mode}`}><div className="ip-editor-top"><button onClick={()=>{if(!dirty||window.confirm("Leave without saving your edits?"))onBack();}}><ArrowLeft/>Conversation</button><span>{dirty?"Unsaved changes":artifact.edited?"Your saved draft":"A draft to make your own"}</span><button className="ip-primary" disabled={busy||saving||!dirty||!draft.trim()} onClick={()=>void save()}>{saving?<LoaderCircle className="ig-spin"/>:<Save/>}{saving?"Saving":"Save draft"}</button></div>
+ <div className="ip-editor-layout"><div className="ip-edit-fields"><span className="ip-kicker">MAKE IT YOURS</span><h1>{artifact.title}</h1><div className="ip-artifact-tabs">{artifacts.map(a=><button aria-pressed={a.id===artifact.id} key={a.id} onClick={()=>choose(a.id)}>{a.title}</button>)}</div>{mode==="share"?<div className="ip-sharing"><ReviewSharing task={task} shares={saved.data.shares} reviews={saved.data.reviews} isBusy={busy||saved.isBusy} saveOutput={saved.saveOutput} onRefresh={saved.refresh}/></div>:<><label htmlFor="ip-draft">Your words</label><textarea id="ip-draft" maxLength={10000} value={draft} onChange={e=>{setDraft(e.target.value);setNotice("");}}/><p>Changes appear in the preview as you type.</p></>}{(error||saved.errorMessage)&&<p role="alert" className="ip-error">{error||saved.errorMessage}</p>}{(notice||saved.statusMessage)&&<p role="status">{notice||saved.statusMessage}</p>}</div>
+ <div className="ip-preview-area"><div className="ip-preview-caption"><span>Preview</span><span>{dirty?"Editing":"Saved draft"}</span></div><article className={`ip-paper ${serif?"ip-serif":""}`}><small>MADE WITH IGOR</small><h2>{artifact.title}</h2><div>{draft}</div></article><p className="ip-preview-note">{artifact.assumptions.length>0?"Review the assumptions and practical details before sharing.":"Your words, ready for a closer look."}</p></div>
+ <nav className="ip-editor-tools" aria-label="Draft tools"><button aria-pressed={mode==="edit"} onClick={()=>setMode("edit")}><FileText/><span>Edit</span></button><button aria-pressed={tone==="rose"} onClick={()=>setTone(tone==="paper"?"rose":"paper")}><ImageIcon/><span>Theme</span></button><button aria-pressed={serif} onClick={()=>setSerif(!serif)}><Settings2/><span>Type</span></button><button aria-pressed={mode==="preview"} onClick={()=>setMode(mode==="preview"?"edit":"preview")}><Eye/><span>Preview</span></button><button aria-pressed={mode==="share"} disabled={dirty||artifact.id!=="main"} title={dirty?"Save your draft before sharing":artifact.id!=="main"?"Open your main document to share it":"Share your saved working document"} onClick={()=>setMode("share")}><Share2/><span>Share</span></button><a href={`/api/tasks/${task.id}/export?format=markdown&version=${task.brief.version}`} download aria-label="Export saved draft"><Download/><span>Export</span></a></nav></div></section>;
 }

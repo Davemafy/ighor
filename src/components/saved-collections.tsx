@@ -99,7 +99,7 @@ export function SavedCollections({
               save={saveOutput}
             />
             <button onClick={() => void onLoad(collection.taskId)}>
-              Open source workspace
+              Open conversation
             </button>
             <button
               disabled={isBusy}
