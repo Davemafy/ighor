@@ -473,5 +473,33 @@ test("composed work persists through edits, filtering, planning, maps and refres
     canvas.getByText("Unsaved changes", { exact: true }),
   ).toHaveCount(0);
   await expect(page).toHaveURL(/view=editor/);
+  // Coordinates are not mandatory for editing a current place. Removing them
+  // only removes map capability, not the saved list, selection or itinerary.
+  const withoutGeo = (await (
+    await page.request.get(`/api/tasks/${task.id}`)
+  ).json()) as Task;
+  for (const candidate of withoutGeo.candidates) {
+    if (candidate.type === "place" && candidate.place) {
+      candidate.place.latitude = null;
+      candidate.place.longitude = null;
+    }
+  }
+  const missingGeoDb = new DatabaseSync(".igor/canvas-e2e/tasks.sqlite");
+  missingGeoDb.prepare("UPDATE tasks SET state=? WHERE id=?").run(
+    JSON.stringify(withoutGeo),
+    task.id,
+  );
+  missingGeoDb.close();
+  await page.reload();
+  await expect(canvas.getByText(/No current coordinates are available/)).toBeVisible();
+  const views = canvas.getByRole("group", {name: "Geographic result view"});
+  await expect(views.getByRole("button", {name: "Map"})).toBeDisabled();
+  await expect(canvas.getByRole("group", {name: "Choose a place"})).toBeVisible();
+  await canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 1"}).click();
+  await expect.poll(async () => (await (
+    await page.request.get(`/api/tasks/${task.id}`)
+  ).json() as Task).canvas?.selectedCandidateId).toBe("venue-one");
+  await expect(canvas.locator(".ic-map-plan")).toContainText("Supplied venue 2");
+  await evidence("11-unmapped-place-list");
   expect(errors).toEqual([]);
 });
