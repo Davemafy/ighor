@@ -128,15 +128,13 @@ function requireExplicitText(text: string, value: string) {
   }
 }
 
-function requireExplicitNumber(text: string, value: number) {
+function requireExplicitNumber(text: string, value: number, question: string) {
   const supplied = [...text.matchAll(/\d+(?:\.\d+)?/g)].map((match) =>
     Number(match[0]),
   );
 
   if (!supplied.includes(value)) {
-    throw new Error(
-      "State the numeric planning fact explicitly; Igor will not invent it.",
-    );
+    throw new Error(question);
   }
 }
 
@@ -163,8 +161,15 @@ function applyConstraintCorrection(
     constraintValues.set(field, action[field]);
   }
 
-  if (action.budget !== undefined) {
-    requireExplicitNumber(text, action.budget);
+  if (
+    action.budget !== undefined &&
+    action.budget !== task.brief.constraints.budget
+  ) {
+    requireExplicitNumber(
+      text,
+      action.budget,
+      "What budget would you like to use?",
+    );
     const amount = String(action.budget).replaceAll(".", "\\.");
     const explicitBudget = new RegExp(
       `\\bbudget(?:\\s+(?:is|to|of))?\\s*[:=]?\\s*\\$?\\s*${amount}(?!\\d|\\.\\d)`,
@@ -185,7 +190,10 @@ function applyConstraintCorrection(
     changed.add("budget");
   }
 
-  if (action.duration !== undefined) {
+  if (
+    action.duration !== undefined &&
+    action.duration !== task.brief.constraints.duration
+  ) {
     const words: Record<string, number> = {
       one: 1,
       two: 2,
@@ -213,7 +221,11 @@ function applyConstraintCorrection(
           action.duration,
       )
     ) {
-      requireExplicitNumber(text, action.duration);
+      requireExplicitNumber(
+        text,
+        action.duration,
+        "How many minutes should I allow?",
+      );
 
       if (
         !new RegExp(
@@ -232,11 +244,11 @@ function applyConstraintCorrection(
   }
 
   if (action.location !== undefined) {
-    requireExplicitText(text, action.location);
-
     if (task.brief.constraints.location === action.location) {
       return;
     }
+
+    requireExplicitText(text, action.location);
 
     task.brief.constraints.location = action.location;
     changed.add("location");
@@ -413,11 +425,19 @@ function applyPracticalFacts(
   }
 
   if (action.cost !== undefined && action.cost !== null) {
-    requireExplicitNumber(text, action.cost);
+    requireExplicitNumber(
+      text,
+      action.cost,
+      "What cost should I use for this option?",
+    );
   }
 
   if (action.duration !== undefined && action.duration !== null) {
-    requireExplicitNumber(text, action.duration);
+    requireExplicitNumber(
+      text,
+      action.duration,
+      "How many minutes should I allow?",
+    );
   }
 
   if (action.cost !== undefined && action.cost !== null) {

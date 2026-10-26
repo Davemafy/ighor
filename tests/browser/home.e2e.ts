@@ -49,10 +49,8 @@ test("a sample journey refines, saves a reference and survives refresh", async (
   ).toBeDisabled();
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Refine your discovery" })
-    .fill("Budget: 20");
-  await page.getByRole("button", { name: "Send refinement" }).click();
+  await page.getByRole("textbox", { name: "Message Igor" }).fill("Budget: 20");
+  await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.locator(".ig-results")).toHaveAttribute(
     "aria-busy",
     "false",

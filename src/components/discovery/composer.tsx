@@ -32,7 +32,7 @@ export function DiscoveryComposer({
       }}
     >
       <label className="ig-sr-only" htmlFor={id}>
-        {compact ? "Refine your discovery" : "What would you like to explore?"}
+        {compact ? "Message Igor" : "What would you like to explore?"}
       </label>
       <textarea
         ref={inputRef}
@@ -43,7 +43,7 @@ export function DiscoveryComposer({
         onChange={(event) => onChange(event.target.value)}
         placeholder={
           compact
-            ? "A different mood? Another city? Just ask..."
+            ? "Ask, explore or change direction..."
             : "Tell me what you love. Or what you have in mind..."
         }
         onKeyDown={(event) => {
@@ -63,13 +63,13 @@ export function DiscoveryComposer({
       <div className="ig-composer-bottom">
         <span>
           {compact
-            ? "Keep exploring, in your own words"
+            ? "Continue in your own words"
             : "Your taste is a starting point, not a box."}
         </span>
         <button
           type="submit"
           disabled={disabled || !value.trim()}
-          aria-label={compact ? "Send refinement" : "Start exploring"}
+          aria-label={compact ? "Send message" : "Start exploring"}
         >
           {busy ? (
             <LoaderCircle className="ig-spin" size={20} />

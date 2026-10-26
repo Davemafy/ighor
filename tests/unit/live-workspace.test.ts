@@ -116,3 +116,40 @@ it("attributes shared taste without fabricating individual friends or consent", 
   );
   expect(invented.ok).toBe(false);
 });
+
+it("ignores repeated defaults without treating them as supplied facts or discarding taste", async () => {
+  const { applyConversationActions } =
+    await import("../../src/core/conversation");
+  const task = freshLiveTask("defaults", "owner");
+  const result = applyConversationActions(
+    task,
+    [
+      {
+        kind: "profile",
+        participant: "group",
+        preferences: [
+          { value: "Radiohead", polarity: "like", entityType: "artist" },
+        ],
+      },
+      { kind: "constraints", budget: 60, duration: 180, location: "At home" },
+    ],
+    "We love Radiohead",
+  );
+  expect(result.ok).toBe(true);
+
+  if (result.ok) {
+    expect(result.task.brief.participants[0].preferences[0].value).toBe(
+      "Radiohead",
+    );
+    expect(result.changed).not.toContain("budget");
+    expect(result.changed).not.toContain("duration");
+    expect(result.task.brief.suppliedFacts).toEqual([]);
+  }
+
+  const fabricated = applyConversationActions(
+    task,
+    [{ kind: "constraints", budget: 200 }],
+    "We love Radiohead",
+  );
+  expect(fabricated.ok).toBe(false);
+});

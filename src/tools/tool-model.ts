@@ -47,6 +47,7 @@ const conversationInstructions = [
   "Participant and candidate references must match supplied context; ambiguous references require clarification, never guess",
   "No inferred availability, price, genre exclusion or new tool permissions",
   "Missing fields stay absent",
+  "Do not turn unchanged stored constraints or starting defaults into new edits; ask only when a missing fact is needed for the next step",
   "Numeric action facts must be stated numerically by the user",
   "Return wording null unless the user explicitly requests a document edit and supplies the wording",
   "Never turn a discovery request into an invitation or artifact edit",
