@@ -8,6 +8,25 @@ Run `npm run format` and `npm run verify:all`. For quicker feedback while editin
 
 Browser tests start their own servers. Stop other Next.js processes before building or testing. A new machine needs `npx playwright install chromium`.
 
+## Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for new work:
+
+```text
+<type>(<scope>): <imperative summary>
+```
+
+Use `feat` for new behavior, `fix` for corrected behavior, `refactor` for internal restructuring, `test` for test-only changes, `docs` for documentation, `perf` for measured performance work, `ci` for automation, `build` for dependencies and build configuration, and `chore` for maintenance. Good scopes include `agent`, `qloo`, `workspace`, `store`, `evidence` and `discovery`.
+
+```text
+feat(discovery): add saved cross-domain trails
+fix(store): enforce the saved-memory limit
+test(store): cover full-capacity memory updates
+ci: run recorded browser checks on pull requests
+```
+
+Keep the subject specific and ideally under 72 characters. Prefer one logical change per commit, explain non-obvious trade-offs in the body, and mark actual breaking changes with `!` plus a `BREAKING CHANGE:` footer. Do not invent commits, backdate history, or use commit messages to make unverified implementation claims. Never include credentials, private user content or private planning material in commits.
+
 ## Code style
 
 Use descriptive names and one variable declaration per statement. Leave space between functions and logical steps. Add braces to control flow, including short branches. ESLint and Prettier enforce these conventions.
