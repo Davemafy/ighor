@@ -29,6 +29,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { TaskCanvas } from "./task-canvas";
 import { hasPendingInput, type TurnFeedback } from "./turn-feedback";
 import type { Task, TaskAction, Candidate } from "@/core/contracts";
 import type { SavedCollection, SaveOutput } from "./use-saved-outcomes";
@@ -193,7 +194,9 @@ function ExecutionFeedback({
               : "Waiting for Igor"
             : feedback.state === "error"
               ? "This reply could not finish"
-              : "Reply complete"}
+              : feedback.action.type === "canvas"
+                ? "Changes saved"
+                : "Reply complete"}
         </span>
         {busy && <time>{seconds}s</time>}
       </div>
@@ -361,7 +364,9 @@ export function ProductResults({
       end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [task.messages.length, feedback?.startedAt]);
   return (
-    <div className={`pp-conversation ${artifacts.length ? "pp-has-work" : ""}`}>
+    <div
+      className={`pp-conversation ${task.canvas ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
+    >
       <div className="pp-thread-body">
         <div
           className="pp-transcript"
@@ -439,7 +444,7 @@ export function ProductResults({
               ))}
           </div>
         )}
-        {candidates.length > 0 && (
+        {!task.canvas && candidates.length > 0 && (
           <section className="pp-results">
             <header>
               <div>
@@ -507,7 +512,8 @@ export function ProductResults({
           </section>
         )}
       </div>
-      {artifacts.length > 0 && (
+      {task.canvas && <TaskCanvas task={task} busy={busy} onTurn={onTurn} />}
+      {!task.canvas && artifacts.length > 0 && (
         <aside className="pp-work-pane" aria-label="Your work">
           <div className="pp-work-pane-heading">
             <span>

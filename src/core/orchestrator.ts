@@ -1,3 +1,5 @@
+import { mutateCanvas } from "./presentation";
+import { ensureBoundPresentation } from "./presentation-default";
 import { randomUUID } from "node:crypto";
 import {
   TurnSchema,
@@ -50,6 +52,36 @@ export async function runTurn(
   }
 
   const emit = agentEmitter(structuredClone(task), send);
+
+  if (input.type === "canvas") {
+    if (!task.canvas) {
+      throw new Error("No canvas exists for this task.");
+    }
+
+    task.canvas = mutateCanvas(
+      task.canvas,
+      input.surfaceId,
+      input.mutation,
+      task,
+    );
+    task.brief.version++;
+    task.trace.push({
+      id: randomUUID(),
+      version: task.brief.version,
+      action: "ui." + input.mutation.operation,
+      outcome: "Saved a direct canvas edit to the shared task.",
+      requests: 0,
+      durationMs: 0,
+      evidenceIds: [],
+      at: new Date().toISOString(),
+    });
+    task.trace = task.trace.slice(-100);
+    TaskSchema.parse(task);
+    store.save(task, input.version, owner);
+    emit({ type: "done", task: structuredClone(task) });
+
+    return task;
+  }
 
   const wasInterpretationError =
     task.status === "error" &&
@@ -429,6 +461,7 @@ export async function runTurn(
     }
   }
 
+  ensureBoundPresentation(task);
   task.brief.version++;
   task.trace = task.trace.slice(-100);
   task.messages.push({
