@@ -109,7 +109,65 @@ export function composeOutcome(input: Input) {
     edited: false,
   }, previous);
 
-  const artifacts = finalizeConnectedArtifacts([artifact], input.artifacts);
+  // Music-direction outcomes can become a useful, connected body of work.
+  // These are drafts grounded in cultural references, not booked activities.
+  const related: Artifact[] = [];
+  if (spec.kind === "music-direction" && references.length) {
+    const sourceNames = references.slice(0, 3).map((candidate) => candidate.name);
+    const culturalLine = sourceNames.join(", ");
+    const produce = (
+      id: string,
+      kind: Artifact["kind"],
+      title: string,
+      content: string,
+      directInputs: string[],
+    ) => {
+      const prior = input.artifacts.find((item) => item.id === id);
+      related.push(
+        reconcileGeneratedArtifact({
+          id,
+          kind,
+          title,
+          content,
+          version: (prior?.version ?? 0) + 1,
+          dependencies: ["goal", "main", ...directInputs, ...evidenceIds],
+          evidenceIds,
+          assumptions: [
+            "Conceptual draft from Qloo-linked cultural references, not real-world availability, commercial rights or measured demand.",
+          ],
+          freshness: "current",
+          edited: false,
+        }, prior),
+      );
+    };
+
+    produce(
+      "concept",
+      "creative-brief",
+      "A shared experience concept",
+      [
+        "Concept direction for review",
+        `Build an intimate experience around the cultural references ${culturalLine}.`,
+        `Proposed location: ${input.brief.constraints.location} (user-supplied planning context; suitability not verified).`,
+        "Explore a cohesive visual and listening atmosphere, then validate real venues, budget, rights and guest preferences before publishing.",
+      ].join("\\n\\n"),
+      ["location"],
+    );
+    produce(
+      "invitation",
+      "invitation",
+      "A starting invitation",
+      [
+        "You're invited to explore an intimate listening experience.",
+        `Cultural starting points: ${culturalLine}.`,
+        `Location under consideration: ${input.brief.constraints.location}.`,
+        "Date, availability, guests and practical arrangements to be confirmed.",
+      ].join("\\n\\n"),
+      ["location", "concept"],
+    );
+  }
+
+  const artifacts = finalizeConnectedArtifacts([artifact, ...related], input.artifacts);
 
   return {
     artifacts,
