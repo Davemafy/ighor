@@ -19,3 +19,8 @@ AGENTS.md
 # Private internal research and strategic working notes; never publish with the application.
 docs/intelligence/
 docs/product-intelligence.md
+
+# Real evaluation outputs, participant responses and private treatment keys.
+evaluation/private-study/
+evaluation/private-*/
+evaluation/collected-runs.json

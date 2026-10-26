@@ -13,11 +13,12 @@
     "test": "vitest run --config tests/vitest.config.mts",
     "test:connected:browser": "playwright test --config tests/connected-work.playwright.config.mts",
     "test:e2e": "node scripts/check-browser.mjs",
-    "verify": "npm run format:check && npm run typecheck && npm run lint && npm test && npm run build",
+    "verify": "npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:eval && npm run build",
     "prebuild": "node scripts/clean-build.mjs",
     "dev:recorded": "node scripts/dev-recorded.mjs",
     "test:browser": "node scripts/check-browser.mjs",
-    "verify:all": "npm run verify && npm run test:browser"
+    "verify:all": "npm run verify && npm run test:browser",
+    "test:eval": "node --test scripts/igor-blind-eval.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.61.0",
