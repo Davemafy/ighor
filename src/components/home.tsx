@@ -71,7 +71,7 @@ function ProductEditor({task,busy,error,onTurn,onTask,onBack}:{task:Task;busy:bo
    }
    if(selected!==artifact.id)setSelected(artifact.id);
    lastSeen.current={id:artifact.id,version:artifact.version,content:artifact.content};
- },[artifact?.id,artifact?.version,artifact?.content,selected]);
+ },[artifact?.id,artifact?.version,artifact?.content,selected,draft]);
  useEffect(()=>{if(artifact&&artifact.content===draft&&saving){setSaving(false);setNotice("Your draft is saved.");}},[artifact?.content,draft,saving]);
  async function save(){if(!artifact||busy||artifact.locked||artifact.freshness!=="current")return;setSaving(true);setNotice("");await onTurn({type:"artifact",artifactId:artifact.id,content:draft});setSaving(false);}
  function choose(id:string){if(dirty&&!window.confirm("Discard your unsaved edits and open another draft?"))return;const a=artifacts.find(x=>x.id===id);if(a){setSelected(a.id);setDraft(a.content);setNotice("");}}
