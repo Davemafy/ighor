@@ -83,6 +83,9 @@ export function applyStructuredTurn(
     case "artifact":
       editDocument(update, input);
       break;
+    case "artifact-lock":
+      changeArtifactLock(update, input);
+      break;
   }
 
   return update;
@@ -480,10 +483,26 @@ function changeSavedMemory(
   update.localChangeOnly = true;
 }
 
+function changeArtifactLock(
+  update: TurnUpdate,
+  input: Extract<Turn, { type: "artifact-lock" }>,
+) {
+  const artifact = update.task.artifacts.find((a) => a.id === input.artifactId);
+  if (!artifact) throw new Error("Artifact not found.");
+  if (input.locked && artifact.freshness !== "current") {
+    throw new Error("Only current work can be approved.");
+  }
+  artifact.locked = input.locked;
+  update.localChangeOnly = true;
+}
+
 function editDocument(
   update: TurnUpdate,
   input: Extract<Turn, { type: "artifact" }>,
 ) {
+  const artifact = update.task.artifacts.find((a) => a.id === input.artifactId);
+  if (!artifact) throw new Error("Artifact not found.");
+  if (artifact.locked) throw new Error("Unlock approved work before editing it.");
   update.artifactEdit = input;
   update.localChangeOnly = true;
 }
