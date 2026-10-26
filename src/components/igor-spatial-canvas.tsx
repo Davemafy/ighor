@@ -700,6 +700,29 @@ export default function IgorSpatialCanvas({
                     {c?.name || "Previously selected place"}
                     {c?.freshness !== "current" && <small> Needs review</small>}
                   </strong>
+                  <label className="ic-itinerary-day">
+                    <span className="pp-visually-hidden">Day for {c?.name || "place"}</span>
+                    <select
+                      aria-label={`Day for ${c?.name || "place"}`}
+                      value={task.canvas?.itineraryDays?.[id] ?? 0}
+                      disabled={busy || c?.freshness !== "current"}
+                      onChange={(event) =>
+                        mutate({
+                          operation: "itinerary-day",
+                          nodeId: node.id,
+                          candidateId: id,
+                          day: Number(event.target.value),
+                        })
+                      }
+                    >
+                      <option value={0}>Day unset</option>
+                      {Array.from({length: 14}, (_, day) => (
+                        <option key={day + 1} value={day + 1}>
+                          Day {day + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     disabled={busy || i === 0}
                     aria-label={`Move ${c?.name || "place"} earlier`}
