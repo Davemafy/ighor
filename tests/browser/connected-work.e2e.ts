@@ -93,7 +93,7 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
   await surface.getByRole("button", {name: "Close expanded work"}).click();
   await expect(surface).not.toHaveClass(/ic-fullscreen/);
   await expect(page.locator(".pp-message-assistant").last()).toContainText(
-    "Audience and concept",
+    "Launch brief: saved your wording.",
   );
   await message(page, "Budget: 1000");
   await message(page, "Approve Musical identity");
