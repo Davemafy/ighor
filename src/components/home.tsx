@@ -23,6 +23,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { TaskCanvas } from "./task-canvas";
+import { ConnectedWorkCanvas } from "./connected-work-canvas";
 import { useWorkspace } from "./use-workspace";
 import {
   ProductText,
@@ -35,6 +36,9 @@ import {
 import { useSavedOutcomes } from "./use-saved-outcomes";
 import "../app/product.css";
 import "../app/canvas.css";
+import "../app/mobile-gate.css";
+import "../app/spatial-morph.css";
+import "../app/connected-work.css";
 
 type View = "explore" | "conversations" | "saved" | "conversation" | "editor";
 const asset = "/marketing/assets/";
@@ -91,6 +95,27 @@ export function Home() {
     [historyError, setHistoryError] = useState(""),
     [help, setHelp] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // The visual viewport is shorter than the layout viewport when a mobile
+  // keyboard opens. Keep the task and composer in the visible area.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const sync = () => {
+      document.documentElement.style.setProperty(
+        "--igor-visible-height",
+        `${Math.round(viewport?.height ?? window.innerHeight)}px`,
+      );
+    };
+    sync();
+    viewport?.addEventListener("resize", sync);
+    viewport?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      viewport?.removeEventListener("resize", sync);
+      viewport?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
+      document.documentElement.style.removeProperty("--igor-visible-height");
+    };
+  }, []);
   function navigate(next: View, replace = false) {
     setView(next);
     const url = new URL(location.href);
@@ -264,6 +289,15 @@ export function Home() {
       </aside>
       <div className="ip-body">
         <header className="ip-topbar">
+          {(view === "conversation" || view === "editor") && (
+            <button
+              className="ip-mobile-back"
+              aria-label="Back to conversations"
+              onClick={() => navigate("conversations")}
+            >
+              <ArrowLeft />
+            </button>
+          )}
           <a href="/app" className="ip-wordmark" aria-label="Igor home">
             igor
             <span className="ip-brand-dot" />
@@ -301,14 +335,17 @@ export function Home() {
                 disabled={
                   view !== "editor" &&
                   !currentWork.length &&
-                  !workspace.task?.canvas
+                  !workspace.task?.canvas &&
+                  !workspace.task?.work?.documents.length
                 }
                 title={
                   view === "editor"
                     ? "Return to your conversation"
                     : currentWork.length
                       ? "Open your plans and drafts"
-                      : "Your plans and drafts will appear here"
+                      : workspace.task?.work?.documents.length
+                        ? "Open connected documents and decisions"
+                        : "Your plans and drafts will appear here"
                 }
               >
                 {view === "editor" ? <MessageCircle /> : <FileText />}
@@ -533,7 +570,9 @@ export function Home() {
               </div>
             </section>
           )}
-          {view === "editor" && workspace.task?.canvas && (
+          {view === "editor" &&
+            workspace.task &&
+            (workspace.task.canvas || workspace.task.work?.documents.length) && (
             <section className="ip-conversation">
               {workspace.errorMessage && (
                 <p role="alert" className="ip-error">
@@ -541,11 +580,20 @@ export function Home() {
                   to retry.
                 </p>
               )}
-              <TaskCanvas
-                task={workspace.task}
-                busy={workspace.isBusy}
-                onTurn={(a) => void begin(a)}
-              />
+              {workspace.task.canvas ? (
+                <TaskCanvas
+                  task={workspace.task}
+                  busy={workspace.isBusy}
+                  onTurn={(a) => void begin(a)}
+                />
+              ) : (
+                <ConnectedWorkCanvas
+                  key={workspace.task.id}
+                  task={workspace.task}
+                  busy={workspace.isBusy}
+                  onTurn={(a) => void begin(a)}
+                />
+              )}
               <div className="ip-conversation-composer">
                 <ProductComposer
                   value={prompt}
@@ -561,7 +609,10 @@ export function Home() {
               </div>
             </section>
           )}
-          {view === "editor" && workspace.task && !workspace.task.canvas && (
+          {view === "editor" &&
+            workspace.task &&
+            !workspace.task.canvas &&
+            !workspace.task.work?.documents.length && (
             <ProductEditor
               key={workspace.task.id}
               task={workspace.task}

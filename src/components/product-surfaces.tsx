@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
@@ -30,6 +31,8 @@ import {
   type RefObject,
 } from "react";
 import { TaskCanvas } from "./task-canvas";
+import { ConnectedWorkCanvas } from "./connected-work-canvas";
+import { morphLayout } from "./mobile-transitions";
 import { hasPendingInput, type TurnFeedback } from "./turn-feedback";
 import type { Task, TaskAction, Candidate } from "@/core/contracts";
 import type { SavedCollection, SaveOutput } from "./use-saved-outcomes";
@@ -48,7 +51,7 @@ export function ProductDialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     id = useId();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (open && !d.open) d.showModal();
@@ -125,7 +128,12 @@ export function ProductComposer({
         }
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey &&
+            !e.nativeEvent.isComposing &&
+            !window.matchMedia("(pointer: coarse)").matches
+          ) {
             e.preventDefault();
             if (value.trim() && !disabled) onSubmit();
           }
@@ -315,6 +323,22 @@ export function ProductResults({
     [message, setMessage] = useState(""),
     [saving, setSaving] = useState(false),
     [kept, setKept] = useState<string[]>([]);
+  const [paneChoice, setPaneChoice] = useState<{
+    surfaceId: string;
+    pane: "thread" | "canvas";
+  } | null>(null);
+  // A new persisted canvas revision automatically opens the updated result.
+  // A user's Conversation/Result selection remains in effect for that revision.
+  const hasWorkDocuments = Boolean(task.work?.documents.length);
+  const hasVisual = Boolean(task.canvas || hasWorkDocuments);
+  const surfaceId = task.canvas?.surface.id ??
+    (hasWorkDocuments ? `connected:${task.work!.activeGoalId ?? task.id}` : "");
+  const pane =
+    paneChoice?.surfaceId === surfaceId
+      ? paneChoice.pane
+      : hasVisual
+        ? "canvas"
+        : "thread";
   const candidates = task.candidates.filter((c) => c.freshness === "current"),
     types = [...new Set(candidates.map((c) => c.type))],
     shown = candidates.filter((c) => filter === "all" || c.type === filter),
@@ -345,6 +369,7 @@ export function ProductResults({
     }
   }
   const end = useRef<HTMLDivElement>(null),
+    scrollRegion = useRef<HTMLDivElement>(null),
     follow = useRef(true);
   const artifacts = task.artifacts.filter(
     (a) => a.freshness === "current" || busy,
@@ -356,18 +381,78 @@ export function ProductResults({
         window.innerHeight + window.scrollY >=
         document.documentElement.scrollHeight - 240;
     };
+    const region = scrollRegion.current;
+    const observeRegion = () => {
+      if (region && window.matchMedia("(max-width: 760px)").matches) {
+        follow.current =
+          region.scrollHeight - region.scrollTop - region.clientHeight < 240;
+      }
+    };
     window.addEventListener("scroll", read, { passive: true });
-    return () => window.removeEventListener("scroll", read);
+    region?.addEventListener("scroll", observeRegion, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", read);
+      region?.removeEventListener("scroll", observeRegion);
+    };
   }, []);
   useEffect(() => {
-    if (busy || follow.current)
-      end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [task.messages.length, feedback?.startedAt]);
+    if (!busy && !follow.current) return;
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)")
+      .matches
+      ? "instant"
+      : "smooth";
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      if (pane === "thread") {
+        const region = scrollRegion.current;
+        region?.scrollTo({ top: region.scrollHeight, behavior });
+      }
+    } else {
+      end.current?.scrollIntoView({ behavior, block: "end" });
+    }
+  }, [task.messages.length, feedback?.startedAt, busy, pane]);
   return (
     <div
-      className={`pp-conversation ${task.canvas ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
+      className={`pp-conversation ${hasVisual ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
+      data-pane={pane}
     >
-      <div className="pp-thread-body">
+      {hasVisual && (
+        <div
+          className="pp-mobile-switch"
+          role="tablist"
+          aria-label="Workspace views"
+        >
+          <button
+            role="tab"
+            aria-selected={pane === "thread"}
+            onClick={() =>
+              morphLayout(() => setPaneChoice({ surfaceId, pane: "thread" }))
+            }
+          >
+            Conversation
+          </button>
+          <button
+            role="tab"
+            aria-selected={pane === "canvas"}
+            onClick={() =>
+              morphLayout(() => setPaneChoice({ surfaceId, pane: "canvas" }))
+            }
+          >
+            Your result
+          </button>
+        </div>
+      )}
+      {hasVisual && pane === "canvas" && feedback?.state === "error" && (
+        <div className="pp-mobile-result-error" role="alert">
+          <span>
+            {feedback.error ||
+              "Igor could not finish this reply. Your work is preserved."}
+          </span>
+          <button disabled={busy} onClick={() => onTurn(feedback.action)}>
+            Try again
+          </button>
+        </div>
+      )}
+      <div className="pp-thread-body" ref={scrollRegion}>
         <div
           className="pp-transcript"
           aria-label="Conversation"
@@ -444,7 +529,7 @@ export function ProductResults({
               ))}
           </div>
         )}
-        {!task.canvas && candidates.length > 0 && (
+        {!hasVisual && candidates.length > 0 && (
           <section className="pp-results">
             <header>
               <div>
@@ -478,7 +563,20 @@ export function ProductResults({
                 <article className="pp-result-card" key={c.id}>
                   <button
                     className="pp-result-open"
-                    onClick={() => setSelected(c.id)}
+                    onClick={(event) => {
+                      const artwork =
+                        event.currentTarget.querySelector<HTMLElement>(
+                          ".pp-artwork",
+                        );
+                      artwork?.style.setProperty(
+                        "view-transition-name",
+                        "igor-result-artwork",
+                      );
+                      morphLayout(() => {
+                        setSelected(c.id);
+                        artwork?.style.removeProperty("view-transition-name");
+                      });
+                    }}
                   >
                     <Artwork candidate={c} />
                     <div>
@@ -512,8 +610,12 @@ export function ProductResults({
           </section>
         )}
       </div>
-      {task.canvas && <TaskCanvas task={task} busy={busy} onTurn={onTurn} />}
-      {!task.canvas && artifacts.length > 0 && (
+      {task.canvas ? (
+        <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
+      ) : hasWorkDocuments ? (
+        <ConnectedWorkCanvas key={task.id} task={task} busy={busy} onTurn={onTurn} />
+      ) : null}
+      {!hasVisual && artifacts.length > 0 && (
         <aside className="pp-work-pane" aria-label="Your work">
           <div className="pp-work-pane-heading">
             <span>
@@ -560,7 +662,12 @@ export function ProductResults({
       >
         {detail && (
           <div className="pp-detail">
-            <Artwork candidate={detail} />
+            <div
+              className="pp-shared-artwork"
+              style={{ viewTransitionName: "igor-result-artwork" }}
+            >
+              <Artwork candidate={detail} />
+            </div>
             <div className="pp-detail-copy">
               <small>{categoryName(detail.type)}</small>
               <h1>{detail.name}</h1>

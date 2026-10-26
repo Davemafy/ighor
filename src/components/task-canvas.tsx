@@ -22,6 +22,7 @@ import {
   type PresentationNode,
 } from "@/core/presentation";
 import { ProductText } from "./product-surfaces";
+import { morphLayout } from "./mobile-transitions";
 
 const SpatialCanvas = lazy(() => import("./igor-spatial-canvas"));
 type Props = {
@@ -71,6 +72,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
   return (
     <aside
       className={`ic-canvas ${full ? "ic-fullscreen" : ""}`}
+      style={{ viewTransitionName: "igor-task-canvas" }}
       aria-label="Task canvas"
       aria-busy={busy}
     >
@@ -80,7 +82,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
           <h2>{surface.title}</h2>
         </div>
         <button
-          onClick={() => setFull(!full)}
+          onClick={() => morphLayout(() => setFull(!full))}
           aria-label={full ? "Exit full screen canvas" : "Expand canvas"}
         >
           {full ? <Minimize /> : <Expand />}
@@ -216,8 +218,24 @@ function CanvasTree({
         const rows = table.rows.filter((r) =>
           r.cells.join(" ").toLowerCase().includes(filter),
         );
+        const numericColumns = table.columns
+          .map((_, index) => index)
+          .filter((index) =>
+            index !== node.labelColumn &&
+            table.rows.length > 0 &&
+            table.rows.every((r) =>
+              Boolean(r.cells[index]?.trim()) &&
+              Number.isFinite(Number(r.cells[index])),
+            ),
+          );
+        const candidateColumn = task.canvas?.chartAxes?.[node.id] ??
+          node.valueColumn;
+        const valueColumn = numericColumns.includes(candidateColumn)
+          ? candidateColumn
+          : node.valueColumn;
+        const unit = valueColumn === node.valueColumn ? node.unit : "";
         const max = Math.max(
-          ...rows.map((r) => Math.abs(Number(r.cells[node.valueColumn]))),
+          ...rows.map((r) => Math.abs(Number(r.cells[valueColumn]))),
           1,
         );
         body = (
@@ -225,24 +243,47 @@ function CanvasTree({
             className="ic-chart"
             aria-label={node.title || "Data comparison"}
           >
+            {numericColumns.length > 1 && (
+              <label className="ic-chart-measure">
+                Compare by
+                <select
+                  value={valueColumn}
+                  disabled={busy}
+                  aria-label={`Comparison measure for ${node.title || "chart"}`}
+                  onChange={(event) =>
+                    mutate({
+                      operation: "chart-axis",
+                      nodeId: node.id,
+                      valueColumn: Number(event.target.value),
+                    })
+                  }
+                >
+                  {numericColumns.map((index) => (
+                    <option key={index} value={index}>
+                      {table.columns[index]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {rows.map((r) => (
               <div key={r.id}>
                 <span>{r.cells[node.labelColumn]}</span>
                 <div className="ic-bar-track">
                   <span
                     style={{
-                      width: `${(Math.abs(Number(r.cells[node.valueColumn])) / max) * 100}%`,
+                      width: `${(Math.abs(Number(r.cells[valueColumn])) / max) * 100}%`,
                     }}
                   />
                 </div>
                 <strong>
-                  {r.cells[node.valueColumn]} {node.unit}
+                  {r.cells[valueColumn]} {unit}
                 </strong>
               </div>
             ))}
             <figcaption>
-              Values from {table.title || "the table"}. Filters apply to both
-              views.
+              Values from {table.title || "the table"}. Filters and selected
+              measures use the same stored comparison data.
             </figcaption>
           </figure>
         );
@@ -667,7 +708,7 @@ function CanvasDocument({
               ? "Unsaved changes"
               : "Saved draft"}
         </span>
-        <button aria-pressed={editing} onClick={() => setEditing(!editing)}>
+        <button aria-pressed={editing} onClick={() => morphLayout(() => setEditing(!editing))}>
           {editing ? "Preview" : "Edit draft"}
         </button>
       </div>

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import type { Task } from "../../src/core/contracts";
+import { mkdirSync } from "node:fs";
 
 async function saved(page: Page): Promise<Task> {
   return page.evaluate(async () => {
@@ -29,7 +30,7 @@ async function message(page: Page, text: string) {
   );
   const previous = (await saved(page)).brief.version;
   await input.fill(text);
-  await input.press("Enter");
+  await page.getByRole("button", {name: "Send message"}).click();
   await expect
     .poll(async () => (await saved(page)).brief.version)
     .toBeGreaterThan(previous);
@@ -44,7 +45,7 @@ async function message(page: Page, text: string) {
 
 test("existing chat UI carries a listening-bar concept through approvals, edits, budget revision and reload (scripted fixtures)", async ({
   page,
-}) => {
+}, info) => {
   const runtimeErrors: string[] = [];
   page.on("pageerror", (e) => runtimeErrors.push(e.message));
   await page.goto("/app");
@@ -57,8 +58,42 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
     "I want to launch a small listening bar for people into alternative music and independent art. Help me make it distinctive without overspending.",
   );
   expect(task.work?.documents).toHaveLength(8);
+  const surface = page.getByRole("complementary", {name: "Connected work"});
+  await expect(surface).toBeVisible();
+  await surface.getByRole("button", {name: "Launch brief", exact: true}).click();
+  await surface.getByRole("button", {name: "Expand connected work"}).click();
+  await expect(surface).toHaveClass(/ic-fullscreen/);
+  await surface.getByRole("button", {name: "Edit document"}).click();
+  const editor = surface.getByRole("textbox", {name: "Edit Launch brief"});
+  await editor.fill("Invite a small pilot community. This sentence is my exact wording.");
+  const oldVersion = (await saved(page)).work!.documents.find(
+    (d) => d.id === "listening-bar-launch",
+  )!.version;
+  await surface.getByRole("button", {name: "Save changes"}).click();
+  await expect.poll(async () => (await saved(page)).work!.documents.find(
+    (d) => d.id === "listening-bar-launch",
+  )!.version).toBeGreaterThan(oldVersion);
+  await expect(editor).toHaveValue(
+    "Invite a small pilot community. This sentence is my exact wording.",
+  );
+  await surface.getByRole("button", {name: "Preview"}).click();
+  await surface.getByRole("combobox", {name: "Document revision"}).selectOption(
+    String(oldVersion),
+  );
+  await expect(surface.getByLabel("Document preview")).not.toContainText(
+    "my exact wording",
+  );
+  await surface.getByRole("combobox", {name: "Document revision"}).selectOption("current");
+  if (info.project.name.includes("mobile")) {
+    mkdirSync("test-results/morphing", {recursive: true});
+    await page.screenshot({
+      path: `test-results/morphing/${info.project.name}-connected-artifact.png`,
+    });
+  }
+  await surface.getByRole("button", {name: "Close expanded work"}).click();
+  await expect(surface).not.toHaveClass(/ic-fullscreen/);
   await expect(page.locator(".pp-message-assistant").last()).toContainText(
-    "Audience and concept",
+    "Launch brief: saved your wording.",
   );
   await message(page, "Budget: 1000");
   await message(page, "Approve Musical identity");
@@ -84,6 +119,9 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
   ).toEqual(
     before.work?.documents.find((d) => d.id === "listening-bar-concept"),
   );
+  expect(
+    task.work?.documents.find((d) => d.id === "listening-bar-launch")?.content,
+  ).toBe("Invite a small pilot community. This sentence is my exact wording.");
   expect(
     task.work?.documents.find((d) => d.id === "listening-bar-allocation")
       ?.history.length,

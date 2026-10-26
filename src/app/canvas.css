@@ -782,3 +782,28 @@
 .ic-canvas .ic-timeline strong {
   color: #f7f5f0;
 }
+
+/* A chart's selected measure is persisted through the canvas mutation API. */
+.ic-chart-measure {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--ic-muted);
+  font-size: 12px;
+  margin: 0 0 5px;
+}
+.ic-chart-measure select {
+  min-height: 42px;
+  max-width: min(100%, 250px);
+  border: 1px solid var(--ic-line);
+  border-radius: 11px;
+  padding: 9px 12px;
+  color: #f3eee4;
+  background: #28262d;
+  font: inherit;
+}
+.ic-bar-track > span { transition: width 220ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .ic-bar-track > span { transition: none; }
+}

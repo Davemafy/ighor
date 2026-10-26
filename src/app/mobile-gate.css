@@ -1,0 +1,261 @@
+/* Igor mobile quality gate. Only shell, conversation and result transitions.
+   The existing tokens, images, components and data contracts are preserved. */
+.ip-mobile-back,
+.pp-mobile-switch { display: none !important; }
+
+.pp-mobile-result-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 13px 15px;
+  margin-bottom: 12px;
+  border: 1px solid #8c5353;
+  border-radius: 14px;
+  background: #281b1b;
+  color: #f4c6c6;
+  font-size: 12px;
+}
+.pp-mobile-result-error > span { flex: 1 1 180px; }
+.ip-app .pp-mobile-result-error > button {
+  border: 1px solid #c18c92;
+  border-radius: 999px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.pp-shared-artwork { min-width: 0; }
+.pp-shared-artwork > .pp-artwork { width: 100%; height: 100%; }
+.pp-detail > .pp-shared-artwork {
+  align-self: start;
+  position: sticky;
+  top: 105px;
+  aspect-ratio: 4 / 5;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 18px;
+}
+::view-transition-group(igor-result-artwork),
+::view-transition-group(igor-task-canvas) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(igor-result-artwork),
+::view-transition-new(igor-result-artwork) {
+  object-fit: cover;
+}
+
+@media (max-width: 760px) {
+  /* Do not stack fixed bottom navigation under a persistent composer. */
+  .ip-view-conversation > .ip-rail,
+  .ip-view-editor > .ip-rail { display: none; }
+  .ip-view-conversation .ip-mobile-back,
+  .ip-view-editor .ip-mobile-back {
+    display: grid !important;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 38px;
+    padding: 7px;
+    color: #f5f2e9;
+    border-radius: 10px;
+  }
+  .ip-mobile-back > svg { width: 21px; height: 21px; }
+  .ip-app .ip-topbar {
+    padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right));
+    gap: 11px;
+    min-width: 0;
+    flex: none;
+  }
+  .ip-view-conversation .ip-wordmark,
+  .ip-view-editor .ip-wordmark { font-size: 24px; }
+  .ip-topbar > .ip-header-context {
+    padding-left: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .ip-header-title {
+    max-width: none !important;
+    width: 100%;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.28;
+  }
+  .ip-topbar > .ip-header-actions { flex: none; }
+  .ip-view-conversation,
+  .ip-view-editor:has(.ip-conversation) {
+    height: var(--igor-visible-height, 100dvh);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .ip-view-conversation > .ip-body,
+  .ip-view-editor:has(.ip-conversation) > .ip-body {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+  .ip-view-conversation .ip-body > main,
+  .ip-view-editor:has(.ip-conversation) .ip-body > main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .ip-view-conversation .ip-conversation,
+  .ip-view-editor .ip-conversation {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px 0;
+    overflow: hidden;
+  }
+  .ip-view-conversation .pp-conversation,
+  .ip-view-editor .pp-conversation {
+    width: 100%;
+    min-height: 0;
+    max-width: none;
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .ip-view-conversation .pp-conversation.pp-has-canvas {
+    gap: 0;
+  }
+  .ip-view-conversation .pp-thread-body {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0 24px;
+    scroll-padding-bottom: 30px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pp-thread-body .pp-transcript {
+    margin-bottom: 32px;
+    padding-bottom: 4px;
+  }
+  .pp-transcript > div:last-child { scroll-margin-bottom: 28px; }
+  .ip-view-conversation .ip-conversation-composer,
+  .ip-view-editor .ip-conversation-composer {
+    position: relative;
+    bottom: auto;
+    flex: none;
+    width: 100%;
+    max-width: none;
+    padding: 10px 0 max(12px, env(safe-area-inset-bottom));
+    margin: 0;
+    background: linear-gradient(to bottom, #1110, #111 14px);
+    z-index: 4;
+  }
+  .ip-view-conversation .pp-compose,
+  .ip-view-editor .pp-compose {
+    border-radius: 20px;
+    padding: 12px 14px 10px;
+  }
+  .ip-view-conversation .pp-compose textarea,
+  .ip-view-editor .pp-compose textarea {
+    min-height: 24px;
+    max-height: min(150px, 28dvh);
+    font-size: 16px;
+  }
+  .ip-view-conversation .pp-compose > div,
+  .ip-view-editor .pp-compose > div { margin-top: 2px; }
+  .ip-view-conversation .pp-compose button,
+  .ip-view-editor .pp-compose button { width: 40px; height: 40px; }
+  .ip-view-conversation .ip-conversation-empty {
+    margin: 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-top: 4dvh;
+    overflow-y: auto;
+  }
+  .ip-view-conversation .ip-starter-grid { padding-bottom: 18px; }
+  .pp-conversation.pp-has-canvas > .pp-mobile-switch {
+    display: flex !important;
+    flex: none;
+    width: 100%;
+    align-self: stretch;
+    gap: 5px;
+    padding: 4px;
+    margin-bottom: 12px;
+    background: #252422;
+    border: 1px solid #ffffff16;
+    border-radius: 15px;
+  }
+  .pp-mobile-switch > button {
+    flex: 1;
+    min-height: 39px;
+    padding: 9px 12px;
+    border-radius: 11px;
+    color: #aaa9a4;
+    font-size: 12px;
+    transition: background-color 160ms, color 160ms;
+  }
+  .pp-mobile-switch > button[aria-selected="true"] {
+    background: #f1ede4;
+    color: #242220;
+    box-shadow: 0 2px 10px #0002;
+  }
+  .pp-has-canvas[data-pane="canvas"] > .pp-thread-body,
+  .pp-has-canvas[data-pane="thread"] > .ic-canvas { display: none; }
+  .ip-view-conversation .pp-has-canvas > .ic-canvas,
+  .ip-view-editor .ic-canvas {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-height: none;
+    position: relative;
+    overflow: auto;
+    border-radius: 18px 18px 0 0;
+    margin: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .ip-view-conversation .pp-has-canvas > .ic-canvas.ic-fullscreen,
+  .ip-view-editor .ic-canvas.ic-fullscreen {
+    position: fixed;
+    inset: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: none;
+    z-index: 90;
+    border-radius: 20px;
+    box-shadow: 0 22px 110px #000c;
+  }
+  .pp-detail > .pp-shared-artwork {
+    position: relative;
+    top: auto;
+    aspect-ratio: 1;
+    width: 100%;
+  }
+  .pp-dialog {
+    height: var(--igor-visible-height, 100dvh);
+    max-height: var(--igor-visible-height, 100dvh);
+    overscroll-behavior: contain;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(igor-result-artwork),
+  ::view-transition-group(igor-task-canvas) { animation-duration: 0.01ms !important; }
+  .pp-mobile-switch > button { transition: none; }
+}
