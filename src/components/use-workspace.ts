@@ -142,7 +142,7 @@ export function useWorkspace() {
           const newSurface = Boolean(event.task.canvas &&
             event.task.canvas.surface.id !== currentTask.canvas?.surface.id);
           const significantCanvasEdit = action.type === "canvas" &&
-            ["edit", "filter", "reorder"].includes(action.mutation.operation);
+            ["edit", "filter", "chart-axis", "reorder"].includes(action.mutation.operation);
           const significantWorkEdit = action.type === "work" &&
             action.actions.some((change) => change.kind === "edit");
           // State comes from the server; a UI transition never predicts a
