@@ -89,6 +89,9 @@ export function applyStructuredTurn(
     case "artifact":
       editDocument(update, input);
       break;
+    case "artifact-lock":
+      changeArtifactLock(update, input);
+      break;
   }
 
   return update;
@@ -292,7 +295,12 @@ function reviseConstraints(
     }
   }
 
-  update.needsDiscovery = update.changedDependencies.includes("location");
+  // Artist-only cultural work doesn't depend on the physical venue.
+  // Re-evaluate practical facts and dependent output drafts, but retain
+  // cultural evidence and an independently approved sound direction.
+  update.needsDiscovery =
+    update.changedDependencies.includes("location") &&
+    (task.brief.targetType !== "artist" || task.brief.kind === "gathering");
 }
 
 function updateParticipant(
@@ -492,10 +500,46 @@ function changeSavedMemory(
   update.localChangeOnly = true;
 }
 
+function changeArtifactLock(
+  update: TurnUpdate,
+  input: Extract<Turn, { type: "artifact-lock" }>,
+) {
+  const artifact = update.task.artifacts.find((a) => a.id === input.artifactId);
+
+  if (!artifact) {
+    throw new Error("Artifact not found.");
+  }
+
+  if (input.locked && artifact.freshness !== "current") {
+    throw new Error("Only current work can be approved.");
+  }
+
+  artifact.locked = input.locked;
+
+  if (!input.locked && artifact.freshness === "stale") {
+    // Unlocking an invalidated artifact requests a real recomposition;
+    // merely flipping the lock cannot make old evidence current.
+    update.changedDependencies.push(artifact.id);
+    update.localChangeOnly = false;
+  } else {
+    update.localChangeOnly = true;
+  }
+}
+
 function editDocument(
   update: TurnUpdate,
   input: Extract<Turn, { type: "artifact" }>,
 ) {
+  const artifact = update.task.artifacts.find((a) => a.id === input.artifactId);
+
+  if (!artifact) {
+    throw new Error("Artifact not found.");
+  }
+
+  if (artifact.locked) {
+    throw new Error("Unlock approved work before editing it.");
+  }
+
   update.artifactEdit = input;
   update.localChangeOnly = true;
 }

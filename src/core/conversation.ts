@@ -637,8 +637,16 @@ function applyDocumentCorrection(
 ) {
   const { task, changed } = edit;
 
-  if (!task.artifacts.some((a: Artifact) => a.id === action.artifactId)) {
+  const artifact = task.artifacts.find(
+    (a: Artifact) => a.id === action.artifactId,
+  );
+
+  if (!artifact) {
     throw new Error("Create the artifact before editing it.");
+  }
+
+  if (artifact.locked) {
+    throw new Error("Unlock approved work before editing it.");
   }
 
   edit.artifact = { artifactId: action.artifactId, content: action.content };

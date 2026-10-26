@@ -1,5 +1,10 @@
 import type { Artifact, Candidate, Task } from "../core/contracts";
 import {
+  reconcileGeneratedArtifact,
+  hasLockedConflict,
+  finalizeConnectedArtifacts,
+} from "../core/connected-artifacts";
+import {
   OutcomeDetailsSchema,
   type OutcomeDetails,
   type OutcomeSpec,
@@ -82,36 +87,110 @@ export function composeOutcome(input: Input) {
         ? "research-report"
         : spec.kind;
   const previous = input.artifacts.find((a) => a.id === "main");
-  const artifact: Artifact = {
-    id: "main",
-    kind,
-    title,
-    content,
-    details: OutcomeDetailsSchema.parse(details),
-    version: (previous?.version ?? 0) + 1,
-    dependencies: [
-      "outcome",
-      "goal",
-      "budget",
-      "duration",
-      "location",
-      "catalogue",
-      "selection",
-      "contextAnchor",
-      ...references.map((candidate) => `candidate:${candidate.id}`),
-      ...evidenceIds,
-    ],
-    evidenceIds,
-    assumptions: details.openQuestions,
-    freshness: "current",
-    edited: false,
-  };
+  const artifact: Artifact = reconcileGeneratedArtifact(
+    {
+      id: "main",
+      kind,
+      title,
+      content,
+      details: OutcomeDetailsSchema.parse(details),
+      version: (previous?.version ?? 0) + 1,
+      dependencies: [
+        "outcome",
+        "goal",
+        ...(spec.kind === "music-direction" || spec.kind === "research"
+          ? []
+          : ["budget", "duration", "location", "selection"]),
+        "catalogue",
+        "contextAnchor",
+        ...(spec.kind === "music-direction" || spec.kind === "research"
+          ? []
+          : references.map((candidate) => `candidate:${candidate.id}`)),
+        ...evidenceIds,
+      ],
+      evidenceIds,
+      assumptions: details.openQuestions,
+      freshness: "current",
+      edited: false,
+    },
+    previous,
+  );
+
+  // Music-direction outcomes can become a useful, connected body of work.
+  // These are drafts grounded in cultural references, not booked activities.
+  const related: Artifact[] = [];
+
+  if (spec.kind === "music-direction" && references.length) {
+    const sourceNames = references
+      .slice(0, 3)
+      .map((candidate) => candidate.name);
+    const culturalLine = sourceNames.join(", ");
+
+    const produce = (
+      id: string,
+      kind: Artifact["kind"],
+      title: string,
+      content: string,
+      directInputs: string[],
+    ) => {
+      const prior = input.artifacts.find((item) => item.id === id);
+      related.push(
+        reconcileGeneratedArtifact(
+          {
+            id,
+            kind,
+            title,
+            content,
+            version: (prior?.version ?? 0) + 1,
+            dependencies: ["goal", "main", ...directInputs, ...evidenceIds],
+            evidenceIds,
+            assumptions: [
+              "Conceptual draft from Qloo-linked cultural references, not real-world availability, commercial rights or measured demand.",
+            ],
+            freshness: "current",
+            edited: false,
+          },
+          prior,
+        ),
+      );
+    };
+
+    produce(
+      "concept",
+      "creative-brief",
+      "A shared experience concept",
+      [
+        "Concept direction for review",
+        `Build an intimate experience around the cultural references ${culturalLine}.`,
+        `Proposed location: ${input.brief.constraints.location} (working brief value; confirm before using; suitability not verified).`,
+        "Explore a cohesive visual and listening atmosphere, then validate real venues, budget, rights and guest preferences before publishing.",
+      ].join("\n\n"),
+      ["location"],
+    );
+    produce(
+      "invitation",
+      "invitation",
+      "A starting invitation",
+      [
+        "You're invited to explore an intimate listening experience.",
+        `Cultural starting points: ${culturalLine}.`,
+        `Location under consideration: ${input.brief.constraints.location}.`,
+        "Date, availability, guests and practical arrangements to be confirmed.",
+      ].join("\n\n"),
+      ["location", "concept"],
+    );
+  }
+
+  const artifacts = finalizeConnectedArtifacts(
+    [artifact, ...related],
+    input.artifacts,
+  );
 
   return {
-    artifacts: [artifact],
+    artifacts,
     selected: selected.map((candidate) => candidate.id),
     schedule: [],
-    status: (scheduled && !selected.length
+    status: (hasLockedConflict(artifacts) || (scheduled && !selected.length)
       ? "partial"
       : references.length
         ? "ready"
