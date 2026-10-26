@@ -249,6 +249,16 @@ describe("Broader evidence-linked outcomes through the actual orchestrator", () 
       outcome: { kind: "music-direction" },
     });
     expect(main(t).kind).toBe("music-direction");
+    expect(t.artifacts.map((a) => a.id)).toEqual([
+      "main",
+      "concept",
+      "invitation",
+    ]);
+    expect(t.artifacts.every((a) => a.evidenceIds.length > 0)).toBe(true);
+    expect(t.artifacts.find((a) => a.id === "concept")?.content)
+      .toContain("Location");
+    expect(t.artifacts.find((a) => a.id === "invitation")?.content)
+      .toContain("to be confirmed");
     expect(t.brief.contextAnchor?.name).toBe("Ghibli Museum");
     expect(main(t).details?.references).toHaveLength(10);
     expect(t.brief.selected).toEqual([]);
