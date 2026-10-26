@@ -387,6 +387,11 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await canvas.getByRole("button", {name: "Add to your plan", exact: true}).click();
   await canvas.getByRole("button", {name: "Move Supplied venue 1 earlier"}).click();
   await expect(canvas.locator(".ic-map-plan li").first()).toContainText("Supplied venue 1");
+  await canvas.getByRole("combobox", {name: "Day for Supplied venue 1"}).selectOption("2");
+  await canvas.getByRole("combobox", {name: "Day for Supplied venue 2"}).selectOption("1");
+  await expect.poll(async () => (await (
+    await page.request.get(`/api/tasks/${task.id}`)
+  ).json() as Task).canvas?.itineraryDays["venue-one"]).toBe(2);
   await evidence("09-itinerary-reordered");
   await canvas.getByRole("button", {name: "Remove Supplied venue 1"}).click();
   await expect(canvas.locator(".ic-map-plan li")).toHaveCount(1);
@@ -402,6 +407,8 @@ test("composed work persists through edits, filtering, planning, maps and refres
     await page.request.get(`/api/tasks/${task.id}`)
   ).json()) as Task;
   expect(saved.canvas?.itineraryIds).toEqual(["venue-two"]);
+  expect(saved.canvas?.itineraryDays["venue-one"]).toBeUndefined();
+  expect(saved.canvas?.itineraryDays["venue-two"]).toBe(1);
   expect(saved.canvas?.chartAxes["chart"]).toBe(2);
   expect(saved.canvas?.selectedCandidateId).toBe("venue-two");
   expect(
