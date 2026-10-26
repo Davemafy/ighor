@@ -415,14 +415,14 @@ export function ProductResults({
           <button
             role="tab"
             aria-selected={pane === "thread"}
-            onClick={() => setPaneChoice({ surfaceId, pane: "thread" })}
+            onClick={() => morphLayout(() => setPaneChoice({ surfaceId, pane: "thread" }))}
           >
             Conversation
           </button>
           <button
             role="tab"
             aria-selected={pane === "canvas"}
-            onClick={() => setPaneChoice({ surfaceId, pane: "canvas" })}
+            onClick={() => morphLayout(() => setPaneChoice({ surfaceId, pane: "canvas" }))}
           >
             Your result
           </button>
