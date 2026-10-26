@@ -1,5 +1,5 @@
 import type { Artifact, Candidate, Task } from "../core/contracts";
-import { reconcileGeneratedArtifact, hasLockedConflict } from "../core/connected-artifacts";
+import { reconcileGeneratedArtifact, hasLockedConflict, finalizeConnectedArtifacts } from "../core/connected-artifacts";
 import {
   OutcomeDetailsSchema,
   type OutcomeDetails,
@@ -108,11 +108,13 @@ export function composeOutcome(input: Input) {
     edited: false,
   }, previous);
 
+  const artifacts = finalizeConnectedArtifacts([artifact], input.artifacts);
+
   return {
-    artifacts: [artifact],
+    artifacts,
     selected: selected.map((candidate) => candidate.id),
     schedule: [],
-    status: (hasLockedConflict([artifact]) || (scheduled && !selected.length)
+    status: (hasLockedConflict(artifacts) || (scheduled && !selected.length)
       ? "partial"
       : references.length
         ? "ready"
