@@ -613,7 +613,7 @@ export function ProductResults({
       {task.canvas ? (
         <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
       ) : hasWorkDocuments ? (
-        <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
+        <ConnectedWorkCanvas key={task.id} task={task} busy={busy} onTurn={onTurn} />
       ) : null}
       {!hasVisual && artifacts.length > 0 && (
         <aside className="pp-work-pane" aria-label="Your work">
