@@ -95,6 +95,7 @@ export function modelContext(task: Task, message: string) {
       title: artifact.title,
       content: artifact.content.slice(0, 3000),
       freshness: artifact.freshness,
+      locked: artifact.locked ?? false,
       evidenceIds: artifact.evidenceIds,
       assumptions: artifact.assumptions,
       openQuestions: artifact.details?.openQuestions,
