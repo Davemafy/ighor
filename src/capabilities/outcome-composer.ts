@@ -93,13 +93,14 @@ export function composeOutcome(input: Input) {
     dependencies: [
       "outcome",
       "goal",
-      "budget",
-      "duration",
-      "location",
+      ...(spec.kind === "music-direction" || spec.kind === "research"
+        ? []
+        : ["budget", "duration", "location", "selection"]),
       "catalogue",
-      "selection",
       "contextAnchor",
-      ...references.map((candidate) => `candidate:${candidate.id}`),
+      ...(spec.kind === "music-direction" || spec.kind === "research"
+        ? []
+        : references.map((candidate) => `candidate:${candidate.id}`)),
       ...evidenceIds,
     ],
     evidenceIds,
