@@ -9,6 +9,7 @@ import {
   readTurnEvents,
   submitTurn,
   TurnRequestError,
+  completedTurnAfter,
   type WorkspaceSummary,
 } from "./workspace-api";
 
@@ -160,10 +161,14 @@ export function useWorkspace() {
       for await (const event of readTurnEvents(response)) {
         if (event.type === "state" || event.type === "done") {
           const previousVisual = Boolean(
-            currentTask.canvas || currentTask.work?.documents.length || currentTask.work?.decisions.length,
+            currentTask.canvas ||
+            currentTask.work?.documents.length ||
+            currentTask.work?.decisions.length,
           );
           const nextVisual = Boolean(
-            event.task.canvas || event.task.work?.documents.length || event.task.work?.decisions.length,
+            event.task.canvas ||
+            event.task.work?.documents.length ||
+            event.task.work?.decisions.length,
           );
           const newSurface = Boolean(
             event.task.canvas &&
@@ -185,7 +190,8 @@ export function useWorkspace() {
             nextVisual &&
             (!previousVisual ||
               newSurface ||
-              (event.type === "done" && ["message", "question"].includes(action.type)) ||
+              (event.type === "done" &&
+                ["message", "question"].includes(action.type)) ||
               significantCanvasEdit ||
               significantWorkEdit)
           ) {
@@ -321,6 +327,21 @@ export function useWorkspace() {
 
           if (latest) {
             setTask(latest);
+            if (
+              completedTurnAfter(
+                latest,
+                currentTask.brief.version,
+                currentTask.messages.length,
+              )
+            ) {
+              failed = false;
+              setErrorMessage("");
+              setFeedback((previous) =>
+                previous
+                  ? { ...previous, state: "complete", error: undefined }
+                  : previous,
+              );
+            }
           }
         } catch {
           /* Keep the visible input and retry available. */

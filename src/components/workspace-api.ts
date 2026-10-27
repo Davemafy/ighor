@@ -73,7 +73,7 @@ export async function submitTurn(
   });
 
   if (!response.ok) {
-    const body = await response.json();
+    const body = await response.json().catch(() => ({}));
     throw new TurnRequestError(
       body.error ?? "Could not save the turn.",
       response.status === 409,
@@ -149,4 +149,19 @@ export async function* readTurnEvents(
       reader.releaseLock();
     }
   }
+}
+
+/** A dropped connection must not offer to replay an already completed turn. */
+export function completedTurnAfter(
+  task: Task,
+  version: number,
+  messageCount: number,
+) {
+  return (
+    task.brief.version > version &&
+    ["ready", "partial"].includes(task.status) &&
+    task.messages
+      .slice(messageCount)
+      .some((message) => message.role === "assistant")
+  );
 }

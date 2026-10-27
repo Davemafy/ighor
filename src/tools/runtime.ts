@@ -1,4 +1,5 @@
 import { LiveQlooProvider, SqliteResponseCache } from "./qloo-live";
+import { FallbackModel } from "./fallback-model";
 import { ToolCallingModel } from "./tool-model";
 import { ResponsiveGeminiModel } from "./responsive-gemini";
 import { RecordedQlooProvider } from "./recorded-qloo";
@@ -46,23 +47,30 @@ export function runtimeModelProvider(mode: Task["mode"]) {
     return new DevelopmentModel();
   }
 
-  return process.env.GEMINI_API_KEY
-    ? new ResponsiveGeminiModel(
-        process.env.GEMINI_API_KEY,
-        process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
-      )
-    : process.env.LLM_API_KEY && process.env.LLM_MODEL
+  const backup =
+    process.env.LLM_API_KEY && process.env.LLM_MODEL
       ? new ToolCallingModel(process.env.LLM_API_KEY, process.env.LLM_MODEL)
-      : process.env.IGOR_TEST_FIXTURES === "1" ||
-          process.env.IGOR_QLOO_RECORDING ||
-          process.env.NODE_ENV === "test"
-        ? new DevelopmentModel()
-        : {
-            executionMode: "tool-calling" as const,
-            async interpret(): Promise<never> {
-              throw new Error(
-                "No production model configured. Configure GEMINI_API_KEY or LLM_API_KEY and LLM_MODEL.",
-              );
-            },
-          };
+      : undefined;
+  if (process.env.GEMINI_API_KEY) {
+    const primary = new ResponsiveGeminiModel(
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
+    );
+    return backup ? new FallbackModel(primary, backup) : primary;
+  }
+  return (
+    backup ??
+    (process.env.IGOR_TEST_FIXTURES === "1" ||
+    process.env.IGOR_QLOO_RECORDING ||
+    process.env.NODE_ENV === "test"
+      ? new DevelopmentModel()
+      : {
+          executionMode: "tool-calling" as const,
+          async interpret(): Promise<never> {
+            throw new Error(
+              "No production model configured. Configure GEMINI_API_KEY or LLM_API_KEY and LLM_MODEL.",
+            );
+          },
+        })
+  );
 }
