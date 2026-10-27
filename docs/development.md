@@ -65,3 +65,7 @@ HTTP acceptance scripts target localhost on port 3300. Start a recorded-data pro
 Set `XAI_API_KEY` (or `GROK_API_KEY`). Optionally set `XAI_MODEL` (or `GROK_MODEL`); the default is `grok-4.3`. If Gemini is configured, Grok is its interpretation backup. Otherwise Grok is the primary model. Existing OpenAI settings are only used when no Grok key is configured. Keys remain server-side.
 
 The adapter uses the pinned `https://api.x.ai/v1/responses` endpoint, `store: false`, validated application tools, bounded requests and the existing read-only fallback policy. It does not enable provider-hosted web tools or replay cultural calls and writes. Protocol reference: https://docs.x.ai/developers/rest-api-reference/inference/responses.
+
+### Grok provider infrastructure
+
+Grok now uses the open-source Vercel AI SDK and its direct xAI provider (`ai`, `@ai-sdk/xai`). No Vercel hosting, gateway key, or OpenAI credentials are required. The adapter translates Igor’s existing decision protocol into SDK messages; Igor retains final schema validation, one bounded repair, request budgets, provider fallback, and all Qloo execution. SDK tools have no execute callbacks. Automatic SDK retries are disabled so retries do not multiply across layers, and response storage remains disabled. Gemini keeps its existing adapter; this is an incremental provider migration, not a UI or orchestration rewrite.
