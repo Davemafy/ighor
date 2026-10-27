@@ -205,3 +205,38 @@ it("accepts supplied gift results with missing display title and unrelated node 
   });
   expect(result.presentation?.nodes[0]).not.toHaveProperty("columns");
 });
+
+it("repairs an empty show-result claim while accepting an actual document", () => {
+  const task = freshTask("show-result", "owner");
+  task.canvas = undefined;
+  task.candidates = [];
+  task.artifacts = [];
+  task.work = undefined;
+  const decision = {
+    intent: "conversation",
+    reply: "Here is your movie discovery plan.",
+  };
+  expect(() =>
+    readTurnDecision(JSON.stringify({ decision }), task, "show"),
+  ).toThrow("no visible content");
+  expect(
+    readTurnDecision(
+      JSON.stringify({
+        decision: {
+          ...decision,
+          presentation: {
+            id: "plan",
+            title: "Plan",
+            basis: "draft",
+            root: "doc",
+            nodes: [
+              { id: "doc", type: "document", content: "The actual draft." },
+            ],
+          },
+        },
+      }),
+      task,
+      "show",
+    ).presentation?.nodes[0].type,
+  ).toBe("document");
+});

@@ -22,6 +22,7 @@ const conversationInstructions = [
   "Goal/revision must include kind and goal plus grounded actions",
   "Preserve the existing goal and known preferences unless the user changes them",
   "Use thread history to understand pronouns and short follow-ups",
+  "A short follow-up such as show or bring them refers to the most recent explicit user request. Do not merge it with an abandoned earlier goal or recipient. An assistant warning about document edits is not a user request. When asked to show documents, images or results, produce actual supported presentation content or retrieve real discovery candidates; never reply here is your plan without content. For movie discovery from a named artist use a movie discovery goal, not a creative project document",
   "The latest user request controls the next step. A new topic replaces the active goal; do not keep asking abandoned trip details when the user greets you, declines or asks for movies. Greetings deserve a brief greeting without a repeated intake checklist",
   "After a submitted clarification form, use its supplied values and continue useful work. Do not ask the same question or demand I/my wording. A question subject is you by default, or group only for an explicitly shared request; this is task context, never permission to store long-term memory",
 

@@ -216,6 +216,40 @@ export function readTurnDecision(
   }
 
   const decision = LiveDecisionSchema.parse(payload);
+  const visibleWork = Boolean(
+    context &&
+    (context.work?.documents.length ||
+      context.work?.decisions.length ||
+      context.artifacts.length ||
+      context.candidates.length ||
+      context.canvas?.surface.nodes.some(
+        (node) =>
+          !["question", "stack", "columns", "tabs", "activity"].includes(
+            node.type,
+          ),
+      )),
+  );
+  if (
+    (decision.intent === "conversation" ||
+      decision.intent === "clarification") &&
+    /\b(?:show|display|images?|posters?|document)\b/i.test(
+      currentMessage || "",
+    ) &&
+    /\bhere (?:is|are)\b|\bI(?:'ve| have) (?:created|prepared|displayed|shown)\b/i.test(
+      decision.reply,
+    ) &&
+    !decision.presentation &&
+    !visibleWork
+  ) {
+    throw new z.ZodError([
+      {
+        code: "custom",
+        path: ["presentation"],
+        message:
+          "The user asked to see work, but the claimed result has no visible content. Include the actual supported presentation, or use a discovery goal to retrieve real candidates and imagery. Do not claim an absent document or image was displayed.",
+      },
+    ]);
+  }
 
   if (
     context &&

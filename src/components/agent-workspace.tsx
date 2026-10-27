@@ -106,14 +106,9 @@ export function AgentWorkspace({
     : !!(
         task?.canvas?.surface.nodes.some(
           (node) =>
-            ![
-              "stack",
-              "tabs",
-              "columns",
-              "text",
-              "activity",
-              "question",
-            ].includes(node.type),
+            !["stack", "tabs", "columns", "activity", "question"].includes(
+              node.type,
+            ),
         ) ||
         task?.work?.documents.length ||
         task?.work?.decisions.length ||
