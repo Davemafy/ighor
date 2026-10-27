@@ -61,6 +61,15 @@ export async function POST(
           }
         };
 
+        // Keep proxies and clients informed while inference or retrieval runs.
+        const heartbeat = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(": heartbeat\n\n"));
+          } catch {
+            /* The client may have left. */
+          }
+        }, 10000);
+
         try {
           send({
             type: "action",
@@ -85,6 +94,7 @@ export async function POST(
               : "The action was rejected. Review its inputs.",
           });
         } finally {
+          clearInterval(heartbeat);
           controller.close();
         }
       },
@@ -95,6 +105,7 @@ export async function POST(
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {

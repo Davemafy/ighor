@@ -700,40 +700,29 @@ export function AgentWorkspace({
             )}
             {historyLoading && <LoadingSurface mode="history" />}
             <div className="iw-history-list" aria-busy={historyLoading}>
-              {matchingHistory.map((h, index) => (
-                <div className="iw-history-item" key={h.id}>
-                  {!historySearch.trim() && (
-                    <h2 className="iw-history-section">
-                      {index === 0
-                        ? "Continue where you left off"
-                        : index === 1
-                          ? "Earlier conversations"
-                          : ""}
-                    </h2>
-                  )}
-                  <button
-                    key={h.id}
-                    disabled={w.isBusy || w.isLoadingWorkspace}
-                    onClick={() => void open(h.id)}
-                  >
-                    <span className="iw-history-copy">
-                      <strong>{conversationTitle(h.title || h.goal)}</strong>
-                      {h.preview && <span>{h.preview}</span>}
-                    </span>
-                    <span className="iw-history-meta">
-                      {h.updatedAt &&
-                        Number.isFinite(Date.parse(h.updatedAt)) && (
-                          <time dateTime={h.updatedAt}>
-                            {new Intl.DateTimeFormat(undefined, {
-                              month: "short",
-                              day: "numeric",
-                            }).format(new Date(h.updatedAt))}
-                          </time>
-                        )}
-                      <ArrowRight />
-                    </span>
-                  </button>
-                </div>
+              {matchingHistory.map((h) => (
+                <button
+                  key={h.id}
+                  disabled={w.isBusy || w.isLoadingWorkspace}
+                  onClick={() => void open(h.id)}
+                >
+                  <span className="iw-history-copy">
+                    <strong>{conversationTitle(h.title || h.goal)}</strong>
+                    {h.preview && <span>{h.preview}</span>}
+                  </span>
+                  <span className="iw-history-meta">
+                    {h.updatedAt &&
+                      Number.isFinite(Date.parse(h.updatedAt)) && (
+                        <time dateTime={h.updatedAt}>
+                          {new Intl.DateTimeFormat(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          }).format(new Date(h.updatedAt))}
+                        </time>
+                      )}
+                    <ArrowRight />
+                  </span>
+                </button>
               ))}
             </div>
             {!historyLoading &&

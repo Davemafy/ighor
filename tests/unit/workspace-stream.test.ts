@@ -98,3 +98,36 @@ it("reports a dropped connection instead of implying completion", async () => {
   });
   await expect(events.next()).rejects.toThrow("ended before completion");
 });
+
+it("times out an idle connection and cancels its reader", async () => {
+  let cancelled = false;
+  const response = new Response(
+    new ReadableStream({
+      cancel() {
+        cancelled = true;
+      },
+    }),
+  );
+  await expect(readTurnEvents(response, 15).next()).rejects.toThrow(
+    "connection stopped responding",
+  );
+  expect(cancelled).toBe(true);
+  expect(response.body?.locked).toBe(false);
+});
+
+it("accepts CRLF packets and heartbeats split across network chunks", async () => {
+  const bytes = new TextEncoder().encode(
+    ': heartbeat\r\n\r\ndata: {"type":"action","message":"Working"}\r\n\r\ndata: {"type":"error","message":"Retry"}\r\n\r\n',
+  );
+  const response = streamedResponse(
+    Array.from(bytes, (byte) => Uint8Array.of(byte)),
+  );
+  const events = [];
+
+  for await (const event of readTurnEvents(response)) {
+    events.push(event);
+  }
+
+  expect(events.map((event) => event.type)).toEqual(["action", "error"]);
+  expect(response.body?.locked).toBe(false);
+});

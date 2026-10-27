@@ -67,6 +67,7 @@ export async function submitTurn(
 ): Promise<Response> {
   const response = await fetch(`/api/tasks/${task.id}/turn`, {
     method: "POST",
+    signal: AbortSignal.timeout(150000),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...action, version: task.brief.version }),
   });
@@ -84,6 +85,7 @@ export async function submitTurn(
 
 export async function* readTurnEvents(
   response: Response,
+  idleTimeoutMs = 45000,
 ): AsyncGenerator<Event> {
   const reader = response.body?.getReader();
 
@@ -97,8 +99,24 @@ export async function* readTurnEvents(
 
   try {
     while (true) {
-      const { value, done } = await reader.read();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const chunk = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "The connection stopped responding. Your saved conversation will be checked before you retry.",
+                ),
+              ),
+            idleTimeoutMs,
+          );
+        }),
+      ]).finally(() => clearTimeout(timer));
+      const { value, done } = chunk;
       pending += decoder.decode(value, { stream: !done });
+      pending = pending.replace(/\r\n/g, "\n");
       let boundary = pending.indexOf("\n\n");
 
       while (boundary >= 0) {

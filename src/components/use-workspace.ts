@@ -152,7 +152,6 @@ export function useWorkspace() {
     });
     setExecutionMessage("Waiting for Igor");
     let failed = false;
-    let receivedState = false;
     let morphed = false;
 
     try {
@@ -195,16 +194,27 @@ export function useWorkspace() {
             setTask(event.task);
           }
 
-          receivedState = true;
+          const terminalError =
+            event.type !== "done"
+              ? ""
+              : event.task.status === "error"
+                ? event.task.error || "This reply could not finish."
+                : action.type === "message" &&
+                    !event.task.messages
+                      .slice(currentTask.messages.length)
+                      .some((message) => message.role === "assistant")
+                  ? "Your message was saved, but Igor did not finish a reply. Try again."
+                  : "";
 
-          if (event.type === "done" && event.task.status === "error") {
+          if (terminalError) {
             failed = true;
+            setErrorMessage(terminalError);
             setFeedback((previous) =>
               previous
                 ? {
                     ...previous,
                     state: "error",
-                    error: event.task.error || "This reply could not finish.",
+                    error: terminalError,
                   }
                 : previous,
             );
@@ -304,7 +314,7 @@ export function useWorkspace() {
 
       // A transport error can happen after the server saved a turn. Reconcile
       // before allowing a retry, so messages and optimistic versions stay aligned.
-      if (failed && !receivedState) {
+      if (failed) {
         try {
           const latest = await fetchWorkspace(currentTask.id);
 
