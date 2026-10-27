@@ -1144,3 +1144,17 @@
     transform: none;
   }
 }
+
+/* Desktop navigation and its reserved column always share one width. */
+@media (min-width: 761px) {
+  .iw-app .iw-nav,
+  .iw-app .iw-nav:is(:hover, :focus-within) {
+    width: 208px;
+    box-shadow: none;
+    transition: none;
+  }
+  .iw-app .iw-nav span {
+    opacity: 1;
+    transition: none;
+  }
+}
