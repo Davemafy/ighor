@@ -238,6 +238,13 @@ export async function interpretMessage(
   // All model-supplied numeric and wording patches use the same grounding rules,
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
+  const explicitDocumentEdit =
+    /\b(?:edit|rewrite|replace|update|change|revise|set)\b[\s\S]{0,160}\b(?:document|invitation|invite|wording|copy|draft|text)\b/i.test(
+      input.text,
+    ) ||
+    /\b(?:document|invitation|invite|wording|copy|draft)\b[\s\S]{0,100}\b(?:edit|rewrite|replace|update|change|revise|say|read)\b/i.test(
+      input.text,
+    );
 
   // A grounded intake answer is not permission to rewrite an invitation.
   // Keep supported taste extraction without letting an invented document edit
@@ -247,7 +254,10 @@ export async function interpretMessage(
   for (let index = proposals.length - 1; index >= 0; index--) {
     const action = proposals[index];
 
-    if (action.kind === "artifact" && !input.text.includes(action.content)) {
+    if (
+      action.kind === "artifact" &&
+      (!explicitDocumentEdit || !input.text.includes(action.content))
+    ) {
       proposals.splice(index, 1);
       trace(
         "proposal.ignored",
@@ -266,6 +276,7 @@ export async function interpretMessage(
 
   if (
     parsed.wording &&
+    explicitDocumentEdit &&
     input.text.includes(parsed.wording) &&
     !proposals.some(
       (action) =>

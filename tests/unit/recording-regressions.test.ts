@@ -252,3 +252,19 @@ it("renders headings and lists as safe markup rather than raw Markdown", () => {
   expect(markup).not.toContain("<script>");
   expect(markup).toContain("&lt;script&gt;");
 });
+
+it("does not treat a copied movie request as replacement document wording", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  stores.push(store);
+  const task = freshTask("movie-copy", "owner");
+  store.create(task);
+  const text = "Find movies based on my interest in nujabes. Show the returned references so I can explore them and save the ones I like to a collection.";
+  const result = await runTurn(store, task.id, "owner", {type: "message", text, version: task.brief.version}, undefined, undefined, {
+    interpret: async () => ({intent: "goal", supported: true, kind: "discovery", goal: text, targetType: "movie", actions: [
+      {kind: "artifact", artifactId: "main", content: text},
+      {kind: "profile", participant: "you", preferences: [{value: "nujabes", polarity: "like", entityType: "artist"}]},
+    ]}),
+  });
+  expect(result.messages.some((message) => message.text.includes("Save the document wording separately"))).toBe(false);
+  expect(result.trace.some((entry) => entry.action === "proposal.ignored")).toBe(true);
+});
