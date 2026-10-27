@@ -1055,3 +1055,10 @@
     inset: 16px 16px 16px 92px !important;
   }
 }
+
+/* Saved collections reserve the expanded desktop rail without hover reflow. */
+@media (min-width: 761px) {
+  .iw-app:has(> main > .iw-library:not(.iw-history-page)) {
+    padding-left: 208px;
+  }
+}
