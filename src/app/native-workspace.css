@@ -1853,3 +1853,16 @@
   border-color: #d6cebf;
   backdrop-filter: none;
 }
+
+/* Reply emphasis must inherit the light interface's readable ink. */
+.iw-app .pp-message-text :is(strong, b, em, i) {
+  color: inherit;
+}
+.iw-app .pp-message-text a {
+  color: #3e4269;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.iw-app .iw-message .pp-message-text :is(h1, h2, h3, h4, li) {
+  color: #24201b;
+}

@@ -1,3 +1,4 @@
+import { interfaceReply } from "./interface-replies";
 import { modelContext } from "./model-context";
 import { readModelResponse } from "./response-body";
 import { z } from "zod";
@@ -28,6 +29,7 @@ const conversationInstructions = [
 
   "When completing an initial request after clarification, reuse facts and tastes already explicitly supplied in this thread; do not ask the user to repeat them",
   "Write clear, concise plain-text replies",
+  "Requests about this chat's appearance or fluid/morphing UI are interface feedback, not a new planning project. Do not create a Fluid Workspace document, ask a project-intake form, or claim custom CSS, ripples or water physics were installed. Explain the available Appearance controls briefly. When images are unavailable, say so; never claim an image exists because a film title was written",
   "Put evidence IDs in replyEvidenceIds, not in the prose",
   "Do not claim to have changed state without validated actions or a presentation change",
   "If history is omitted and a reference is unclear, ask rather than guess",
@@ -182,6 +184,8 @@ export class ToolCallingModel implements ModelProvider {
   }
 
   async interpret(text: string, context?: Task) {
+    const direct = interfaceReply(text, context);
+    if (direct) return direct;
     const tool = turnTool();
     const input: unknown[] = [
       {

@@ -1,3 +1,4 @@
+import { interfaceReply } from "./interface-replies";
 import { z } from "zod";
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 import { GeminiModel } from "./gemini-model";
@@ -17,6 +18,8 @@ const Route = z.object({
 
 export class ResponsiveGeminiModel extends GeminiModel {
   override async interpret(text: string, context?: Task) {
+    const direct = interfaceReply(text, context);
+    if (direct) return direct;
     const firstTurn =
       context &&
       !context.brief.goal &&
@@ -41,7 +44,8 @@ export class ResponsiveGeminiModel extends GeminiModel {
     const tool = {
       type: "function",
       name: "route_conversation",
-      description: "Choose a genuine reply or delegate substantive work to Igor's validated agent.",
+      description:
+        "Choose a genuine reply or delegate substantive work to Igor's validated agent.",
       parameters: {
         type: "object",
         additionalProperties: false,
@@ -50,7 +54,11 @@ export class ResponsiveGeminiModel extends GeminiModel {
             type: "string",
             enum: ["conversation", "clarification", "delegate"],
           },
-          reply: { type: "string", description: "Required for conversation or clarification; omit for delegate." },
+          reply: {
+            type: "string",
+            description:
+              "Required for conversation or clarification; omit for delegate.",
+          },
         },
         required: ["intent"],
       },
@@ -78,7 +86,10 @@ export class ResponsiveGeminiModel extends GeminiModel {
       if (
         decision.intent === "delegate" ||
         !decision.reply?.trim() ||
-        (decision.intent === "conversation" && /\b(?:I have booked|I booked|I created|I saved|I checked availability)\b/i.test(decision.reply))
+        (decision.intent === "conversation" &&
+          /\b(?:I have booked|I booked|I created|I saved|I checked availability)\b/i.test(
+            decision.reply,
+          ))
       ) {
         return super.interpret(text, context);
       }
