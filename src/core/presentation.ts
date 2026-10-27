@@ -13,6 +13,26 @@ const row = z.strictObject({
   cells: z.array(z.string().max(1000)).min(1).max(12),
   evidenceIds: refs.default([]),
 });
+const QuestionFieldSchema = z
+  .strictObject({
+    id,
+    label: z.string().min(1).max(120),
+    type: z.enum(["text", "number", "date", "choice"]),
+    required: z.boolean().default(true),
+    placeholder: z.string().max(100).optional(),
+    options: z.array(z.string().min(1).max(120)).min(2).max(8).optional(),
+  })
+  .superRefine((field, ctx) => {
+    if (
+      (field.type === "choice") !== Boolean(field.options) ||
+      (field.options && new Set(field.options).size !== field.options.length)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Only choice fields have distinct options.",
+      });
+    }
+  });
 export const PresentationNodeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     ...base,
@@ -73,6 +93,12 @@ export const PresentationNodeSchema = z.discriminatedUnion("type", [
     candidateIds: refs,
   }),
   z.strictObject({ ...base, type: z.literal("activity") }),
+  z.strictObject({
+    ...base,
+    type: z.literal("question"),
+    prompt: z.string().min(1).max(500),
+    fields: z.array(QuestionFieldSchema).min(1).max(6),
+  }),
 ]);
 export type PresentationNode = z.infer<typeof PresentationNodeSchema>;
 
@@ -160,6 +186,14 @@ export const PresentationSchema = z
         fail("Step IDs must be unique.");
       }
 
+      if (
+        node.type === "question" &&
+        new Set(node.fields.map((field) => field.id)).size !==
+          node.fields.length
+      ) {
+        fail("Question field IDs must be unique.");
+      }
+
       if (node.type === "chart") {
         const table = byId.get(node.tableId);
 
@@ -195,11 +229,24 @@ export const CanvasStateSchema = z.object({
   itineraryIds: refs.default([]),
   filters: z.record(z.string(), z.string().max(200)).default({}),
   chartAxes: z.record(z.string(), z.number().int().min(0).max(11)).default({}),
-  itineraryDays: z.record(z.string(), z.number().int().min(1).max(14)).default({}),
+  itineraryDays: z
+    .record(z.string(), z.number().int().min(1).max(14))
+    .default({}),
   completed: z.array(z.string().max(180)).max(100).default([]),
+  answers: z
+    .record(
+      z.string().max(180),
+      z.record(z.string().max(80), z.string().max(2000)),
+    )
+    .default({}),
 });
 export type CanvasState = z.infer<typeof CanvasStateSchema>;
 export const CanvasMutationSchema = z.discriminatedUnion("operation", [
+  z.strictObject({
+    operation: z.literal("answer"),
+    nodeId: id,
+    values: z.record(z.string().max(80), z.string().max(2000)),
+  }),
   z.strictObject({
     operation: z.literal("edit"),
     nodeId: id,
@@ -325,6 +372,61 @@ export function mutateCanvas(
   }
 
   switch (mutation.operation) {
+    case "answer": {
+      if (node.type !== "question") {
+        throw new Error("This component does not accept answers.");
+      }
+
+      if (
+        Object.keys(mutation.values).some(
+          (key) => !node.fields.some((field) => field.id === key),
+        )
+      ) {
+        throw new Error("Unknown question field.");
+      }
+
+      const values: Record<string, string> = {};
+
+      for (const field of node.fields) {
+        const value = (mutation.values[field.id] ?? "").trim();
+
+        if (field.required && !value) {
+          throw new Error(`Please answer ${field.label}.`);
+        }
+
+        if (
+          value &&
+          field.type === "choice" &&
+          !field.options?.includes(value)
+        ) {
+          throw new Error("Choose an offered answer.");
+        }
+
+        if (
+          value &&
+          field.type === "number" &&
+          !Number.isFinite(Number(value))
+        ) {
+          throw new Error("Enter a valid number.");
+        }
+
+        if (
+          value &&
+          field.type === "date" &&
+          (!/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+            !Number.isFinite(Date.parse(value)) ||
+            new Date(value).toISOString().slice(0, 10) !== value)
+        ) {
+          throw new Error("Enter a valid date.");
+        }
+
+        values[field.id] = value;
+      }
+
+      canvas.answers[`${canvas.surface.id}:${node.id}`] = values;
+      break;
+    }
+
     case "edit":
       if (node.type !== "document" || node.artifactId) {
         throw new Error("Only an authored draft can be edited here.");
@@ -339,20 +441,23 @@ export function mutateCanvas(
 
       canvas.filters[node.id] = mutation.value;
       break;
+
     case "chart-axis": {
       if (node.type !== "chart") {
         throw new Error("Only a chart can change its measure.");
       }
 
       const table = canvas.surface.nodes.find((n) => n.id === node.tableId);
+
       if (
         table?.type !== "table" ||
         mutation.valueColumn >= table.columns.length ||
         mutation.valueColumn === node.labelColumn ||
         table.rows.length === 0 ||
-        table.rows.some((row) =>
-          !row.cells[mutation.valueColumn]?.trim() ||
-          !Number.isFinite(Number(row.cells[mutation.valueColumn])),
+        table.rows.some(
+          (row) =>
+            !row.cells[mutation.valueColumn]?.trim() ||
+            !Number.isFinite(Number(row.cells[mutation.valueColumn])),
         )
       ) {
         throw new Error("Choose an existing numeric comparison column.");
@@ -361,6 +466,7 @@ export function mutateCanvas(
       canvas.chartAxes[node.id] = mutation.valueColumn;
       break;
     }
+
     case "select":
       if (!(
         (node.type === "spatial" || node.type === "discovery") &&
@@ -401,11 +507,13 @@ export function mutateCanvas(
       }
 
       canvas.itineraryIds = mutation.candidateIds;
+
       for (const key of Object.keys(canvas.itineraryDays)) {
         if (!mutation.candidateIds.includes(key)) {
           delete canvas.itineraryDays[key];
         }
       }
+
       break;
     }
 
@@ -427,6 +535,7 @@ export function mutateCanvas(
       } else {
         canvas.itineraryDays[mutation.candidateId] = mutation.day;
       }
+
       break;
     }
 

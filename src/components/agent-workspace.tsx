@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import {
   AgentActivity,
   LoadingImage,
 } from "./workspace-loading";
+import { morphLayout } from "./mobile-transitions";
 import { hasPendingInput } from "./turn-feedback";
 import { TaskCanvas } from "./task-canvas";
 import { ConnectedWorkCanvas } from "./connected-work-canvas";
@@ -38,6 +40,7 @@ import "../app/canvas.css";
 import "../app/connected-work.css";
 import "../app/spatial-morph.css";
 import "../app/workbench.css";
+import "../app/native-workspace.css";
 
 const assets = "/marketing/assets/";
 const starts = [
@@ -72,28 +75,61 @@ const starts = [
 ];
 type Page = "work" | "history" | "saved";
 
-export function AgentWorkspace() {
+export function AgentWorkspace({
+  initialPage = "work",
+  initialConversation = false,
+  initialHasResult = false,
+  initialPane = "thread",
+}: {
+  initialPage?: Page;
+  initialConversation?: boolean;
+  initialHasResult?: boolean;
+  initialPane?: "thread" | "work";
+}) {
   const w = useWorkspace();
-  const [page, setPage] = useState<Page>("work");
+  const [page, setPage] = useState<Page>(initialPage);
   const [prompt, setPrompt] = useState("");
   const [menu, setMenu] = useState(false);
-  const [pane, setPane] = useState<"thread" | "work">("thread");
+  const [pane, setPane] = useState<"thread" | "work">(initialPane);
   const [historyError, setHistoryError] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
-  const restored = useRef(false);
   const scrolledTask = useRef<string | null>(null);
   const task = w.task;
-  const hasResult = !!(
-    task?.canvas ||
-    task?.work?.documents.length ||
-    task?.artifacts.length ||
-    task?.candidates.length
-  );
-  const started = !!(task?.messages.length || w.feedback);
+  const hasResult = !task
+    ? initialHasResult
+    : !!(
+        task?.canvas?.surface.nodes.some(
+          (node) =>
+            ![
+              "stack",
+              "tabs",
+              "columns",
+              "text",
+              "activity",
+              "question",
+            ].includes(node.type),
+        ) ||
+        task?.work?.documents.length ||
+        task?.artifacts.length ||
+        task?.candidates.length
+      );
+  const started = task
+    ? !!(task.messages.length || w.feedback)
+    : initialConversation;
+  const questions =
+    task?.canvas?.surface.nodes.filter((node) => node.type === "question") ??
+    [];
   const title = task?.brief.goal || "Your conversation";
 
+  useEffect(() => {
+    if (!task || w.isLoadingWorkspace) {
+      return;
+    }
+
+    document.cookie = `igor-layout=${started ? "conversation" : "welcome"}:${hasResult ? "result" : "plain"}; Path=/app; SameSite=Lax; Max-Age=2592000`;
+  }, [task?.id, started, hasResult, w.isLoadingWorkspace]);
   useEffect(() => {
     void w
       .loadHistory()
@@ -101,22 +137,8 @@ export function AgentWorkspace() {
       .finally(() => setHistoryLoading(false));
   }, []);
   useEffect(() => {
-    if (!task || restored.current) return;
-    restored.current = true;
-    const query = new URL(location.href).searchParams;
-    const id = query.get("task");
-    if (query.get("view") === "saved") setPage("saved");
-    if (query.get("view") === "conversations") setPage("history");
-    if (query.get("view") === "editor") setPane("work");
-    if (id && id !== task.id)
-      void w
-        .openWorkspace(id)
-        .catch(() =>
-          w.setErrorMessage("That conversation could not be restored."),
-        );
-  }, [task?.id]);
-  useEffect(() => {
     const region = end.current?.closest(".iw-messages");
+
     if (
       region &&
       (scrolledTask.current !== task?.id ||
@@ -129,6 +151,7 @@ export function AgentWorkspace() {
   }, [task?.id, task?.messages.length, w.isBusy, w.isLoadingWorkspace]);
   useEffect(() => {
     const area = input.current;
+
     if (area) {
       area.style.height = "auto";
       area.style.height = `${Math.min(area.scrollHeight, 144)}px`;
@@ -141,13 +164,18 @@ export function AgentWorkspace() {
         "--iw-height",
         `${viewport?.height ?? innerHeight}px`,
       );
+
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenu(false);
+      if (event.key === "Escape") {
+        setMenu(false);
+      }
     };
+
     resize();
     viewport?.addEventListener("resize", resize);
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", escape);
+
     return () => {
       viewport?.removeEventListener("resize", resize);
       window.removeEventListener("resize", resize);
@@ -155,15 +183,21 @@ export function AgentWorkspace() {
       document.documentElement.style.removeProperty("--iw-height");
     };
   }, []);
+
   function canLeave() {
     const check = new Event("beforeunload", { cancelable: true });
+
     return (
       window.dispatchEvent(check) ||
       window.confirm("Leave with unsaved edits? Keep a copy before continuing.")
     );
   }
+
   function navigate(next: Page) {
-    if (page === "work" && next !== "work" && !canLeave()) return;
+    if (page === "work" && next !== "work" && !canLeave()) {
+      return;
+    }
+
     setPage(next);
     setMenu(false);
     const url = new URL(location.href);
@@ -177,8 +211,12 @@ export function AgentWorkspace() {
     );
     history.replaceState({}, "", url);
   }
+
   async function open(id: string) {
-    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) return;
+    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) {
+      return;
+    }
+
     try {
       if (await w.openWorkspace(id)) {
         navigate("work");
@@ -191,10 +229,18 @@ export function AgentWorkspace() {
       w.setErrorMessage("This conversation could not open. Try again.");
     }
   }
+
   async function fresh() {
-    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) return;
+    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) {
+      return;
+    }
+
     const next = await w.createWorkspace();
-    if (!next) return;
+
+    if (!next) {
+      return;
+    }
+
     setPrompt("");
     setPane("thread");
     navigate("work");
@@ -203,23 +249,39 @@ export function AgentWorkspace() {
     history.replaceState({}, "", url);
     requestAnimationFrame(() => input.current?.focus());
   }
+
   async function turn(action: TaskAction) {
-    if (!task || w.isBusy) return;
+    if (!task || w.isBusy || w.isLoadingWorkspace) {
+      return;
+    }
+
     if (action.type === "message") {
       setPrompt("");
       navigate("work");
-      if (!hasResult) setPane("thread");
+
+      if (!hasResult) {
+        setPane("thread");
+      }
     }
+
     await w.sendTurn(action);
     void w.loadHistory().catch(() => {});
   }
+
   function submit(event?: FormEvent) {
     event?.preventDefault();
-    if (prompt.trim() && task && !w.isBusy)
+
+    if (prompt.trim() && task && !w.isBusy && !w.isLoadingWorkspace) {
       void turn({ type: "message", text: prompt.trim() });
+    }
   }
+
   const composer = (
-    <form className="iw-composer" onSubmit={submit} data-busy={w.isBusy}>
+    <form
+      className="iw-composer"
+      onSubmit={submit}
+      data-busy={w.isBusy || w.isLoadingWorkspace}
+    >
       <label className="iw-sr" htmlFor="iw-message">
         Message Igor
       </label>
@@ -239,8 +301,9 @@ export function AgentWorkspace() {
             !e.shiftKey &&
             !e.nativeEvent.isComposing &&
             !matchMedia("(pointer: coarse)").matches
-          )
+          ) {
             submit(e);
+          }
         }}
       />
       <button
@@ -254,14 +317,12 @@ export function AgentWorkspace() {
   );
 
   return (
-    <div
-      className={`iw-app ${(started || w.isLoadingWorkspace) && page === "work" ? "iw-active" : ""}`}
-    >
+    <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
       <a className="iw-skip" href="#iw-main">
         Skip to content
       </a>
       <header className="iw-nav">
-        <a className="iw-brand" href="/" aria-label="Igor homepage">
+        <Link className="iw-brand" href="/" aria-label="Igor homepage">
           <img
             src={assets + "brand/igor-mark-black.svg"}
             width="29"
@@ -269,25 +330,28 @@ export function AgentWorkspace() {
             alt=""
           />
           <span>igor</span>
-        </a>
+        </Link>
         <nav aria-label="Product navigation">
           <button
             aria-current={page === "work" ? "page" : undefined}
             onClick={() => navigate("work")}
           >
-            Your space
+            <MessageCircle />
+            <span>Your space</span>
           </button>
           <button
             aria-current={page === "history" ? "page" : undefined}
             onClick={() => navigate("history")}
           >
-            Conversations
+            <Search />
+            <span>Conversations</span>
           </button>
           <button
             aria-current={page === "saved" ? "page" : undefined}
             onClick={() => navigate("saved")}
           >
-            Saved
+            <Bookmark />
+            <span>Saved</span>
           </button>
         </nav>
         <button
@@ -327,10 +391,7 @@ export function AgentWorkspace() {
         )}
       </header>
       <main id="iw-main">
-        {page === "work" && w.isLoadingWorkspace && (
-          <LoadingSurface mode="workspace" />
-        )}
-        {page === "work" && !w.isLoadingWorkspace && !started && (
+        {page === "work" && !started && (
           <section className="iw-welcome">
             <div className="iw-intro">
               <h1>
@@ -369,10 +430,11 @@ export function AgentWorkspace() {
             </div>
           </section>
         )}
-        {page === "work" && !w.isLoadingWorkspace && started && task && (
+        {page === "work" && started && (
           <section
             className={`iw-workspace ${hasResult ? "iw-with-result" : ""}`}
             data-pane={pane}
+            aria-busy={w.isLoadingWorkspace}
           >
             <header className="iw-workbar">
               <button
@@ -383,13 +445,19 @@ export function AgentWorkspace() {
                 <ArrowLeft />
               </button>
               <div>
-                <h1 title={title}>{title}</h1>
+                <h1 title={title}>
+                  {task ? (
+                    title
+                  ) : (
+                    <i className="iw-skeleton iw-title-placeholder" />
+                  )}
+                </h1>
               </div>
               <span className="iw-workbar-status">
-                {w.isBusy ? (
+                {w.isBusy || w.isLoadingWorkspace ? (
                   <>
                     <LoaderCircle className="ig-spin" />
-                    Working
+                    {w.isLoadingWorkspace ? "Opening" : "Working"}
                   </>
                 ) : (
                   ""
@@ -406,7 +474,7 @@ export function AgentWorkspace() {
                   role="tab"
                   aria-selected={pane === "thread"}
                   aria-controls="iw-thread"
-                  onClick={() => setPane("thread")}
+                  onClick={() => morphLayout(() => setPane("thread"))}
                 >
                   <MessageCircle />
                   Conversation
@@ -415,7 +483,7 @@ export function AgentWorkspace() {
                   role="tab"
                   aria-selected={pane === "work"}
                   aria-controls="iw-result"
-                  onClick={() => setPane("work")}
+                  onClick={() => morphLayout(() => setPane("work"))}
                 >
                   <FileText />
                   Your work
@@ -423,136 +491,128 @@ export function AgentWorkspace() {
               </div>
             )}
             <div className="iw-workgrid">
-              <aside className="iw-recent">
-                <button
-                  className="iw-new-thread"
-                  onClick={() => void fresh()}
-                  disabled={w.isBusy || w.isLoadingWorkspace}
-                >
-                  <Compose />
-                  New conversation
-                </button>
-
-                {w.history.slice(0, 8).map((h) => (
-                  <button
-                    key={h.id}
-                    className={h.id === task.id ? "iw-selected" : ""}
-                    onClick={() => void open(h.id)}
-                    disabled={w.isBusy || w.isLoadingWorkspace}
-                  >
-                    <span>{h.title || h.goal || "A new thought"}</span>
-                  </button>
-                ))}
-              </aside>
               <section
                 className="iw-thread"
+                style={{ viewTransitionName: "igor-conversation" }}
                 id="iw-thread"
                 aria-label="Conversation"
               >
-                <div className="iw-messages" aria-busy={w.isBusy}>
-                  {task.messages.map((m, i) => (
-                    <article
-                      className={`iw-message iw-${m.role}`}
-                      key={m.id || `${m.at}:${i}`}
-                    >
-                      <span className="iw-author">
-                        {m.role === "assistant" ? (
-                          <img
-                            src={assets + "brand/igor-mark-black.svg"}
-                            alt="Igor"
-                            width="24"
-                            height="24"
-                          />
-                        ) : (
-                          "You"
-                        )}
-                      </span>
-                      <ProductText text={m.text} />
-                    </article>
-                  ))}
-                  {hasPendingInput(task.messages, w.feedback) && (
-                    <article className="iw-message iw-user iw-pending">
-                      <span className="iw-author">You</span>
-                      <ProductText text={w.feedback!.input} />
-                    </article>
-                  )}
-                  <AgentActivity
-                    busy={w.isBusy}
-                    feedback={w.feedback}
-                    message={w.executionMessage}
-                    waitingForReply={
-                      w.feedback?.action.type === "message" &&
-                      !task.messages
-                        .slice(w.feedback.messageCount)
-                        .some((m) => m.role === "assistant")
-                    }
-                  />
-                  {!!w.feedback?.steps.length && !w.isBusy && hasResult && (
-                    <details className="iw-receipt">
-                      <summary>
-                        View activity
-                        <ChevronDown />
-                      </summary>
-                      <ol>
-                        {w.feedback.steps.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                      </ol>
-                    </details>
-                  )}
-                  {task.entities
-                    .filter((e) => e.status === "ambiguous")
-                    .map((e) => (
-                      <div className="iw-choices" key={e.id}>
-                        <p>Which one did you mean?</p>
-                        {e.choices.map((c) => (
-                          <button
-                            disabled={w.isBusy || w.isLoadingWorkspace}
-                            key={c.id}
-                            onClick={() =>
-                              void turn({
-                                type: "resolve",
-                                entityId: e.id,
-                                choiceId: c.id,
-                              })
-                            }
-                          >
-                            {c.name}
-                            <ArrowRight />
-                          </button>
-                        ))}
-                      </div>
+                <div
+                  className="iw-messages"
+                  aria-busy={w.isBusy || w.isLoadingWorkspace}
+                >
+                  <div className="iw-message-stream">
+                    {!task && <LoadingSurface mode="thread" />}
+                    {task?.messages.map((m, i) => (
+                      <article
+                        className={`iw-message iw-${m.role}`}
+                        key={m.id || `${m.at}:${i}`}
+                      >
+                        <span className="iw-author">
+                          {m.role === "assistant" ? (
+                            <img
+                              src={assets + "brand/igor-mark-black.svg"}
+                              alt="Igor"
+                              width="24"
+                              height="24"
+                            />
+                          ) : (
+                            "You"
+                          )}
+                        </span>
+                        <ProductText text={m.text} />
+                      </article>
                     ))}
-                  {hasResult && (
-                    <button
-                      className="iw-work-entry"
-                      onClick={() => {
-                        setPane("work");
-                        requestAnimationFrame(() =>
-                          document
-                            .getElementById("iw-result")
-                            ?.focus({ preventScroll: true }),
-                        );
-                      }}
-                    >
-                      <FileText />
-                      <span>
-                        {task.canvas?.surface.title ||
-                          task.work?.goals.find(
-                            (g) => g.id === task.work?.activeGoalId,
-                          )?.title ||
-                          task.artifacts[0]?.title ||
-                          "Your connections"}
-                        <small>
-                          {w.isBusy
-                            ? "Work in progress"
-                            : "Open your saved work"}
-                        </small>
-                      </span>
-                      <ArrowUpRight />
-                    </button>
-                  )}
-                  <div ref={end} />
+                    {hasPendingInput(task?.messages ?? [], w.feedback) && (
+                      <article className="iw-message iw-user iw-pending">
+                        <span className="iw-author">You</span>
+                        <ProductText text={w.feedback!.input} />
+                      </article>
+                    )}
+                    <AgentActivity
+                      busy={w.isBusy || w.isLoadingWorkspace}
+                      feedback={w.feedback}
+                      message={w.executionMessage}
+                    />
+                    {!!w.feedback?.steps.length && !w.isBusy && hasResult && (
+                      <details className="iw-receipt">
+                        <summary>
+                          View activity
+                          <ChevronDown />
+                        </summary>
+                        <ol>
+                          {w.feedback.steps.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ol>
+                      </details>
+                    )}
+                    {task?.entities
+                      .filter((e) => e.status === "ambiguous")
+                      .map((e) => (
+                        <div className="iw-choices" key={e.id}>
+                          <p>Which one did you mean?</p>
+                          {e.choices.map((c) => (
+                            <button
+                              disabled={w.isBusy || w.isLoadingWorkspace}
+                              key={c.id}
+                              onClick={() =>
+                                void turn({
+                                  type: "resolve",
+                                  entityId: e.id,
+                                  choiceId: c.id,
+                                })
+                              }
+                            >
+                              {c.name}
+                              <ArrowRight />
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    {task &&
+                      !hasResult &&
+                      questions.map((node) => (
+                        <TaskCanvas
+                          key={node.id}
+                          task={task}
+                          busy={w.isBusy || w.isLoadingWorkspace}
+                          onTurn={turn}
+                          focusNodeId={node.id}
+                          inline
+                        />
+                      ))}
+                    {task && hasResult && (
+                      <button
+                        className="iw-work-entry"
+                        onClick={() => {
+                          morphLayout(() => setPane("work"));
+                          requestAnimationFrame(() =>
+                            document
+                              .getElementById("iw-result")
+                              ?.focus({ preventScroll: true }),
+                          );
+                        }}
+                      >
+                        <FileText />
+                        <span>
+                          {task.canvas?.surface.title ||
+                            task.work?.goals.find(
+                              (g) => g.id === task.work?.activeGoalId,
+                            )?.title ||
+                            task.artifacts[0]?.title ||
+                            "Your connections"}
+                          <small>
+                            {w.isBusy
+                              ? "Work in progress"
+                              : "Open your saved work"}
+                          </small>
+                        </span>
+                        <ArrowUpRight />
+                      </button>
+                    )}
+                    <div ref={end} />
+                  </div>
                 </div>
               </section>
               {hasResult && (
@@ -560,18 +620,22 @@ export function AgentWorkspace() {
                   className="iw-result"
                   id="iw-result"
                   aria-label="Your work"
-                  aria-busy={w.isBusy}
+                  aria-busy={w.isBusy || w.isLoadingWorkspace}
                   data-updating={w.isBusy}
                   tabIndex={-1}
                 >
-                  <Work
-                    key={task.id}
-                    task={task}
-                    busy={w.isBusy}
-                    onTurn={turn}
-                    onTask={w.acceptTask}
-                    onLoad={open}
-                  />
+                  {task ? (
+                    <Work
+                      key={task.id}
+                      task={task}
+                      busy={w.isBusy || w.isLoadingWorkspace}
+                      onTurn={turn}
+                      onTask={w.acceptTask}
+                      onLoad={open}
+                    />
+                  ) : (
+                    <LoadingSurface mode="output" />
+                  )}
                 </section>
               )}
             </div>
@@ -601,7 +665,7 @@ export function AgentWorkspace() {
                 </button>
               </p>
             )}
-            {historyLoading && <LoadingSurface mode="list" />}
+            {historyLoading && <LoadingSurface mode="history" />}
             <div className="iw-history-list" aria-busy={historyLoading}>
               {w.history.map((h) => (
                 <button
@@ -609,7 +673,7 @@ export function AgentWorkspace() {
                   disabled={w.isBusy || w.isLoadingWorkspace}
                   onClick={() => void open(h.id)}
                 >
-                  <span>{h.title || h.goal || "A new thought"}</span>
+                  <span>{conversationTitle(h.title || h.goal)}</span>
                   <ArrowUpRight />
                 </button>
               ))}
@@ -619,6 +683,12 @@ export function AgentWorkspace() {
                 Every idea starts somewhere. Start a thought and find it here.
               </p>
             )}
+          </section>
+        )}
+        {page === "saved" && !task && (
+          <section className="iw-library">
+            <h1>Your collection.</h1>
+            <LoadingSurface mode="collection" />
           </section>
         )}
         {page === "saved" && task && (
@@ -667,21 +737,71 @@ function Work({
   onTask: (t: Task) => void;
   onLoad: (id: string) => Promise<void>;
 }) {
+  const [resource, setResource] = useState("workspace");
+  const placeNode = task.canvas?.surface.nodes.find(
+    (node) => node.type === "spatial",
+  );
+  const resources = [
+    ...(task.canvas ? [{ id: "workspace", title: "Workspace" }] : []),
+    ...(task.work?.documents.length
+      ? [{ id: "documents", title: "Documents" }]
+      : []),
+    ...(task.artifacts.length ? [{ id: "drafts", title: "Drafts" }] : []),
+    ...(placeNode ? [{ id: "places", title: "Places" }] : []),
+  ];
+  const active = resources.some((item) => item.id === resource)
+    ? resource
+    : resources[0]?.id;
   const saved = useSavedOutcomes(task, onTask, onTurn);
   const kept = new Set(
     saved.data.collections.flatMap((collection) =>
       collection.items.map((item) => item.id),
     ),
   );
+
   return (
     <div className="iw-result-content">
-      {task.canvas ? (
+      {resources.length > 1 && (
+        <nav className="iw-resource-tabs" aria-label="Work surfaces">
+          {resources.map((item) => (
+            <button
+              key={item.id}
+              aria-pressed={active === item.id}
+              onClick={() => {
+                if (
+                  !window.dispatchEvent(
+                    new Event("beforeunload", { cancelable: true }),
+                  ) &&
+                  !window.confirm("Leave this surface with unsaved edits?")
+                ) {
+                  return;
+                }
+
+                morphLayout(() => setResource(item.id));
+              }}
+            >
+              {item.title}
+            </button>
+          ))}
+        </nav>
+      )}
+      {active === "workspace" && (
         <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
-      ) : task.work?.documents.length ? (
+      )}
+      {active === "documents" && (
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
-      ) : task.artifacts.length ? (
+      )}
+      {active === "drafts" && (
         <ArtifactWork task={task} busy={busy} onTurn={onTurn} onTask={onTask} />
-      ) : null}
+      )}
+      {active === "places" && placeNode && (
+        <TaskCanvas
+          task={task}
+          busy={busy}
+          onTurn={onTurn}
+          focusNodeId={placeNode.id}
+        />
+      )}
       {task.candidates.length > 0 && (
         <section className="iw-references">
           <header>
@@ -746,6 +866,7 @@ function Work({
     </div>
   );
 }
+
 function ArtifactWork({
   task,
   busy,
@@ -759,6 +880,7 @@ function ArtifactWork({
 }) {
   const [id, setId] = useState("");
   const artifact = task.artifacts.find((a) => a.id === id) || task.artifacts[0];
+
   return (
     <section className="iw-artifact">
       <nav aria-label="Documents">
@@ -783,6 +905,7 @@ function ArtifactWork({
     </section>
   );
 }
+
 function Draft({
   artifact,
   busy,
@@ -796,16 +919,23 @@ function Draft({
   const [base, setBase] = useState(artifact.content);
   const [editing, setEditing] = useState(false);
   const dirty = draft !== base;
+
   if (artifact.content !== base && (!dirty || artifact.content === draft)) {
     setBase(artifact.content);
     setDraft(artifact.content);
   }
+
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty) {
+      return;
+    }
+
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", warn);
+
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
+
   return (
     <>
       <header>
@@ -876,6 +1006,7 @@ function Draft({
     </>
   );
 }
+
 function WorkSharing({
   task,
   onTask,
@@ -887,6 +1018,7 @@ function WorkSharing({
   onLoad: (id: string) => Promise<void>;
 }) {
   const saved = useSavedOutcomes(task, onTask, onTurn);
+
   return (
     <details className="iw-sharing">
       <summary>
@@ -906,6 +1038,7 @@ function WorkSharing({
     </details>
   );
 }
+
 function Saved({
   task,
   onTask,
@@ -918,11 +1051,12 @@ function Saved({
   onLoad: (id: string) => Promise<void>;
 }) {
   const saved = useSavedOutcomes(task, onTask, onTurn);
+
   return (
     <section className="iw-library">
       <h1>Your collection.</h1>
       {saved.isLoading ? (
-        <LoadingSurface mode="list" />
+        <LoadingSurface mode="collection" />
       ) : (
         <ProductCollections
           task={task}
@@ -931,6 +1065,7 @@ function Saved({
           saveOutput={saved.saveOutput}
           onLoad={async (id) => {
             await onLoad(id);
+
             return true;
           }}
         />
@@ -938,4 +1073,12 @@ function Saved({
       {saved.errorMessage && <p role="alert">{saved.errorMessage}</p>}
     </section>
   );
+}
+
+function conversationTitle(value?: string) {
+  if (!value) {
+    return "A new thought";
+  }
+
+  return starts.find((start) => start.prompt === value)?.title ?? value;
 }

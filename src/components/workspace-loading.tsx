@@ -1,60 +1,79 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { TurnFeedback } from "./turn-feedback";
 import { ChevronDown } from "./workspace-icons";
 
-export function LoadingSurface({ mode }: { mode: "workspace" | "list" }) {
+export function LoadingSurface({
+  mode,
+}: {
+  mode: "thread" | "history" | "collection" | "output";
+}) {
   return (
-    <section
-      className={`iw-loading-surface iw-loading-${mode}`}
+    <div
+      className={`iw-placeholder iw-placeholder-${mode}`}
       role="status"
-      aria-label={
-        mode === "workspace" ? "Loading your workspace" : "Loading saved work"
-      }
+      aria-label="Loading your saved work"
     >
-      <span className="iw-sr">
-        {mode === "workspace" ? "Loading your workspace" : "Loading saved work"}
-      </span>
+      <span className="iw-sr">Loading your saved work</span>
       <div aria-hidden="true">
-        {mode === "workspace" && (
-          <div className="iw-loading-heading">
+        {mode === "thread" ? (
+          <>
+            <div className="iw-placeholder-user">
+              <i className="iw-skeleton" />
+              <i className="iw-skeleton" />
+            </div>
+            <div className="iw-placeholder-reply">
+              <img
+                src="/marketing/assets/brand/igor-mark-black.svg"
+                width="24"
+                height="24"
+                alt=""
+              />
+              <i className="iw-skeleton" />
+              <i className="iw-skeleton" />
+              <i className="iw-skeleton" />
+            </div>
+          </>
+        ) : mode === "history" ? (
+          [0, 1, 2, 3].map((id) => (
+            <div className="iw-placeholder-history-row" key={id}>
+              <i className="iw-skeleton" />
+            </div>
+          ))
+        ) : mode === "collection" ? (
+          <div className="iw-placeholder-collection-grid">
+            {[0, 1, 2].map((id) => (
+              <div key={id}>
+                <i className="iw-skeleton iw-placeholder-cover" />
+                <i className="iw-skeleton" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="iw-placeholder-output">
             <i className="iw-skeleton" />
+            <i className="iw-skeleton iw-placeholder-cover" />
             <i className="iw-skeleton" />
           </div>
         )}
-        <div className="iw-loading-rows">
-          {[0, 1, 2].map((i) => (
-            <div key={i}>
-              <i className="iw-skeleton iw-skeleton-square" />
-              <span>
-                <i className="iw-skeleton" />
-                <i className="iw-skeleton" />
-              </span>
-            </div>
-          ))}
-        </div>
-        {mode === "workspace" && (
-          <div className="iw-loading-compose iw-skeleton" />
-        )}
       </div>
-    </section>
+    </div>
   );
 }
 
 export function LoadingImage({ src }: { src: string }) {
-  const ref = useRef<HTMLImageElement>(null);
+  return <ImagePlaceholder key={src} src={src} />;
+}
+
+function ImagePlaceholder({ src }: { src: string }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setFailed(false);
-    setReady(Boolean(ref.current?.complete && ref.current?.naturalWidth));
-  }, [src]);
+
   return (
     <span className="iw-loading-image" data-ready={ready || failed}>
       {!ready && !failed && <span className="iw-skeleton" aria-hidden="true" />}
       <img
-        ref={ref}
         src={src}
         alt=""
         loading="lazy"
@@ -71,14 +90,15 @@ export function AgentActivity({
   busy,
   feedback,
   message,
-  waitingForReply,
 }: {
   busy: boolean;
   feedback: TurnFeedback | null;
   message: string;
-  waitingForReply: boolean;
 }) {
-  if (!busy || !feedback) return null;
+  if (!busy || !feedback) {
+    return null;
+  }
+
   const activity = feedback.activity;
   const status = activity?.actionStatus;
   const title =
@@ -91,9 +111,12 @@ export function AgentActivity({
           : activity?.kind === "tool-invocation" ||
               activity?.kind === "tool-result"
             ? "Working on your request"
-            : feedback.action.type === "message"
-              ? "Thinking"
-              : "Saving your changes";
+            : feedback.action.type === "canvas" &&
+                feedback.action.mutation.operation === "answer"
+              ? "Working with your answers"
+              : feedback.action.type === "message"
+                ? "Thinking"
+                : "Saving your changes";
   const events = (feedback.activities ?? [])
     .filter(
       (item) =>
@@ -106,6 +129,7 @@ export function AgentActivity({
     /^(Processing this turn|User message saved|Assistant message saved|Completed the turn)/i.test(
       message,
     );
+
   return (
     <div className="iw-agent-working">
       <div
@@ -148,13 +172,6 @@ export function AgentActivity({
             ))}
           </ol>
         </details>
-      )}
-      {waitingForReply && (
-        <div className="iw-response-skeleton" aria-hidden="true">
-          <i className="iw-skeleton" />
-          <i className="iw-skeleton" />
-          <i className="iw-skeleton" />
-        </div>
       )}
     </div>
   );

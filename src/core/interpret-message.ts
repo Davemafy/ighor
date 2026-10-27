@@ -144,7 +144,7 @@ export async function interpretMessage(
     }
 
     task.error = null;
-    task.status = "ready";
+    task.status = parsed.intent === "clarification" ? "clarification" : "ready";
     task.canvas = installPresentation(
       task.canvas,
       validatePresentation(parsed.presentation, task),

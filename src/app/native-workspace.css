@@ -1,0 +1,494 @@
+/* The app uses the landing page's Archivo, marks and paper palette.
+   The work surface itself stays unframed; navigation is peripheral. */
+.iw-app {
+  --iw-paper: #f7f7f7;
+  --iw-line: #dededb;
+}
+.iw-app .iw-workspace {
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: var(--iw-paper);
+}
+.iw-app.iw-active > main {
+  padding: 0;
+}
+.iw-app .iw-workgrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.iw-app .iw-with-result .iw-workgrid {
+  grid-template-columns: minmax(330px, 0.85fr) minmax(400px, 1.15fr);
+}
+.iw-app .iw-workspace-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--iw-paper);
+}
+.iw-app .iw-with-result .iw-workspace-footer {
+  grid-template-columns: minmax(330px, 0.85fr) minmax(400px, 1.15fr);
+}
+.iw-app .iw-workspace-footer > .iw-dock {
+  grid-column: 1;
+  width: 100%;
+  max-width: 808px;
+  justify-self: center;
+  padding: 12px 28px 14px;
+}
+.iw-app .iw-thread {
+  border: 0;
+}
+.iw-app .iw-workbar {
+  border: 0;
+  height: 64px;
+  min-height: 64px;
+  padding: 12px 30px;
+}
+.iw-app .iw-workbar h1 {
+  font-size: 15px;
+  max-width: 600px;
+}
+.iw-app .iw-workbar-status {
+  font-size: 12px;
+}
+.iw-app .iw-messages {
+  padding: 24px 30px 16px;
+}
+.iw-message-stream {
+  max-width: 740px;
+  margin-inline: auto;
+  min-width: 0;
+}
+.iw-app .iw-message {
+  margin-bottom: 32px;
+}
+.iw-app .iw-message .pp-message-text {
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: -0.18px;
+}
+.iw-app .iw-user {
+  width: fit-content;
+  max-width: 88%;
+}
+.iw-app .iw-user .pp-message-text {
+  padding: 13px 17px;
+  background: #eaeae7;
+  border-radius: 18px 18px 5px 18px;
+}
+.iw-app .iw-author img {
+  width: 24px;
+  height: 24px;
+}
+.iw-app .iw-author {
+  margin-bottom: 16px;
+}
+.iw-app .iw-dock .iw-composer textarea {
+  font-size: 16px;
+}
+.iw-app .iw-dock .iw-composer {
+  border-radius: 18px;
+  border-color: #d2d2cd;
+  box-shadow: 0 4px 20px #25241a06;
+}
+.iw-app .iw-dock > p {
+  display: none;
+}
+.iw-app .iw-result {
+  border-left: 1px solid #e3e2dc;
+  padding: 18px clamp(18px, 2.5vw, 42px) 32px;
+  background: #efeee8;
+}
+.iw-app .iw-result-content {
+  max-width: 1000px;
+  margin: auto;
+}
+.iw-app .iw-result .ic-canvas {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.iw-app .ic-canvas-header {
+  padding: 20px 0 12px;
+}
+.iw-app .ic-canvas-header h2 {
+  font-family: Archivo, Arial, sans-serif;
+  font-size: clamp(24px, 2.3vw, 34px);
+  line-height: 1.12;
+  font-weight: 650;
+}
+.iw-app .ic-canvas-meta {
+  padding: 0 0 22px;
+}
+.iw-app .ic-canvas-footer {
+  font-size: 11px;
+}
+.iw-resource-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding: 0 0 10px;
+}
+.iw-app .iw-resource-tabs button {
+  min-height: 38px;
+  padding: 8px 13px;
+  border-radius: 30px;
+  font-size: 13px;
+  color: #65635d;
+}
+.iw-app .iw-resource-tabs button[aria-pressed="true"] {
+  background: #fff;
+  color: #111;
+  box-shadow: 0 1px 5px #00000009;
+}
+.iw-app .iw-resource-tabs button:hover {
+  background: #ffffffa8;
+}
+.iw-app .iw-library {
+  max-width: 1080px;
+  padding-top: 65px;
+}
+.iw-app .iw-library h1 {
+  font-size: clamp(34px, 4.5vw, 52px);
+  margin-bottom: 30px;
+}
+.iw-app .iw-history-list > button {
+  min-height: 72px;
+  font-size: 16px;
+}
+.iw-app .iw-work-entry > span {
+  font-size: 15px;
+}
+.iw-app .iw-work-entry small {
+  font-size: 12px;
+}
+.iw-app .pp-collection-empty {
+  max-width: 480px;
+  margin: 36px auto;
+  min-height: 280px;
+  padding: 36px 24px;
+}
+.iw-app .pp-collection-empty > svg {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 20px;
+}
+.iw-app .pp-collection-empty h2 {
+  font-size: 24px;
+}
+.iw-app .pp-collection-empty p {
+  font-size: 15px;
+}
+/* Clarification is an actual shared task input, not a decorative chat bubble. */
+.ic-inline {
+  margin: 8px 0 32px;
+}
+.ic-question {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid #deded8;
+  border-radius: 18px;
+  background: #fff;
+}
+.iw-app .ic-question > p {
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: -0.25px;
+}
+.ic-question-field {
+  display: grid;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.ic-question small {
+  font-size: 11px;
+  color: #777;
+  font-weight: 400;
+  margin-left: 7px;
+}
+.ic-question-field input {
+  width: 100%;
+  min-height: 48px;
+  min-width: 0;
+  padding: 12px 14px;
+  color: #111;
+  border: 1px solid #d8d8d3;
+  border-radius: 9px;
+  background: #fafaf8;
+  font:
+    400 16px/1.4 Archivo,
+    Arial,
+    sans-serif;
+}
+.ic-question fieldset {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.ic-question legend {
+  font-size: 13px;
+  font-weight: 550;
+  margin-bottom: 10px;
+}
+.ic-question fieldset > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ic-question fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid #d8d8d3;
+  border-radius: 24px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.ic-question fieldset label[data-checked="true"] {
+  border-color: #111;
+  background: #f1f1eb;
+}
+.ic-question input[type="radio"] {
+  accent-color: #111;
+  margin: 0;
+}
+.iw-app .ic-question > button {
+  justify-self: end;
+  min-height: 44px;
+  padding: 11px 19px;
+  color: white;
+  background: #111;
+  border-radius: 28px;
+  font-size: 14px;
+}
+/* Placeholders share the same parents, widths and padding as restored UI. */
+.iw-title-placeholder {
+  display: block;
+  width: 180px;
+  height: 18px;
+}
+.iw-placeholder i {
+  display: block;
+  height: 14px;
+  border-radius: 5px;
+}
+.iw-placeholder-user {
+  width: 70%;
+  margin: 0 0 38px auto;
+  padding: 17px;
+  border-radius: 18px;
+  background: #eaeae7;
+  display: grid;
+  gap: 12px;
+}
+.iw-placeholder-user i:last-child {
+  width: 65%;
+}
+.iw-placeholder-reply {
+  display: grid;
+  gap: 14px;
+  padding-bottom: 25px;
+}
+.iw-placeholder-reply img {
+  margin-bottom: 3px;
+}
+.iw-placeholder-reply i:last-child {
+  width: 64%;
+}
+.iw-placeholder-history-row {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #dededb;
+}
+.iw-placeholder-history-row i {
+  width: min(65%, 420px);
+}
+.iw-placeholder-history-row:nth-child(2) i {
+  width: min(48%, 280px);
+}
+.iw-placeholder-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding-top: 58px;
+}
+.iw-placeholder-collection-grid > div {
+  display: grid;
+  gap: 15px;
+}
+.iw-placeholder .iw-placeholder-cover {
+  height: auto;
+  aspect-ratio: 1.2;
+}
+.iw-placeholder-output {
+  display: grid;
+  gap: 22px;
+  padding-top: 25px;
+}
+@media (min-width: 761px) {
+  .iw-app {
+    padding-left: 76px;
+  }
+  .iw-app .iw-nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 76px;
+    max-width: none;
+    height: 100dvh;
+    margin: 0;
+    padding: 26px 13px;
+    border: 0;
+    border-right: 1px solid #e5e5e0;
+    border-radius: 0;
+    background: #efefebee;
+    box-shadow: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 30px;
+    transition: width 0.2s ease;
+    overflow: hidden;
+  }
+  .iw-app .iw-nav:is(:hover, :focus-within) {
+    width: 208px;
+    box-shadow: 15px 0 35px #11111107;
+  }
+  .iw-app .iw-brand {
+    height: 40px;
+    margin-left: 10px;
+    gap: 15px;
+  }
+  .iw-app .iw-brand img {
+    min-width: 29px;
+  }
+  .iw-app .iw-nav nav {
+    display: flex;
+    flex: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .iw-app .iw-nav nav button {
+    justify-content: flex-start;
+    padding: 13px 14px;
+    gap: 17px;
+    min-height: 48px;
+    border-radius: 12px;
+    width: 100%;
+    font-size: 13px;
+  }
+  .iw-app .iw-nav nav button[aria-current="page"] {
+    background: #dfdfd8;
+  }
+  .iw-app .iw-nav nav button:after {
+    display: none;
+  }
+  .iw-app .iw-nav :is(nav button, .iw-new) svg {
+    width: 21px;
+    height: 21px;
+  }
+  .iw-app .iw-nav span {
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .iw-app .iw-nav:is(:hover, :focus-within) span {
+    opacity: 1;
+  }
+  .iw-app .iw-nav .iw-new {
+    border-radius: 14px;
+    min-height: 48px;
+    padding: 13px 14px;
+    width: 100%;
+    margin-top: auto;
+    background: #111;
+    color: white;
+    justify-content: flex-start;
+    gap: 17px;
+  }
+  .iw-app .iw-nav .iw-new span {
+    display: block;
+  }
+  .iw-app .iw-welcome {
+    padding-top: 72px;
+  }
+}
+@media (max-width: 760px) {
+  .iw-app .iw-nav {
+    height: 58px;
+  }
+  .iw-app .iw-nav nav {
+    display: none;
+  }
+  .iw-app .iw-workbar {
+    height: 50px;
+    min-height: 50px;
+    padding: 7px 20px;
+  }
+  .iw-app .iw-workbar h1 {
+    font-size: 13px;
+  }
+  .iw-app .iw-workgrid,
+  .iw-app .iw-with-result .iw-workgrid {
+    display: flex;
+  }
+  .iw-app .iw-pane-tabs {
+    min-height: 44px;
+    background: #f7f7f7;
+  }
+  .iw-app .iw-pane-tabs > button {
+    font-size: 12px;
+    padding-block: 10px;
+  }
+  .iw-app .iw-messages {
+    padding: 24px 22px 12px;
+  }
+  .iw-app .iw-message .pp-message-text {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .iw-app .iw-message {
+    margin-bottom: 28px;
+  }
+  .iw-app .iw-result {
+    width: 100%;
+    flex: 1;
+    border: 0;
+    padding: 14px 20px 24px;
+  }
+  .iw-app .iw-workspace-footer,
+  .iw-app .iw-with-result .iw-workspace-footer {
+    display: block;
+  }
+  .iw-app .iw-workspace-footer > .iw-dock {
+    padding: 10px 18px max(12px, env(safe-area-inset-bottom));
+  }
+  .iw-app .iw-library {
+    padding-top: 52px;
+  }
+  .iw-app .iw-library h1 {
+    font-size: 36px;
+  }
+  .iw-app .iw-history-list > button {
+    font-size: 15px;
+  }
+  .iw-placeholder-collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ic-question {
+    padding: 20px;
+    gap: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app .iw-nav,
+  .iw-app .iw-nav span {
+    transition: none;
+  }
+}

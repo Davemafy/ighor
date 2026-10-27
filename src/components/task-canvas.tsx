@@ -29,6 +29,8 @@ type Props = {
   task: Task;
   busy: boolean;
   onTurn: (action: TaskAction) => void;
+  focusNodeId?: string;
+  inline?: boolean;
 };
 const basisLabel = {
   "general-knowledge": "General knowledge · current facts need verification",
@@ -37,7 +39,7 @@ const basisLabel = {
   draft: "Working draft",
 };
 
-export function TaskCanvas({ task, busy, onTurn }: Props) {
+export function TaskCanvas({ task, busy, onTurn, focusNodeId, inline }: Props) {
   const [full, setFull] = useState(false);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const canvas = task.canvas;
@@ -69,6 +71,21 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
     }
   };
 
+  if (inline && valid.success) {
+    return (
+      <div className="ic-inline">
+        <CanvasTree
+          surface={valid.data}
+          focusNodeId={focusNodeId}
+          task={task}
+          busy={readOnly}
+          mutate={mutate}
+          onTurn={onTurn}
+        />
+      </div>
+    );
+  }
+
   return (
     <aside
       className={`ic-canvas ${full ? "ic-fullscreen" : ""}`}
@@ -78,7 +95,6 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
     >
       <header className="ic-canvas-header">
         <div>
-          <span className="ic-eyebrow">Your work, taking shape</span>
           <h2>{surface.title}</h2>
         </div>
         <button
@@ -117,6 +133,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
       {valid.success ? (
         <CanvasTree
           surface={valid.data}
+          focusNodeId={focusNodeId}
           task={task}
           busy={readOnly}
           mutate={mutate}
@@ -129,7 +146,7 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
         </p>
       )}
       <footer className="ic-canvas-footer">
-        <Check /> Saved with this conversation. Ask Igor for a change.
+        <Check /> {busy ? "Updating your work" : "Saved with this conversation"}
       </footer>
     </aside>
   );
@@ -137,12 +154,14 @@ export function TaskCanvas({ task, busy, onTurn }: Props) {
 
 function CanvasTree({
   surface,
+  focusNodeId,
   task,
   busy,
   mutate,
   onTurn,
 }: {
   surface: Presentation;
+  focusNodeId?: string;
   task: Task;
   busy: boolean;
   mutate: (m: CanvasMutation) => void;
@@ -174,6 +193,17 @@ function CanvasTree({
     let body: ReactNode;
 
     switch (node.type) {
+      case "question":
+        body = (
+          <CanvasQuestion
+            node={node}
+            task={task}
+            surfaceId={surface.id}
+            busy={busy}
+            mutate={mutate}
+          />
+        );
+        break;
       case "text":
         body = <ProductText text={node.text} />;
         break;
@@ -458,7 +488,11 @@ function CanvasTree({
 
   return (
     <div className="ic-composition" key={surface.id}>
-      {render(surface.root)}
+      {render(
+        focusNodeId && surface.nodes.some((node) => node.id === focusNodeId)
+          ? focusNodeId
+          : surface.root,
+      )}
     </div>
   );
 }
@@ -801,5 +835,109 @@ function CanvasDocument({
         </div>
       )}
     </div>
+  );
+}
+
+function CanvasQuestion({
+  node,
+  task,
+  surfaceId,
+  busy,
+  mutate,
+}: {
+  node: Extract<PresentationNode, { type: "question" }>;
+  task: Task;
+  surfaceId: string;
+  busy: boolean;
+  mutate: (mutation: CanvasMutation) => void;
+}) {
+  const saved = task.canvas?.answers[`${surfaceId}:${node.id}`];
+  const [values, setValues] = useState<Record<string, string>>(saved ?? {});
+  const [base, setBase] = useState(saved);
+
+  if (base !== saved) {
+    setBase(saved);
+    setValues(saved ?? {});
+  }
+
+  const dirty = JSON.stringify(values) !== JSON.stringify(saved ?? {});
+  useEffect(() => {
+    if (!dirty) {
+      return;
+    }
+
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  return (
+    <form
+      className="ic-question"
+      onSubmit={(event) => {
+        event.preventDefault();
+        mutate({ operation: "answer", nodeId: node.id, values });
+      }}
+    >
+      <p>{node.prompt}</p>
+      {node.fields.map((field) =>
+        field.type === "choice" ? (
+          <fieldset key={field.id} disabled={busy}>
+            <legend>
+              {field.label}
+              {!field.required && <small>Optional</small>}
+            </legend>
+            <div>
+              {field.options!.map((option) => (
+                <label key={option} data-checked={values[field.id] === option}>
+                  <input
+                    type="radio"
+                    name={`${surfaceId}-${node.id}-${field.id}`}
+                    value={option}
+                    checked={values[field.id] === option}
+                    required={field.required}
+                    onChange={() =>
+                      setValues((previous) => ({
+                        ...previous,
+                        [field.id]: option,
+                      }))
+                    }
+                  />
+                  {option}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : (
+          <label className="ic-question-field" key={field.id}>
+            {field.label}
+            {!field.required && <small>Optional</small>}
+            <input
+              type={field.type}
+              required={field.required}
+              disabled={busy}
+              value={values[field.id] ?? ""}
+              placeholder={field.placeholder}
+              maxLength={field.type === "text" ? 2000 : undefined}
+              onChange={(event) =>
+                setValues((previous) => ({
+                  ...previous,
+                  [field.id]: event.target.value,
+                }))
+              }
+            />
+          </label>
+        ),
+      )}
+      <button type="submit" disabled={busy || (!!saved && !dirty)}>
+        {busy
+          ? "Working with your answers"
+          : saved && !dirty
+            ? "Answers saved"
+            : "Continue"}
+        <ArrowUpRight />
+      </button>
+    </form>
   );
 }

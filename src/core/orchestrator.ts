@@ -44,11 +44,45 @@ export async function runTurn(
   model?: ModelProvider,
   factsProvider: PracticalFactsProvider = new SuppliedFactsProvider(),
 ): Promise<Task> {
-  const input = TurnSchema.parse(raw);
+  let input = TurnSchema.parse(raw);
   let task = store.load(id, owner);
 
   if (task.brief.version !== input.version) {
     throw new ConflictError("A newer correction is already saved.");
+  }
+
+  // A form submission is one real user turn: validate, share answers with the
+  // agent, and save the answer state atomically with the resulting task.
+  if (input.type === "canvas" && input.mutation.operation === "answer") {
+    if (!task.canvas) {
+      throw new Error("No question exists for this task.");
+    }
+
+    const questionId = input.mutation.nodeId;
+    const question = task.canvas.surface.nodes.find(
+      (node) => node.id === questionId,
+    );
+
+    if (question?.type !== "question") {
+      throw new Error("Question not found.");
+    }
+
+    task.canvas = mutateCanvas(
+      task.canvas,
+      input.surfaceId,
+      input.mutation,
+      task,
+    );
+    const answers = task.canvas.answers[`${input.surfaceId}:${question.id}`];
+    const text = [
+      question.title || question.prompt,
+      ...question.fields.map(
+        (field) => `${field.label}: ${answers[field.id] || "Not supplied"}`,
+      ),
+    ].join("\n");
+    // The external answer payload has already passed its own bounded schema.
+    // Keep every field when converting it to an internal message.
+    input = { type: "message", text, version: input.version };
   }
 
   const emit = agentEmitter(structuredClone(task), send);
@@ -186,6 +220,8 @@ export async function runTurn(
   task = update.task;
 
   if (update.conversationOnly) {
+    ensureBoundPresentation(task);
+
     if (wasInterpretationError) {
       task.error = null;
       task.status = task.brief.goal ? "partial" : "draft";

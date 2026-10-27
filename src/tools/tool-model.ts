@@ -60,6 +60,8 @@ const conversationInstructions = [
   "Never turn a discovery request into an invitation or artifact edit",
   "An invitation-only edit must not trigger cultural discovery",
   "Optional presentation composes a task-appropriate interface from the declared trusted vocabulary; choose nodes and their arrangement at runtime, never executable code",
+  "When material details are missing, use clarification intent with a short reply and a question presentation instead of a paragraph containing several questions. Ask only what is needed for the next useful step. Do not ask a form for greetings or simple answers",
+  "Question node exact schema: {id,type:question,title?,prompt,fields:[{id,label,type:text|number|date|choice,required:boolean,placeholder?,options?:string[]}]}. Use 1-6 fields; choice requires 2-8 distinct options, other types omit options. Do not infer personal facts, budgets or dates; offer choices only as optional user-selected directions. Submitted answers are saved to canvas.answers and arrive as a user message; continue the work using them",
   "For useful comparisons compose findings, table, sources and optional chart; charts use numeric cells in the referenced table only",
   "For creation or launch planning use conversation intent with a draft presentation containing an editable document and timeline, not a cultural discovery goal",
   "For general research use conversation intent and presentation; Qloo is not a web search tool and is unnecessary for laptops, data analysis or ordinary planning",

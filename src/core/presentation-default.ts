@@ -13,6 +13,8 @@ export function ensureBoundPresentation(task: Task) {
 
   // Existing canvas remains live through its task bindings. Never reset user-authored work.
   if (task.canvas?.source === "agent") {
+    bindGroundedPlaces(task);
+
     return;
   }
 
@@ -94,5 +96,76 @@ export function ensureBoundPresentation(task: Task) {
     task.canvas.itineraryIds = previous.itineraryIds;
     task.canvas.filters = previous.filters;
     task.canvas.completed = previous.completed;
+    task.canvas.answers = previous.answers;
+  }
+}
+
+/** Enrich an authored composition with actual returned places without discarding it. */
+function bindGroundedPlaces(task: Task) {
+  const canvas = task.canvas;
+
+  if (
+    !canvas ||
+    canvas.surface.nodes.some((node) => node.type === "spatial") ||
+    canvas.surface.nodes.length > 30
+  ) {
+    return;
+  }
+
+  const placeIds = task.candidates
+    .filter(
+      (candidate) =>
+        candidate.type === "place" &&
+        candidate.freshness === "current" &&
+        Number.isFinite(candidate.place?.latitude) &&
+        Number.isFinite(candidate.place?.longitude) &&
+        candidate.place?.latitude != null &&
+        candidate.place?.longitude != null &&
+        Math.abs(candidate.place.latitude) <= 90 &&
+        Math.abs(candidate.place.longitude) <= 180,
+    )
+    .map((candidate) => candidate.id);
+
+  if (!placeIds.length) {
+    return;
+  }
+
+  const surface = structuredClone(canvas.surface);
+  let id = "grounded-places";
+
+  while (surface.nodes.some((node) => node.id === id)) {
+    id += "-map";
+  }
+
+  const root = surface.nodes.find((node) => node.id === surface.root);
+
+  if (root && "children" in root && root.children.length < 12) {
+    root.children.push(id);
+  } else {
+    let rootId = "grounded-layout";
+
+    while (surface.nodes.some((node) => node.id === rootId)) {
+      rootId += "-root";
+    }
+
+    surface.nodes.push({
+      id: rootId,
+      type: "stack",
+      children: [surface.root, id],
+    });
+    surface.root = rootId;
+  }
+
+  surface.nodes.push({
+    id,
+    type: "spatial",
+    title: "Places in your plan",
+    candidateIds: placeIds,
+  });
+
+  try {
+    canvas.surface = validatePresentation(surface, task);
+  } catch {
+    /* Keep the authored surface if its complexity budget is exhausted. */
   }
 }
