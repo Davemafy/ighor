@@ -1,7 +1,32 @@
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 
+export function delegatedMoviePick(text: string, context?: Task) {
+  const permission =
+    /\b(?:pick|choose|select)\s+(?:one\s+)?for me\b|\bsurprise me\b|\brandom(?:ly)?\s+(?:pick|movies?|films?)\b|\bany (?:movies?|films?)\b/i.test(
+      text,
+    );
+  const movieContext =
+    /\b(?:movies?|films?|cinema)\b/i.test(text) ||
+    Boolean(
+      context?.messages.some(
+        (message) =>
+          message.role === "user" &&
+          /\b(?:movies?|films?|cinema)\b/i.test(message.text),
+      ),
+    );
+  return permission && movieContext;
+}
+
 /** App-owned capability boundaries and views over already retrieved images. */
 export function interfaceReply(text: string, context?: Task) {
+  if (delegatedMoviePick(text, context)) {
+    return LiveDecisionSchema.parse({
+      intent: "goal",
+      kind: "discovery",
+      goal: "Explore movie recommendations using an Igor-chosen cultural starting point, not an inferred personal preference.",
+      targetType: "movie",
+    });
+  }
   if (
     /\b(?:ui|interface|chat|workspace|theme)\b/i.test(text) &&
     /\b(?:fluid|water[ -]?like|morphing|ripples?|water physics)\b/i.test(

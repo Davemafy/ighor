@@ -1,3 +1,4 @@
+import { delegatedMoviePick } from "../tools/interface-replies";
 import { mergeArtifacts } from "./preserve-artifacts";
 import type { Task } from "./contracts";
 import type { ArtifactEdit, TurnUpdate } from "./apply-turn";
@@ -33,6 +34,66 @@ export async function executeTaskPlan(
     // A supported turn replaces the old question; identity resolution may ask another.
     if (!localChangeOnly) {
       task.brief.unresolved = [];
+    }
+
+    const latestUser =
+      task.messages.filter((message) => message.role === "user").at(-1)?.text ||
+      "";
+    if (
+      task.mode === "qloo-live" &&
+      !localChangeOnly &&
+      !task.brief.contextAnchor &&
+      delegatedMoviePick(latestUser, task)
+    ) {
+      // Permission to explore is not permission to invent a personal taste.
+      // Resolve this app-selected starting point through Qloo before using it.
+      const seed = "Arrival";
+      const resolution = await executeCapability(
+        capabilities.discover,
+        {
+          operation: "resolve",
+          terms: [seed],
+          entities: task.entities,
+          intendedTypes: { [seed]: "movie" },
+        },
+        context,
+      );
+      const resolved = requireCapabilityData(resolution);
+      task.entities = resolved.entities;
+      const anchor = resolved.entities.find(
+        (entity) =>
+          entity.original === seed &&
+          entity.type === "movie" &&
+          entity.status === "resolved" &&
+          entity.providerId,
+      );
+      if (resolution.status !== "ok" || !anchor?.providerId) {
+        task.status = "partial";
+        task.brief.unresolved = [
+          "Igor could not verify its exploration seed with Qloo. Retry discovery; no recommendations were invented.",
+        ];
+        return task;
+      }
+      task.brief.contextAnchor = {
+        providerId: anchor.providerId,
+        name: anchor.name,
+        type: anchor.type,
+      };
+      task.brief.targetType = "movie";
+      task.messages.push({
+        role: "assistant",
+        kind: "conversation",
+        text: `I chose ${anchor.name} as an exploration starting point because you asked me to pick. This is not a preference you supplied.`,
+        at: context.now(),
+      });
+      task.brief.assumptions = [
+        ...task.brief.assumptions,
+        `Igor chose ${anchor.name} as an exploration seed because you asked it to pick. This is not your stated preference.`,
+      ];
+      trace(
+        "discovery.exploration-seed",
+        `Igor-selected exploration seed: ${anchor.name}. Not a user taste claim.`,
+      );
     }
 
     const hasTaste = task.brief.participants.some((person) =>

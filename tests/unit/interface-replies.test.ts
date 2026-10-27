@@ -37,3 +37,16 @@ it("does not invent posters for text suggestions or intercept discovery goals", 
   expect(result?.presentation).toBeUndefined();
   expect(interfaceReply("Find films based on Nujabes")).toBeUndefined();
 });
+
+it("continues delegated movie picks without inventing a personal preference", () => {
+  const task = freshTask("pick", "owner");
+  task.messages = [
+    { role: "user", text: "Bring any movies", at: new Date().toISOString() },
+  ];
+  const result = interfaceReply("Well random pick for me", task);
+  expect(result).toMatchObject({ intent: "goal", targetType: "movie" });
+  expect(result?.actions).toBeUndefined();
+  expect(
+    interfaceReply("Pick for me", freshTask("unrelated", "owner")),
+  ).toBeUndefined();
+});
