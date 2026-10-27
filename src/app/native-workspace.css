@@ -875,7 +875,7 @@
 .iw-inline-output .iw-result-content {
   max-width: none;
 }
-.iw-app .iw-inline-output .ic-canvas {
+.iw-app .iw-inline-output .ic-canvas:not(.ic-fullscreen) {
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -1041,4 +1041,11 @@
   ::view-transition-group(.igor-work-object) {
     animation-duration: 0.01ms !important;
   }
+}
+
+.iw-app .iw-inline-output .ic-canvas.ic-fullscreen {
+  background: #faf9f5;
+  border: 1px solid #e3e2da;
+  border-radius: 18px;
+  padding: 24px;
 }
