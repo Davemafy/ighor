@@ -5,6 +5,30 @@ export function interpretationFailure(error: unknown): string {
   if (error instanceof z.ZodError) {
     const fields = new Set([
       "decision",
+      "workActions",
+      "presentation",
+      "id",
+      "title",
+      "dependencies",
+      "evidenceIds",
+      "amount",
+      "estimatedCost",
+      "rationale",
+      "basis",
+      "root",
+      "nodes",
+      "type",
+      "children",
+      "fields",
+      "label",
+      "subject",
+      "binding",
+      "required",
+      "prompt",
+      "candidateIds",
+      "columns",
+      "rows",
+      "cells",
       "reply",
       "replyEvidenceIds",
       "candidates",
@@ -51,7 +75,9 @@ export function interpretationFailure(error: unknown): string {
   }
 
   if (error instanceof Error) {
-    const status = /Gemini returned HTTP (\d{3})/.exec(error.message);
+    const status = /(?:Gemini|OpenAI) returned HTTP (\d{3})/.exec(
+      error.message,
+    );
 
     if (status) {
       return `provider HTTP ${status[1]}`;

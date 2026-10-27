@@ -140,7 +140,7 @@ export class ToolCallingModel implements ModelProvider {
     );
 
     if (!response.ok) {
-      throw new Error("Model request failed safely; no retry.");
+      throw new Error(`OpenAI returned HTTP ${response.status}; no retry.`);
     }
 
     const raw = await readModelResponse(response);

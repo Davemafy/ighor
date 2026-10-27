@@ -78,3 +78,37 @@ it("grounds a recipient mentioned in the current message before the thread is sa
     readTurnDecision(raw, task, "A gift for someone").presentation,
   ).toBeUndefined();
 });
+
+it("exposes actual decision fields and both conversation/action intent alternatives to providers", () => {
+  const schema = turnTool().parameters.properties.decision;
+
+  for (const field of [
+    "intent",
+    "reply",
+    "kind",
+    "goal",
+    "actions",
+    "workActions",
+    "presentation",
+  ]) {
+    expect(Object.hasOwn(schema.properties, field)).toBe(true);
+  }
+
+  expect(schema.properties.intent).toMatchObject({
+    enum: expect.arrayContaining([
+      "conversation",
+      "clarification",
+      "goal",
+      "revision",
+    ]),
+  });
+  expect(schema.anyOf.some((branch) => branch.required.includes("reply"))).toBe(
+    true,
+  );
+  expect(
+    schema.anyOf.some(
+      (branch) =>
+        branch.required.includes("kind") && branch.required.includes("goal"),
+    ),
+  ).toBe(true);
+});

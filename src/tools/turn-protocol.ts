@@ -4,40 +4,46 @@ import { LiveDecisionSchema, type Task } from "../core/contracts";
 
 /** One transport envelope for both providers; the engine owns the complete decision schema. */
 export function turnTool() {
+  type Branch = { properties?: Record<string, unknown>; required?: string[] };
+  const schema = z.toJSONSchema(LiveDecisionSchema, { io: "input" });
+  const branches = (schema.anyOf ?? schema.oneOf ?? [schema]) as Branch[];
+  const properties: Record<string, unknown> = Object.assign(
+    {},
+    ...branches.map((branch) => branch.properties ?? {}),
+  );
+  const intents = branches.flatMap(
+    (branch) =>
+      (branch.properties?.intent as { enum?: string[] } | undefined)?.enum ??
+      [],
+  );
+  properties.intent = { type: "string", enum: [...new Set(intents)] };
+
   return {
     type: "function",
     name: "update_brief",
     description:
-      "Return the conversational decision as an object in decision, never a JSON-encoded string. Use only supported components and actions; ask only for details that block the requested work.",
+      "Return one decision object. Conversation or clarification needs a reply; goal or revision needs kind and goal. Include actual supported UI or work actions when creating work. Never JSON-encode the decision object as a string.",
     parameters: {
       type: "object",
       additionalProperties: false,
       properties: {
         decision: {
           type: "object",
-          properties: {
-            intent: {
-              type: "string",
-              enum: [
-                "conversation",
-                "clarification",
-                "goal",
-                "revision",
-                "unsupported",
-              ],
-            },
-          },
+          properties,
           required: ["intent"],
-          additionalProperties: true,
-          description: JSON.stringify(
-            z.toJSONSchema(LiveDecisionSchema, { io: "input" }),
-          ),
+          anyOf: branches.map((branch) => ({
+            properties: { intent: branch.properties?.intent },
+            required: branch.required ?? [],
+          })),
+          additionalProperties: false,
+          description:
+            'A validated decision with optional "presentation" or workActions. Use conversation/clarification with reply, or goal/revision with kind, goal and grounded actions.',
         },
       },
       required: ["decision"],
     },
-    // The application validates the discriminated decision, grounding and
-    // permissions. An object envelope avoids double-encoding document text.
+    // Conditional branches are validated by the provider schema and again by
+    // the application's complete grounding/ownership checks before execution.
     strict: false,
   };
 }
