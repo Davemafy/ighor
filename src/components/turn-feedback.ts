@@ -1,4 +1,4 @@
-import type { Task, TaskAction } from "@/core/contracts";
+import type { Task, TaskAction, Event } from "@/core/contracts";
 
 export type TurnFeedback = {
   input: string;
@@ -8,6 +8,11 @@ export type TurnFeedback = {
   state: "running" | "complete" | "error";
   steps: string[];
   error?: string;
+  activity?: Extract<Event, { type: "action" }>["activity"];
+  activities?: Array<{
+    message: string;
+    activity: NonNullable<Extract<Event, { type: "action" }>["activity"]>;
+  }>;
 };
 
 // Match only messages added by this turn. A repeated input from an earlier

@@ -47,6 +47,7 @@ export function useSavedOutcomes(
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const endpoint = `/api/tasks/${task.id}/outputs`;
 
   async function refresh() {
@@ -61,6 +62,7 @@ export function useSavedOutcomes(
     let active = true;
 
     async function loadSavedOutputs() {
+      setIsLoading(true);
       try {
         const response = await fetch(endpoint);
 
@@ -81,6 +83,8 @@ export function useSavedOutcomes(
               : "Could not load saved work.",
           );
         }
+      } finally {
+        if (active) setIsLoading(false);
       }
     }
 
@@ -144,6 +148,7 @@ export function useSavedOutcomes(
     statusMessage,
     setStatusMessage,
     isBusy,
+    isLoading,
     refresh,
     saveOutput,
     recallPreference,

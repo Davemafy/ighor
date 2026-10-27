@@ -19,6 +19,11 @@ import {
 } from "./workspace-icons";
 import type { Artifact, Task, TaskAction } from "@/core/contracts";
 import { useWorkspace } from "./use-workspace";
+import {
+  LoadingSurface,
+  AgentActivity,
+  LoadingImage,
+} from "./workspace-loading";
 import { hasPendingInput } from "./turn-feedback";
 import { TaskCanvas } from "./task-canvas";
 import { ConnectedWorkCanvas } from "./connected-work-canvas";
@@ -74,9 +79,11 @@ export function AgentWorkspace() {
   const [menu, setMenu] = useState(false);
   const [pane, setPane] = useState<"thread" | "work">("thread");
   const [historyError, setHistoryError] = useState("");
+  const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const restored = useRef(false);
+  const scrolledTask = useRef<string | null>(null);
   const task = w.task;
   const hasResult = !!(
     task?.canvas ||
@@ -86,12 +93,12 @@ export function AgentWorkspace() {
   );
   const started = !!(task?.messages.length || w.feedback);
   const title = task?.brief.goal || "Your conversation";
-  const surface = task?.canvas?.surface.id || task?.work?.activeGoalId;
 
   useEffect(() => {
     void w
       .loadHistory()
-      .catch(() => setHistoryError("Conversations could not load. Try again."));
+      .catch(() => setHistoryError("Conversations could not load. Try again."))
+      .finally(() => setHistoryLoading(false));
   }, []);
   useEffect(() => {
     if (!task || restored.current) return;
@@ -109,11 +116,17 @@ export function AgentWorkspace() {
         );
   }, [task?.id]);
   useEffect(() => {
-    if (surface) setPane("work");
-  }, [surface]);
-  useEffect(() => {
-    end.current?.scrollIntoView({ block: "end", behavior: "instant" });
-  }, [task?.messages.length, w.isBusy]);
+    const region = end.current?.closest(".iw-messages");
+    if (
+      region &&
+      (scrolledTask.current !== task?.id ||
+        w.isBusy ||
+        region.scrollHeight - region.scrollTop - region.clientHeight < 180)
+    ) {
+      end.current?.scrollIntoView({ block: "end", behavior: "instant" });
+      scrolledTask.current = task?.id ?? null;
+    }
+  }, [task?.id, task?.messages.length, w.isBusy, w.isLoadingWorkspace]);
   useEffect(() => {
     const area = input.current;
     if (area) {
@@ -165,7 +178,7 @@ export function AgentWorkspace() {
     history.replaceState({}, "", url);
   }
   async function open(id: string) {
-    if (w.isBusy || !canLeave()) return;
+    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) return;
     try {
       if (await w.openWorkspace(id)) {
         navigate("work");
@@ -179,7 +192,7 @@ export function AgentWorkspace() {
     }
   }
   async function fresh() {
-    if (w.isBusy || !canLeave()) return;
+    if (w.isBusy || w.isLoadingWorkspace || !canLeave()) return;
     const next = await w.createWorkspace();
     if (!next) return;
     setPrompt("");
@@ -195,7 +208,7 @@ export function AgentWorkspace() {
     if (action.type === "message") {
       setPrompt("");
       navigate("work");
-      setPane("thread");
+      if (!hasResult) setPane("thread");
     }
     await w.sendTurn(action);
     void w.loadHistory().catch(() => {});
@@ -233,7 +246,7 @@ export function AgentWorkspace() {
       <button
         type="submit"
         aria-label="Send message"
-        disabled={!task || w.isBusy || !prompt.trim()}
+        disabled={!task || w.isBusy || w.isLoadingWorkspace || !prompt.trim()}
       >
         {w.isBusy ? <LoaderCircle className="ig-spin" /> : <ArrowRight />}
       </button>
@@ -241,7 +254,9 @@ export function AgentWorkspace() {
   );
 
   return (
-    <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
+    <div
+      className={`iw-app ${(started || w.isLoadingWorkspace) && page === "work" ? "iw-active" : ""}`}
+    >
       <a className="iw-skip" href="#iw-main">
         Skip to content
       </a>
@@ -280,7 +295,7 @@ export function AgentWorkspace() {
           aria-label="New conversation"
           title="New conversation"
           onClick={() => void fresh()}
-          disabled={w.isBusy}
+          disabled={w.isBusy || w.isLoadingWorkspace}
         >
           <Compose />
           <span>New conversation</span>
@@ -312,7 +327,10 @@ export function AgentWorkspace() {
         )}
       </header>
       <main id="iw-main">
-        {page === "work" && !started && (
+        {page === "work" && w.isLoadingWorkspace && (
+          <LoadingSurface mode="workspace" />
+        )}
+        {page === "work" && !w.isLoadingWorkspace && !started && (
           <section className="iw-welcome">
             <div className="iw-intro">
               <h1>
@@ -338,7 +356,7 @@ export function AgentWorkspace() {
                   }}
                 >
                   <div className="iw-poster">
-                    <img src={assets + s.image} alt="" loading="lazy" />
+                    <LoadingImage src={assets + s.image} />
                     <span className="iw-poster-number">0{i + 1}</span>
                   </div>
                   <div>
@@ -351,7 +369,7 @@ export function AgentWorkspace() {
             </div>
           </section>
         )}
-        {page === "work" && started && task && (
+        {page === "work" && !w.isLoadingWorkspace && started && task && (
           <section
             className={`iw-workspace ${hasResult ? "iw-with-result" : ""}`}
             data-pane={pane}
@@ -409,7 +427,7 @@ export function AgentWorkspace() {
                 <button
                   className="iw-new-thread"
                   onClick={() => void fresh()}
-                  disabled={w.isBusy}
+                  disabled={w.isBusy || w.isLoadingWorkspace}
                 >
                   <Compose />
                   New conversation
@@ -420,7 +438,7 @@ export function AgentWorkspace() {
                     key={h.id}
                     className={h.id === task.id ? "iw-selected" : ""}
                     onClick={() => void open(h.id)}
-                    disabled={w.isBusy}
+                    disabled={w.isBusy || w.isLoadingWorkspace}
                   >
                     <span>{h.title || h.goal || "A new thought"}</span>
                   </button>
@@ -458,14 +476,17 @@ export function AgentWorkspace() {
                       <ProductText text={w.feedback!.input} />
                     </article>
                   )}
-                  {w.isBusy && (
-                    <div className="iw-activity" role="status">
-                      <LoaderCircle className="ig-spin" />
-                      <span>
-                        {w.executionMessage || "Reading your message"}
-                      </span>
-                    </div>
-                  )}
+                  <AgentActivity
+                    busy={w.isBusy}
+                    feedback={w.feedback}
+                    message={w.executionMessage}
+                    waitingForReply={
+                      w.feedback?.action.type === "message" &&
+                      !task.messages
+                        .slice(w.feedback.messageCount)
+                        .some((m) => m.role === "assistant")
+                    }
+                  />
                   {!!w.feedback?.steps.length && !w.isBusy && hasResult && (
                     <details className="iw-receipt">
                       <summary>
@@ -486,7 +507,7 @@ export function AgentWorkspace() {
                         <p>Which one did you mean?</p>
                         {e.choices.map((c) => (
                           <button
-                            disabled={w.isBusy}
+                            disabled={w.isBusy || w.isLoadingWorkspace}
                             key={c.id}
                             onClick={() =>
                               void turn({
@@ -502,11 +523,36 @@ export function AgentWorkspace() {
                         ))}
                       </div>
                     ))}
+                  {hasResult && (
+                    <button
+                      className="iw-work-entry"
+                      onClick={() => {
+                        setPane("work");
+                        requestAnimationFrame(() =>
+                          document
+                            .getElementById("iw-result")
+                            ?.focus({ preventScroll: true }),
+                        );
+                      }}
+                    >
+                      <FileText />
+                      <span>
+                        {task.canvas?.surface.title ||
+                          task.work?.goals.find(
+                            (g) => g.id === task.work?.activeGoalId,
+                          )?.title ||
+                          task.artifacts[0]?.title ||
+                          "Your connections"}
+                        <small>
+                          {w.isBusy
+                            ? "Work in progress"
+                            : "Open your saved work"}
+                        </small>
+                      </span>
+                      <ArrowUpRight />
+                    </button>
+                  )}
                   <div ref={end} />
-                </div>
-                <div className="iw-dock">
-                  {composer}
-                  <p>Discover, decide, create.</p>
                 </div>
               </section>
               {hasResult && (
@@ -514,6 +560,9 @@ export function AgentWorkspace() {
                   className="iw-result"
                   id="iw-result"
                   aria-label="Your work"
+                  aria-busy={w.isBusy}
+                  data-updating={w.isBusy}
+                  tabIndex={-1}
                 >
                   <Work
                     key={task.id}
@@ -526,6 +575,12 @@ export function AgentWorkspace() {
                 </section>
               )}
             </div>
+            <footer className="iw-workspace-footer">
+              <div className="iw-dock">
+                {composer}
+                <p>Discover, decide, create.</p>
+              </div>
+            </footer>
           </section>
         )}
         {page === "history" && (
@@ -546,11 +601,12 @@ export function AgentWorkspace() {
                 </button>
               </p>
             )}
-            <div className="iw-history-list">
+            {historyLoading && <LoadingSurface mode="list" />}
+            <div className="iw-history-list" aria-busy={historyLoading}>
               {w.history.map((h) => (
                 <button
                   key={h.id}
-                  disabled={w.isBusy}
+                  disabled={w.isBusy || w.isLoadingWorkspace}
                   onClick={() => void open(h.id)}
                 >
                   <span>{h.title || h.goal || "A new thought"}</span>
@@ -558,7 +614,7 @@ export function AgentWorkspace() {
                 </button>
               ))}
             </div>
-            {!w.history.length && !historyError && (
+            {!historyLoading && !w.history.length && !historyError && (
               <p>
                 Every idea starts somewhere. Start a thought and find it here.
               </p>
@@ -578,7 +634,7 @@ export function AgentWorkspace() {
             <p>{w.errorMessage}</p>
             {w.feedback?.state === "error" && (
               <button
-                disabled={w.isBusy}
+                disabled={w.isBusy || w.isLoadingWorkspace}
                 onClick={() => void turn(w.feedback!.action)}
               >
                 Try again
@@ -865,16 +921,20 @@ function Saved({
   return (
     <section className="iw-library">
       <h1>Your collection.</h1>
-      <ProductCollections
-        task={task}
-        collections={saved.data.collections}
-        isBusy={saved.isBusy}
-        saveOutput={saved.saveOutput}
-        onLoad={async (id) => {
-          await onLoad(id);
-          return true;
-        }}
-      />
+      {saved.isLoading ? (
+        <LoadingSurface mode="list" />
+      ) : (
+        <ProductCollections
+          task={task}
+          collections={saved.data.collections}
+          isBusy={saved.isBusy}
+          saveOutput={saved.saveOutput}
+          onLoad={async (id) => {
+            await onLoad(id);
+            return true;
+          }}
+        />
+      )}
       {saved.errorMessage && <p role="alert">{saved.errorMessage}</p>}
     </section>
   );

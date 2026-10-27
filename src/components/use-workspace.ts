@@ -23,6 +23,7 @@ const savedWorkspaceKey = "igor-task";
 export function useWorkspace() {
   const [task, setTask] = useState<Task | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [activeView, setActiveView] = useState<WorkspaceView>("programme");
   const [executionMessage, setExecutionMessage] = useState("");
@@ -49,6 +50,8 @@ export function useWorkspace() {
             "The local workspace could not start. Refresh to retry.",
           );
         }
+      } finally {
+        if (active) setIsLoadingWorkspace(false);
       }
     }
 
@@ -62,6 +65,7 @@ export function useWorkspace() {
   async function createWorkspace() {
     if (sending.current) return;
     setIsBusy(true);
+    setIsLoadingWorkspace(true);
     setErrorMessage("");
 
     try {
@@ -77,22 +81,26 @@ export function useWorkspace() {
       );
     } finally {
       setIsBusy(false);
+      setIsLoadingWorkspace(false);
     }
   }
 
   async function openWorkspace(id: string) {
     if (sending.current) return false;
-    const workspace = await fetchWorkspace(id);
-
-    if (!workspace) {
-      return false;
+    setIsLoadingWorkspace(true);
+    try {
+      const workspace = await fetchWorkspace(id);
+      if (!workspace) {
+        setErrorMessage("That conversation is no longer available.");
+        return false;
+      }
+      setTask(workspace);
+      setFeedback(null);
+      localStorage.setItem(savedWorkspaceKey, id);
+      return true;
+    } finally {
+      setIsLoadingWorkspace(false);
     }
-
-    setTask(workspace);
-    setFeedback(null);
-    localStorage.setItem(savedWorkspaceKey, id);
-
-    return true;
   }
 
   async function loadHistory() {
@@ -124,6 +132,7 @@ export function useWorkspace() {
       messageCount: currentTask.messages.length,
       state: "running",
       steps: [],
+      activities: [],
     });
     setExecutionMessage("Waiting for Igor");
     let failed = false;
@@ -135,21 +144,34 @@ export function useWorkspace() {
 
       for await (const event of readTurnEvents(response)) {
         if (event.type === "state" || event.type === "done") {
-          const previousVisual = Boolean(currentTask.canvas ||
-            currentTask.work?.documents.length);
-          const nextVisual = Boolean(event.task.canvas ||
-            event.task.work?.documents.length);
-          const newSurface = Boolean(event.task.canvas &&
-            event.task.canvas.surface.id !== currentTask.canvas?.surface.id);
-          const significantCanvasEdit = action.type === "canvas" &&
-            ["edit", "filter", "chart-axis", "reorder"].includes(action.mutation.operation);
-          const significantWorkEdit = action.type === "work" &&
+          const previousVisual = Boolean(
+            currentTask.canvas || currentTask.work?.documents.length,
+          );
+          const nextVisual = Boolean(
+            event.task.canvas || event.task.work?.documents.length,
+          );
+          const newSurface = Boolean(
+            event.task.canvas &&
+            event.task.canvas.surface.id !== currentTask.canvas?.surface.id,
+          );
+          const significantCanvasEdit =
+            action.type === "canvas" &&
+            ["edit", "filter", "chart-axis", "reorder"].includes(
+              action.mutation.operation,
+            );
+          const significantWorkEdit =
+            action.type === "work" &&
             action.actions.some((change) => change.kind === "edit");
           // State comes from the server; a UI transition never predicts a
           // completed operation or impersonates a backend result.
-          if (!morphed && nextVisual &&
-            (!previousVisual || newSurface ||
-              significantCanvasEdit || significantWorkEdit)) {
+          if (
+            !morphed &&
+            nextVisual &&
+            (!previousVisual ||
+              newSurface ||
+              significantCanvasEdit ||
+              significantWorkEdit)
+          ) {
             morphed = true;
             morphLayout(() => setTask(event.task));
           } else {
@@ -186,6 +208,21 @@ export function useWorkspace() {
               previous
                 ? {
                     ...previous,
+                    activity: event.activity ?? previous.activity,
+                    activities:
+                      event.activity &&
+                      !previous.activities?.some(
+                        (item) =>
+                          item.activity.eventId === event.activity?.eventId,
+                      )
+                        ? [
+                            ...(previous.activities ?? []),
+                            {
+                              message: event.message,
+                              activity: event.activity,
+                            },
+                          ].slice(-80)
+                        : previous.activities,
                     steps:
                       previous.steps.at(-1) === event.message
                         ? previous.steps
@@ -251,6 +288,7 @@ export function useWorkspace() {
 
   return {
     task,
+    isLoadingWorkspace,
     acceptTask: setTask,
     isBusy,
     errorMessage,
