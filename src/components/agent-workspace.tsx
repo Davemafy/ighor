@@ -758,6 +758,11 @@ export function AgentWorkspace({
         )}
         {page === "saved" && task && (
           <Saved
+            onDiscover={async (request) => {
+              setPane("thread");
+              await turn({ type: "message", text: request });
+            }}
+            busy={w.isBusy || w.isLoadingWorkspace}
             task={task}
             onTask={w.acceptTask}
             onTurn={turn}
@@ -1109,8 +1114,12 @@ function Saved({
   onTask,
   onTurn,
   onLoad,
+  onDiscover,
+  busy,
 }: {
   task: Task;
+  busy: boolean;
+  onDiscover: (request: string) => Promise<void>;
   onTask: (t: Task) => void;
   onTurn: (a: TaskAction) => Promise<void>;
   onLoad: (id: string) => Promise<void>;
@@ -1126,8 +1135,9 @@ function Saved({
         <ProductCollections
           task={task}
           collections={saved.data.collections}
-          isBusy={saved.isBusy}
+          isBusy={saved.isBusy || busy}
           saveOutput={saved.saveOutput}
+          onDiscover={onDiscover}
           onLoad={async (id) => {
             await onLoad(id);
 

@@ -812,3 +812,43 @@
     padding: 10px 17px;
   }
 }
+
+.iw-app .pp-reference-discovery {
+  display: grid;
+  gap: 22px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 28px;
+}
+.iw-app .pp-reference-discovery > p {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.iw-app .pp-reference-discovery > label {
+  display: grid;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.iw-app .pp-reference-discovery :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid #d4d4ce;
+  border-radius: 9px;
+}
+.iw-app .pp-reference-discovery > button {
+  justify-self: start;
+}
+.iw-app .pp-reference-discovery small {
+  font-size: 12px;
+  color: #73736b;
+  line-height: 1.5;
+}
+@media (max-width: 760px) {
+  .iw-app .pp-reference-discovery {
+    padding: 24px 22px;
+    gap: 20px;
+  }
+}

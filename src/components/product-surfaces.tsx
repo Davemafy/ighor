@@ -17,6 +17,7 @@ import {
   Music2,
   Plus,
   Save,
+  Search as SearchReferenceIcon,
   Share2,
   Trash2,
   X,
@@ -32,6 +33,11 @@ import {
 } from "react";
 import { TaskCanvas } from "./task-canvas";
 import { ConnectedWorkCanvas } from "./connected-work-canvas";
+import {
+  referenceKinds,
+  referenceRequest,
+  type ReferenceKind,
+} from "./reference-discovery";
 import { morphLayout } from "./mobile-transitions";
 import { hasPendingInput, type TurnFeedback } from "./turn-feedback";
 import type { Task, TaskAction, Candidate } from "@/core/contracts";
@@ -782,13 +788,21 @@ export function ProductCollections({
   isBusy,
   saveOutput,
   onLoad,
+  onDiscover,
 }: {
   task: Task;
   collections: SavedCollection[];
   isBusy: boolean;
   saveOutput: SaveOutput;
   onLoad: (id: string) => Promise<boolean>;
+  onDiscover: (request: string) => Promise<void>;
 }) {
+  const [discover, setDiscover] = useState(false);
+  const [referenceKind, setReferenceKind] = useState<ReferenceKind>("movie");
+  const [taste, setTaste] = useState("");
+  const [locality, setLocality] = useState("");
+  const [discoveryError, setDiscoveryError] = useState("");
+  const [startingDiscovery, setStartingDiscovery] = useState(false);
   const [create, setCreate] = useState(false),
     [selected, setSelected] = useState<string | null>(null),
     [title, setTitle] = useState(""),
@@ -823,9 +837,11 @@ export function ProductCollections({
             : "Keep the things you want to come back to."}
         </span>
         <button
+          disabled={isBusy || startingDiscovery}
           onClick={() => {
             if (!hasReferences) {
-              void onLoad(task.id);
+              setDiscoveryError("");
+              setDiscover(true);
               return;
             }
             setCreate(true);
@@ -866,6 +882,98 @@ export function ProductCollections({
           </p>
         </div>
       )}
+      <ProductDialog
+        open={discover}
+        onClose={() => setDiscover(false)}
+        title="Find references"
+      >
+        <form
+          className="pp-reference-discovery"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (isBusy || startingDiscovery) return;
+            try {
+              const request = referenceRequest(referenceKind, taste, locality);
+              setDiscoveryError("");
+              setStartingDiscovery(true);
+              await onDiscover(request);
+              setDiscover(false);
+            } catch (error) {
+              setDiscoveryError(
+                error instanceof Error
+                  ? error.message
+                  : "The search could not start. Try again.",
+              );
+            } finally {
+              setStartingDiscovery(false);
+            }
+          }}
+        >
+          <p>Choose what to explore and give Igor one starting point.</p>
+          <label>
+            What would you like to find?
+            <select
+              value={referenceKind}
+              disabled={startingDiscovery}
+              onChange={(event) =>
+                setReferenceKind(event.target.value as ReferenceKind)
+              }
+            >
+              {Object.entries(referenceKinds).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            An artist, film, show or place you enjoy
+            <input
+              required
+              maxLength={100}
+              value={taste}
+              disabled={startingDiscovery}
+              onChange={(event) => setTaste(event.target.value)}
+              placeholder="For example, Nujabes or Arrival"
+            />
+          </label>
+          {referenceKind === "place" && (
+            <label>
+              City or neighborhood
+              <input
+                required
+                maxLength={100}
+                value={locality}
+                disabled={startingDiscovery}
+                onChange={(event) => setLocality(event.target.value)}
+                placeholder="For example, Chicago"
+              />
+            </label>
+          )}
+          {discoveryError && <p role="alert">{discoveryError}</p>}
+          <button
+            className="pp-solid"
+            type="submit"
+            disabled={
+              isBusy ||
+              startingDiscovery ||
+              !taste.trim() ||
+              (referenceKind === "place" && !locality.trim())
+            }
+          >
+            {startingDiscovery ? (
+              <LoaderCircle className="ig-spin" />
+            ) : (
+              <SearchReferenceIcon />
+            )}
+            {startingDiscovery ? "Starting your search…" : "Find references"}
+          </button>
+          <small>
+            Results open in your workspace, where you can save references to a
+            collection.
+          </small>
+        </form>
+      </ProductDialog>
       <ProductDialog
         open={create}
         onClose={() => setCreate(false)}
