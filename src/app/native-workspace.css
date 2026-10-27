@@ -492,3 +492,78 @@
     transition: none;
   }
 }
+
+/* Native dialogs enter the top layer, but still inherit the light app theme. */
+.iw-app .pp-dialog {
+  color-scheme: light;
+  color: #191919;
+  background: #f7f7f7;
+  border-color: #dededb;
+}
+.iw-app .pp-dialog::backdrop {
+  background: #24241d40;
+  backdrop-filter: blur(8px);
+}
+.iw-app .pp-dialog > header {
+  color: #191919;
+  background: #f7f7f7ee;
+  border-color: #dededb;
+}
+.iw-app .pp-dialog > header button {
+  border-color: #d4d4ce;
+}
+.iw-app .pp-dialog :is(input:not([type="checkbox"]), textarea, select) {
+  background: #fff;
+  color: #191919;
+  border-color: #d4d4ce;
+  font-size: 16px;
+}
+.iw-app .pp-dialog :is(p, label, .pp-choice-grid label > span) {
+  color: #55554f;
+}
+.iw-app .pp-dialog .pp-solid {
+  background: #111;
+  color: #fff;
+  padding: 12px 19px;
+  min-height: 44px;
+  border-radius: 25px;
+}
+.iw-app .pp-dialog .pp-solid:disabled {
+  background: #e2e2dd;
+  color: #777;
+  opacity: 1;
+}
+.ic-question-receipt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-block: 1px solid #deded8;
+}
+.ic-question-receipt > svg {
+  width: 18px;
+  color: #575c4c;
+}
+.ic-question-receipt > div {
+  flex: 1;
+  min-width: 0;
+}
+.iw-app .ic-question-receipt p {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ic-question-receipt span {
+  font-size: 11px;
+  color: #72726b;
+}
+.iw-app .ic-question-receipt button {
+  padding: 10px;
+  font-size: 12px;
+  text-decoration: underline;
+}
+@media (max-width: 760px) {
+  .iw-app .pp-dialog {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+}

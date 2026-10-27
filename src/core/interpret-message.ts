@@ -11,7 +11,10 @@ import type { z } from "zod";
 import type { ModelProvider } from "../tools/interfaces";
 import type { Trace } from "../capabilities/contract";
 import { ExecutionBudget, withToolDeadline } from "./execution";
-import { applyConversationActions } from "./conversation";
+import {
+  applyConversationActions,
+  type FormAnswerGrounding,
+} from "./conversation";
 import {
   unchangedTurn,
   type ArtifactEdit,
@@ -24,6 +27,7 @@ export async function interpretMessage(
   model: ModelProvider,
   budget: ExecutionBudget,
   trace: Trace,
+  formAnswer?: FormAnswerGrounding,
 ): Promise<TurnUpdate> {
   const update = unchangedTurn(task);
   const changedDependencies: string[] = [];
@@ -242,6 +246,7 @@ export async function interpretMessage(
       parsed.intent === "goal" && !context.brief.goal
         ? initialRequestText
         : input.text,
+      formAnswer,
     );
 
     if (!applied.ok) {

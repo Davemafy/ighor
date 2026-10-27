@@ -5,6 +5,8 @@ import {
   mutateCanvas,
 } from "../../src/core/presentation";
 import { ensureBoundPresentation } from "../../src/core/presentation-default";
+import { applyConversationActions } from "../../src/core/conversation";
+import { FixtureCulturalProvider } from "../../src/tools/fixture-provider";
 import { freshTask } from "../../src/data/fixtures";
 import { SqliteTaskStore } from "../../src/data/store";
 import { runTurn } from "../../src/core/orchestrator";
@@ -223,4 +225,185 @@ it("retains all accepted form values when their combined text exceeds the chat c
   expect(
     store.load(task.id, "owner").canvas?.answers["details:inputs"],
   ).toEqual(longValues);
+});
+
+it("continues the exact Comedy form answer into discovery without demanding personal pronouns", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  stores.push(store);
+  const task = freshTask("movies", "owner");
+  task.brief.goal = "Help me plan a short trip";
+  task.canvas = installPresentation(
+    undefined,
+    PresentationSchema.parse({
+      id: "movies",
+      title: "Movies",
+      basis: "draft",
+      root: "genre",
+      nodes: [
+        {
+          id: "genre",
+          type: "question",
+          prompt: "What kind of movies are you looking for?",
+          fields: [{ id: "style", label: "Genre or Style", type: "text" }],
+        },
+      ],
+    }),
+  );
+  store.create(task);
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    {
+      type: "canvas",
+      surfaceId: "movies",
+      mutation: {
+        operation: "answer",
+        nodeId: "genre",
+        values: { style: "Comedy" },
+      },
+      version: 0,
+    },
+    undefined,
+    new FixtureCulturalProvider(),
+    {
+      interpret: async () => ({
+        intent: "goal",
+        supported: true,
+        kind: "discovery",
+        targetType: "movie",
+        goal: "Find comedy movies",
+        actions: [
+          {
+            kind: "profile",
+            participant: "you",
+            preferences: [{ value: "Comedy", polarity: "like" }],
+          },
+        ],
+      }),
+    },
+  );
+  expect(result.messages.at(-1)?.text).not.toContain("Whose taste");
+  expect(result.brief.goal).toBe("Find comedy movies");
+  expect(result.brief.participants).toHaveLength(1);
+  expect(result.brief.participants[0].preferences).toEqual([
+    expect.objectContaining({ value: "Comedy", source: "user-supplied" }),
+  ]);
+  expect(
+    result.trace.some((row) => row.action === "tool.invoke:qloo.discover"),
+  ).toBe(true);
+  expect(result.preferences).toEqual([]);
+});
+
+it("does not use answer attribution to invent preferences or attribute group answers to the user", () => {
+  const task = freshTask("guard", "owner");
+  const actions = [
+    {
+      kind: "profile",
+      participant: "you",
+      preferences: [{ value: "Horror", polarity: "like" }],
+    },
+  ];
+  expect(
+    applyConversationActions(task, actions, "Genre: Comedy", {
+      subject: "you",
+      values: ["Comedy"],
+    }).ok,
+  ).toBe(false);
+  const comedy = [
+    {
+      kind: "profile",
+      participant: "you",
+      preferences: [{ value: "Comedy", polarity: "like" }],
+    },
+  ];
+  expect(
+    applyConversationActions(task, comedy, "Genre: Comedy", {
+      subject: "group",
+      values: ["Comedy"],
+    }).ok,
+  ).toBe(false);
+  expect(applyConversationActions(task, comedy, "Genre: Comedy").ok).toBe(
+    false,
+  );
+});
+
+it("can deliver a genre-only shortlist in live mode without forcing a Qloo identity intake", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  stores.push(store);
+  const task = freshTask("genre-only", "owner");
+  task.mode = "qloo-live";
+  task.catalogue = [];
+  task.brief.participants = [];
+  task.canvas = installPresentation(
+    undefined,
+    PresentationSchema.parse({
+      id: "genre",
+      title: "Movie preferences",
+      basis: "draft",
+      root: "input",
+      nodes: [
+        {
+          id: "input",
+          type: "question",
+          prompt: "What style?",
+          fields: [{ id: "genre", label: "Genre", type: "text" }],
+        },
+      ],
+    }),
+  );
+  store.create(task);
+  let culturalCalls = 0;
+  const provider = {
+    resolve: async () => {
+      culturalCalls++;
+      throw new Error("Unexpected call");
+    },
+    discover: async () => {
+      culturalCalls++;
+      throw new Error("Unexpected call");
+    },
+  };
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    {
+      type: "canvas",
+      surfaceId: "genre",
+      mutation: {
+        operation: "answer",
+        nodeId: "input",
+        values: { genre: "Comedy" },
+      },
+      version: 0,
+    },
+    undefined,
+    provider,
+    {
+      interpret: async () => ({
+        intent: "conversation",
+        reply:
+          "Here is a starting shortlist from general knowledge; streaming availability is not checked.",
+        presentation: {
+          id: "shortlist",
+          title: "Comedy shortlist",
+          basis: "general-knowledge",
+          root: "list",
+          nodes: [
+            {
+              id: "list",
+              type: "document",
+              content: "Example shortlist supplied by the test provider.",
+            },
+          ],
+        },
+      }),
+    },
+  );
+  expect(culturalCalls).toBe(0);
+  expect(result.status).toBe("ready");
+  expect(result.canvas?.surface.basis).toBe("general-knowledge");
+  expect(result.brief.unresolved).toEqual([]);
+  expect(result.messages.at(-1)?.text).toContain("starting shortlist");
 });

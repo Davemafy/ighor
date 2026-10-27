@@ -96,6 +96,7 @@ export const PresentationNodeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     ...base,
     type: z.literal("question"),
+    subject: z.enum(["you", "group"]).default("you"),
     prompt: z.string().min(1).max(500),
     fields: z.array(QuestionFieldSchema).min(1).max(6),
   }),

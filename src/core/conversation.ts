@@ -28,7 +28,13 @@ function findUnambiguous<T>(
 }
 
 type ConversationAction = z.infer<typeof ConversationActionSchema>;
+export type FormAnswerGrounding = {
+  subject: "you" | "group";
+  values: string[];
+};
+
 interface EditContext {
+  formAnswer?: FormAnswerGrounding;
   task: Task;
   text: string;
   changed: Set<string>;
@@ -43,6 +49,7 @@ export function applyConversationActions(
   original: Task,
   raw: unknown,
   text: string,
+  formAnswer?: FormAnswerGrounding,
 ) {
   const validated = z
     .array(ConversationActionSchema)
@@ -60,6 +67,7 @@ export function applyConversationActions(
 
   const actions = validated.data;
   const edit: EditContext = {
+    formAnswer,
     task: structuredClone(original),
     text,
     changed: new Set(),
@@ -269,6 +277,7 @@ function applyPreferenceCorrection(
   );
 
   if (
+    !isGroundedFormPreference(edit, participant.id, action.value) &&
     !(participant.id === "you" && /\b(?:I|my|me)\b/i.test(text)) &&
     !(participant.id === "group" && /\b(?:we|our|us)\b/i.test(text)) &&
     !normalize(text).includes(normalize(participant.id))
@@ -319,13 +328,29 @@ function applyProfile(
   const collective = normalize(action.participant) === "group";
 
   if (personal) {
-    if (!/\b(?:I|my|me)\b/i.test(text)) {
+    if (
+      !/\b(?:I|my|me)\b/i.test(text) &&
+      !(
+        action.preferences.length > 0 &&
+        action.preferences.every((preference) =>
+          isGroundedFormPreference(edit, "you", preference.value),
+        )
+      )
+    ) {
       throw new Error(
         "Whose taste should Igor use? State your own preferences or name the person.",
       );
     }
   } else if (collective) {
-    if (!/\b(?:we|our|us)\b/i.test(text)) {
+    if (
+      !/\b(?:we|our|us)\b/i.test(text) &&
+      !(
+        action.preferences.length > 0 &&
+        action.preferences.every((preference) =>
+          isGroundedFormPreference(edit, "group", preference.value),
+        )
+      )
+    ) {
       throw new Error(
         "Whose shared taste should Igor use? Name the people or state your group's preferences.",
       );
@@ -651,4 +676,19 @@ function applyDocumentCorrection(
 
   edit.artifact = { artifactId: action.artifactId, content: action.content };
   changed.add(action.artifactId);
+}
+
+// Only the server's validated question submission can supply this attribution.
+// It applies to this task's profile, never to persistent preference memory.
+function isGroundedFormPreference(
+  edit: EditContext,
+  participant: string,
+  value: string,
+) {
+  return (
+    edit.formAnswer?.subject === participant &&
+    edit.formAnswer.values.some(
+      (answer) => normalize(answer) === normalize(value),
+    )
+  );
 }

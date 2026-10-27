@@ -796,6 +796,9 @@ export function ProductCollections({
     [chosen, setChosen] = useState<string[]>([]),
     [order, setOrder] = useState<string[]>([]),
     [notice, setNotice] = useState("");
+  const hasReferences = task.candidates.some(
+    (candidate) => candidate.freshness === "current",
+  );
   const board = collections.find((c) => c.id === selected);
   function open(c: SavedCollection) {
     setSelected(c.id);
@@ -821,14 +824,18 @@ export function ProductCollections({
         </span>
         <button
           onClick={() => {
+            if (!hasReferences) {
+              void onLoad(task.id);
+              return;
+            }
             setCreate(true);
             setTitle("");
             setChosen([]);
             setNotice("");
           }}
         >
-          <Plus />
-          New collection
+          {hasReferences ? <Plus /> : <ArrowUpRight />}
+          {hasReferences ? "New collection" : "Find references"}
         </button>
       </div>
       {collections.length ? (

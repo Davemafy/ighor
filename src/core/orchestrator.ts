@@ -1,3 +1,4 @@
+import type { FormAnswerGrounding } from "./conversation";
 import { mutateCanvas } from "./presentation";
 import { ensureBoundPresentation } from "./presentation-default";
 import { randomUUID } from "node:crypto";
@@ -45,6 +46,7 @@ export async function runTurn(
   factsProvider: PracticalFactsProvider = new SuppliedFactsProvider(),
 ): Promise<Task> {
   let input = TurnSchema.parse(raw);
+  let formAnswer: FormAnswerGrounding | undefined;
   let task = store.load(id, owner);
 
   if (task.brief.version !== input.version) {
@@ -74,6 +76,10 @@ export async function runTurn(
       task,
     );
     const answers = task.canvas.answers[`${input.surfaceId}:${question.id}`];
+    formAnswer = {
+      subject: question.subject,
+      values: Object.values(answers).filter(Boolean),
+    };
     const text = [
       question.title || question.prompt,
       ...question.fields.map(
@@ -211,7 +217,7 @@ export async function runTurn(
 
   const update =
     input.type === "message"
-      ? await interpretMessage(task, input, model, budget, trace)
+      ? await interpretMessage(task, input, model, budget, trace, formAnswer)
       : applyStructuredTurn(task, input, {
           taskId: id,
           owner,

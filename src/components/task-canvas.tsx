@@ -853,6 +853,7 @@ function CanvasQuestion({
 }) {
   const saved = task.canvas?.answers[`${surfaceId}:${node.id}`];
   const [values, setValues] = useState<Record<string, string>>(saved ?? {});
+  const [editing, setEditing] = useState(false);
   const [base, setBase] = useState(saved);
 
   if (base !== saved) {
@@ -872,11 +873,32 @@ function CanvasQuestion({
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
+  if (saved && !dirty && !editing) {
+    return (
+      <div className="ic-question-receipt">
+        <Check />
+        <div>
+          <p>
+            {node.fields
+              .map((field) => saved[field.id])
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <span>Answers sent</span>
+        </div>
+        <button disabled={busy} onClick={() => setEditing(true)}>
+          Edit
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form
       className="ic-question"
       onSubmit={(event) => {
         event.preventDefault();
+        setEditing(false);
         mutate({ operation: "answer", nodeId: node.id, values });
       }}
     >
