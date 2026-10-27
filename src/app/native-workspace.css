@@ -1398,3 +1398,132 @@
     transition: none !important;
   }
 }
+
+/* Restore image-led entry points instead of thumbnail-sized utility tiles. */
+.iw-app .iw-ideas {
+  display: grid;
+  max-width: 1080px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 42px;
+}
+.iw-app .iw-ideas > button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  padding: 0 0 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+}
+.iw-app .iw-ideas .iw-poster {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 20px #29202b0c;
+}
+.iw-app .iw-ideas > button > div:last-of-type {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0 2px;
+}
+.iw-app .iw-ideas h2 {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.iw-app .iw-ideas > button > p {
+  display: block;
+  margin: 5px 2px 0;
+  font-size: 12px;
+  color: #686868;
+}
+.iw-app .iw-ideas > button svg {
+  display: block;
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+.iw-app .iw-ideas > button:focus-visible {
+  outline: 2px solid #171717;
+  outline-offset: 5px;
+}
+.iw-app .iw-references > div,
+.iw-app .ic-discoveries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.iw-app .iw-references article,
+.iw-app .ic-discoveries > article {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e0ddd5;
+  border-radius: 16px;
+  background: #fffdf7c9;
+}
+.iw-app .iw-references article {
+  padding: 14px;
+}
+.iw-app .iw-references article > img,
+.iw-app .ic-discoveries > article > img {
+  display: block;
+  width: 100%;
+  height: 240px;
+  max-height: none;
+  object-fit: contain;
+  background: #eae7de;
+  border-radius: 10px;
+  margin: 0 0 14px;
+}
+.iw-app .ic-discoveries > article > img {
+  border-radius: 0;
+}
+.iw-app .ic-discoveries > article > div {
+  padding: 0 18px 18px;
+}
+.iw-app .ic-discoveries > article:not(:has(> img)) > div {
+  padding-top: 18px;
+}
+.iw-app .iw-references h3,
+.iw-app .ic-discoveries h4 {
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 8px 0;
+}
+@media (max-width: 1000px) {
+  .iw-app .iw-ideas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 740px;
+  }
+}
+@media (max-width: 760px) {
+  .iw-app .iw-ideas {
+    gap: 20px 14px;
+    margin-top: 30px;
+  }
+  .iw-app .iw-ideas .iw-poster {
+    aspect-ratio: 1;
+  }
+  .iw-app .iw-ideas h2 {
+    font-size: 15px;
+  }
+  .iw-app .iw-ideas > button > p {
+    font-size: 11px;
+  }
+  .iw-app .iw-references > div,
+  .iw-app .ic-discoveries {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
