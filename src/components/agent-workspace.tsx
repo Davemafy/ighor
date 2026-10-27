@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { DecisionWork } from "./decision-work";
+import { AppearanceControl } from "./appearance-control";
 import { AdaptiveStage } from "./adaptive-stage";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -333,6 +334,7 @@ export function AgentWorkspace({
 
   return (
     <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
+      <AppearanceControl />
       <a className="iw-skip" href="#iw-main">
         Skip to content
       </a>
