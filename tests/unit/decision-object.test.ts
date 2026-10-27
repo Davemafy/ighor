@@ -171,3 +171,37 @@ it("rejects invalid compositions for provider repair instead of claiming invisib
     ),
   ).toThrow();
 });
+
+it("accepts supplied gift results with missing display title and unrelated node fields without weakening content validation", () => {
+  const task = freshTask("gift-format", "owner");
+  const result = readTurnDecision(
+    JSON.stringify({
+      decision: {
+        intent: "conversation",
+        reply: "Here are your ideas",
+        presentation: {
+          id: "gifts",
+          basis: "draft",
+          root: "gift",
+          nodes: [
+            {
+              id: "gift",
+              type: "document",
+              content:
+                "Three gift ideas for Mum within the supplied $50 budget.",
+              children: [],
+              columns: [],
+            },
+          ],
+        },
+      },
+    }),
+    task,
+  );
+  expect(result.presentation?.title).toBe("Your work");
+  expect(result.presentation?.nodes[0]).toMatchObject({
+    type: "document",
+    content: "Three gift ideas for Mum within the supplied $50 budget.",
+  });
+  expect(result.presentation?.nodes[0]).not.toHaveProperty("columns");
+});

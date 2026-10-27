@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { validatePresentation } from "../core/presentation";
+import {
+  validatePresentation,
+  PresentationNodeSchema,
+} from "../core/presentation";
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 
 /** Provider guidance uses simple JSON field types; Zod remains the execution authority. */
@@ -87,6 +90,20 @@ export function turnTool() {
   const schema = z.toJSONSchema(LiveDecisionSchema, { io: "input" });
 
   const guidance = providerShape(schema);
+  const fields = guidance.properties as Record<string, Record<string, unknown>>;
+  const presentation = fields.presentation;
+  if (presentation?.properties) {
+    presentation.required = ["id", "title", "basis", "root", "nodes"];
+    const nodes = (
+      presentation.properties as Record<string, Record<string, unknown>>
+    ).nodes;
+    const item = nodes.items as Record<string, unknown>;
+    const shared = item.properties as Record<string, unknown>;
+    // Variant-specific fields must follow the full contract in the description.
+    // Merging all variants tells providers to fill unrelated fields on each node.
+    item.properties = { id: shared.id, type: shared.type, title: shared.title };
+    item.required = ["id", "type"];
+  }
 
   return {
     type: "function",
@@ -151,6 +168,28 @@ export function readTurnDecision(
   ]) {
     if (payload[field] === null) {
       delete payload[field];
+    }
+  }
+
+  if (payload.presentation && typeof payload.presentation === "object") {
+    const surface = payload.presentation as Record<string, unknown>;
+    // Presentation-only metadata normalization. Never normalize action payloads
+    // or invent missing content, coordinates, prices, references or constraints.
+    if (surface.title == null) surface.title = "Your work";
+    if (Array.isArray(surface.nodes)) {
+      surface.nodes = surface.nodes.map((raw: unknown) => {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+        const node = raw as Record<string, unknown>;
+        const variant = PresentationNodeSchema.options.find(
+          (option) => option.shape.type.safeParse(node.type).success,
+        );
+        if (!variant) return node;
+        return Object.fromEntries(
+          Object.entries(node).filter(([key]) =>
+            Object.hasOwn(variant.shape, key),
+          ),
+        );
+      });
     }
   }
 
