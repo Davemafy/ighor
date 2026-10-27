@@ -16,7 +16,7 @@ import {
   Search,
   Share2,
   X,
-} from "lucide-react";
+} from "./workspace-icons";
 import type { Artifact, Task, TaskAction } from "@/core/contracts";
 import { useWorkspace } from "./use-workspace";
 import { hasPendingInput } from "./turn-feedback";
@@ -442,17 +442,7 @@ export function AgentWorkspace() {
                       key={m.id || `${m.at}:${i}`}
                     >
                       <span className="iw-author">
-                        {m.role === "assistant" ? (
-                          <>
-                            <img
-                              src={assets + "brand/igor-mark-white.svg"}
-                              alt=""
-                            />
-                            Igor
-                          </>
-                        ) : (
-                          "You"
-                        )}
+                        {m.role === "assistant" ? "igor" : "You"}
                       </span>
                       <ProductText text={m.text} />
                     </article>
@@ -471,7 +461,7 @@ export function AgentWorkspace() {
                       </span>
                     </div>
                   )}
-                  {!!w.feedback?.steps.length && !w.isBusy && (
+                  {!!w.feedback?.steps.length && !w.isBusy && hasResult && (
                     <details className="iw-receipt">
                       <summary>
                         View activity
