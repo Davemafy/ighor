@@ -1049,3 +1049,9 @@
   border-radius: 18px;
   padding: 24px;
 }
+
+@media (min-width: 761px) {
+  .iw-app .iw-inline-output .ic-canvas.ic-fullscreen {
+    inset: 16px 16px 16px 92px !important;
+  }
+}
