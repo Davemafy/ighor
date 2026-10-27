@@ -74,9 +74,9 @@ it("grounds a recipient mentioned in the current message before the thread is sa
   expect(
     readTurnDecision(raw, task, "A gift for my mum").presentation?.nodes[0],
   ).toMatchObject({ subject: "Mum" });
-  expect(
-    readTurnDecision(raw, task, "A gift for someone").presentation,
-  ).toBeUndefined();
+  expect(() => readTurnDecision(raw, task, "A gift for someone")).toThrow(
+    "Question subject must be supplied",
+  );
 });
 
 it("exposes actual decision fields and both conversation/action intent alternatives to providers", () => {
@@ -140,5 +140,34 @@ it("keeps provider schemas to simple supported field types while the application
 
   expect(() =>
     readTurnDecision(JSON.stringify({ decision: { intent: "goal" } })),
+  ).toThrow();
+});
+
+it("rejects invalid compositions for provider repair instead of claiming invisible work", () => {
+  const task = freshTask("invalid-layout", "owner");
+  expect(() =>
+    readTurnDecision(
+      JSON.stringify({
+        decision: {
+          intent: "conversation",
+          reply: "Created your table",
+          presentation: {
+            id: "options",
+            title: "Options",
+            basis: "draft",
+            root: "table",
+            nodes: [
+              {
+                id: "table",
+                type: "table",
+                columns: ["Option"],
+                rows: [{ id: "one", cells: [{ text: "invalid cell" }] }],
+              },
+            ],
+          },
+        },
+      }),
+      task,
+    ),
   ).toThrow();
 });

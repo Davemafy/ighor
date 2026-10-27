@@ -163,8 +163,16 @@ export function readTurnDecision(
           ...(currentMessage ? [{ role: "user", text: currentMessage }] : []),
         ],
       });
-    } catch {
-      delete payload.presentation;
+    } catch (error) {
+      if (error instanceof z.ZodError) throw error;
+      throw new z.ZodError([
+        {
+          code: "custom",
+          path: ["presentation"],
+          message:
+            error instanceof Error ? error.message : "Invalid presentation",
+        },
+      ]);
     }
   }
 

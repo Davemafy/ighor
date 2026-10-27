@@ -215,6 +215,10 @@ export class ToolCallingModel implements ModelProvider {
           output: JSON.stringify({
             status: "rejected",
             reason: interpretationFailure(error),
+            schemaIssues:
+              error instanceof z.ZodError
+                ? JSON.stringify(error.issues).slice(0, 8000)
+                : "Return valid JSON",
             instruction:
               "No edits or tools were executed. Return one valid decision in the declared envelope. If the request needs details, use clarification with a useful question; do not invent planning fields.",
           }),
