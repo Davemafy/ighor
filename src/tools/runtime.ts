@@ -1,6 +1,6 @@
 import { LiveQlooProvider, SqliteResponseCache } from "./qloo-live";
 import { ToolCallingModel } from "./tool-model";
-import { GeminiModel } from "./gemini-model";
+import { ResponsiveGeminiModel } from "./responsive-gemini";
 import { RecordedQlooProvider } from "./recorded-qloo";
 import { readRecordingText } from "./recording-file";
 import { DevelopmentModel } from "./development-model";
@@ -47,7 +47,7 @@ export function runtimeModelProvider(mode: Task["mode"]) {
   }
 
   return process.env.GEMINI_API_KEY
-    ? new GeminiModel(
+    ? new ResponsiveGeminiModel(
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
       )

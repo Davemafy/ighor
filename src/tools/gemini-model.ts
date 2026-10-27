@@ -14,7 +14,7 @@ const Message = z.object({
 });
 
 const Function = z.object({
-  name: z.enum(["update_brief", "inspect_candidates", "submit_selection"]),
+  name: z.enum(["update_brief", "inspect_candidates", "submit_selection", "route_conversation"]),
   description: z.string(),
   parameters: z.record(z.string(), z.unknown()),
 });
