@@ -1068,3 +1068,79 @@
   min-width: 0;
   flex: 1 1 auto;
 }
+
+/* Soft atmosphere stays behind the existing paper surfaces and readable ink. */
+.iw-app .iw-welcome,
+.iw-app .iw-inline-output {
+  position: relative;
+  isolation: isolate;
+}
+.iw-app .iw-welcome::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  top: -90px;
+  left: 0;
+  width: 100%;
+  height: 440px;
+  background:
+    radial-gradient(ellipse at 23% 24%, #c5b6f46b, transparent 56%),
+    radial-gradient(ellipse at 72% 15%, #f5c7b66b, transparent 54%),
+    radial-gradient(ellipse at 52% 4%, #accdf15c, transparent 58%);
+  filter: blur(28px);
+  opacity: 0.8;
+  transform-origin: center top;
+  animation: igor-atmosphere 22s ease-in-out infinite alternate;
+}
+.iw-app .iw-inline-output {
+  background: #f3f1ed;
+}
+.iw-app .iw-inline-output::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 5% 0%, #c6b8ee59, transparent 55%),
+    radial-gradient(ellipse at 95% 20%, #f3c7b64d, transparent 55%),
+    radial-gradient(ellipse at 55% 95%, #b4d1ed38, transparent 60%);
+  opacity: 0.5;
+  transition: opacity 700ms ease;
+}
+.iw-app .iw-inline-output[aria-busy="true"]::before {
+  opacity: 0.95;
+  animation: igor-work-atmosphere 7s ease-in-out infinite alternate;
+}
+@keyframes igor-atmosphere {
+  from {
+    transform: translate3d(-1%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1%, 12px, 0) scale(1.04);
+  }
+}
+@keyframes igor-work-atmosphere {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+@media (max-width: 760px) {
+  .iw-app .iw-welcome::before {
+    height: 340px;
+    filter: blur(20px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app .iw-welcome::before,
+  .iw-app .iw-inline-output::before {
+    animation: none !important;
+    transition: none;
+    transform: none;
+  }
+}
