@@ -270,6 +270,26 @@ function applyPreferenceCorrection(
 ) {
   const { task, changed, text } = edit;
 
+  if (
+    action.participant === "you" &&
+    !task.brief.participants.some((person) => person.id === "you") &&
+    isGroundedFormPreference(edit, "you", action.value)
+  ) {
+    applyProfile(edit, {
+      kind: "profile",
+      participant: "you",
+      preferences: [
+        {
+          value: action.value,
+          polarity: action.polarity,
+          ...(action.entityType ? { entityType: action.entityType } : {}),
+        },
+      ],
+    });
+
+    return;
+  }
+
   const participant = findUnambiguous(
     task.brief.participants,
     action.participant,

@@ -776,3 +776,39 @@
     padding-top: 56px;
   }
 }
+
+/* Keep rows balanced when a conversation has no timestamp. */
+.iw-app .iw-history-list > button > .iw-history-meta {
+  align-self: center;
+  align-content: center;
+}
+.iw-app .ic-inline .ic-composition {
+  padding: 0;
+}
+.iw-app .ic-inline .ic-component > h3 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #66665e;
+}
+@media (max-width: 760px) {
+  .iw-app .ic-question {
+    padding: 18px;
+    gap: 15px;
+    border-radius: 14px;
+  }
+  .iw-app .ic-question > p {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .iw-app .ic-question-field {
+    gap: 7px;
+  }
+  .iw-app .ic-question-field input {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .iw-app .ic-question > button {
+    min-height: 44px;
+    padding: 10px 17px;
+  }
+}

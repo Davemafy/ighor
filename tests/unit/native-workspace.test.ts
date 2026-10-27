@@ -407,3 +407,79 @@ it("can deliver a genre-only shortlist in live mode without forcing a Qloo ident
   expect(result.brief.unresolved).toEqual([]);
   expect(result.messages.at(-1)?.text).toContain("starting shortlist");
 });
+
+it("creates a missing self profile from a short answer to the persisted taste question", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  stores.push(store);
+  const task = freshTask("chicago-avengers", "owner");
+  task.brief.goal = "Plan a 3-day trip to Chicago";
+  task.brief.participants = [];
+  task.brief.unresolved = [
+    "What is one artist, film, book or place you enjoy that could guide this?",
+  ];
+  store.create(task);
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    { type: "message", text: "Avengers", version: 0 },
+    undefined,
+    new FixtureCulturalProvider(),
+    {
+      interpret: async () => ({
+        intent: "revision",
+        supported: true,
+        kind: "discovery",
+        goal: task.brief.goal,
+        wording: "Unrequested replacement invitation",
+        actions: [
+          {
+            kind: "artifact",
+            artifactId: "invitation",
+            content: "Unrequested replacement invitation",
+          },
+          {
+            kind: "preference",
+            participant: "you",
+            value: "Avengers",
+            polarity: "like",
+            entityType: "movie",
+          },
+        ],
+      }),
+    },
+  );
+  expect(result.brief.participants).toHaveLength(1);
+  expect(result.brief.participants[0].id).toBe("you");
+  expect(result.brief.participants[0].preferences[0].value).toBe("Avengers");
+  expect(result.messages.at(-1)?.text).not.toContain("Which you");
+  expect(result.preferences).toEqual([]);
+  expect(result.trace.some((row) => row.action === "proposal.ignored")).toBe(
+    true,
+  );
+  expect(
+    result.artifacts.some(
+      (artifact) => artifact.content === "Unrequested replacement invitation",
+    ),
+  ).toBe(false);
+});
+
+it("does not infer the same profile from an unprompted short message", () => {
+  const task = freshTask("no-prompt", "owner");
+  task.brief.participants = [];
+  const result = applyConversationActions(
+    task,
+    [
+      {
+        kind: "preference",
+        participant: "you",
+        value: "Avengers",
+        polarity: "like",
+        entityType: "movie",
+      },
+    ],
+    "Avengers",
+  );
+  expect(result.ok).toBe(false);
+  expect(task.brief.participants).toEqual([]);
+});

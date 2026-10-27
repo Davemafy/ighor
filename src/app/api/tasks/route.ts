@@ -55,6 +55,12 @@ export async function GET() {
       {
         tasks: getStore()
           .list(ownerFromToken(token))
+          .filter(
+            (task) =>
+              task.messages.length > 0 ||
+              !!task.brief.goal ||
+              !!task.work?.documents.length,
+          )
           .map((t) => ({
             id: t.id,
             goal: t.brief.goal,

@@ -29,6 +29,18 @@ export async function interpretMessage(
   trace: Trace,
   formAnswer?: FormAnswerGrounding,
 ): Promise<TurnUpdate> {
+  // This is a response to our own persisted intake question, not an inferred
+  // preference or consent to persistent memory. Preserve the exact answer.
+  if (
+    !formAnswer &&
+    task.brief.unresolved.includes(
+      "What is one artist, film, book or place you enjoy that could guide this?",
+    ) &&
+    input.text.trim().length <= 100
+  ) {
+    formAnswer = { subject: "you", values: [input.text.trim()] };
+  }
+
   const update = unchangedTurn(task);
   const changedDependencies: string[] = [];
   let needsDiscovery = false;
@@ -194,6 +206,34 @@ export async function interpretMessage(
   // All model-supplied numeric and wording patches use the same grounding rules,
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
+  // A grounded intake answer is not permission to rewrite an invitation.
+  // Keep supported taste extraction without letting an invented document edit
+  // reject the entire answer or modify existing wording.
+  const answeringTaste =
+    !!formAnswer &&
+    proposals.some(
+      (action) =>
+        (action.kind === "profile" &&
+          action.preferences.some((preference) =>
+            formAnswer.values.includes(preference.value),
+          )) ||
+        (action.kind === "preference" &&
+          formAnswer.values.includes(action.value)),
+    );
+
+  if (answeringTaste) {
+    for (let index = proposals.length - 1; index >= 0; index--) {
+      const action = proposals[index];
+
+      if (action.kind === "artifact" && !input.text.includes(action.content)) {
+        proposals.splice(index, 1);
+        trace(
+          "proposal.ignored",
+          "Ignored an unrequested document rewrite while accepting the supplied taste answer.",
+        );
+      }
+    }
+  }
 
   if (parsed.budget !== undefined || parsed.duration !== undefined) {
     proposals.push({
@@ -205,6 +245,7 @@ export async function interpretMessage(
 
   if (
     parsed.wording &&
+    (!answeringTaste || input.text.includes(parsed.wording)) &&
     !proposals.some(
       (action) =>
         action.kind === "artifact" &&
