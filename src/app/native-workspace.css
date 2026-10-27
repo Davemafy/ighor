@@ -1839,3 +1839,17 @@
     transition: none;
   }
 }
+
+/* Appearance controls remain solid and legible over every atmosphere. */
+.iw-app .iw-appearance-trigger {
+  background: #fffdf7;
+  border: 1px solid #cfc7b8;
+  color: #24201b;
+  box-shadow: 0 3px 12px #30271b14;
+  backdrop-filter: none;
+}
+.iw-app .iw-appearance-panel {
+  background: #fffdf7;
+  border-color: #d6cebf;
+  backdrop-filter: none;
+}
