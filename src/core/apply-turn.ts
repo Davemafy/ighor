@@ -26,6 +26,8 @@ export interface TurnUpdate {
   clarification: string | null;
   interpretationFailed: boolean;
   conversationOnly?: boolean;
+  /** Trusted canvas view only: persist without rerunning cultural planning. */
+  uiOnly?: boolean;
 }
 
 export function unchangedTurn(task: Task): TurnUpdate {

@@ -236,6 +236,10 @@ export const CanvasStateSchema = z.object({
   surface: PresentationSchema,
   previous: z.array(PresentationSchema).max(4).default([]),
   selectedCandidateId: z.string().nullable().default(null),
+  // These direct, owner-scoped canvas choices survive reload and model replies.
+  // They never grant permissions or manufacture cultural evidence.
+  comparisonIds: refs.max(3).default([]),
+  viewModes: z.record(z.string(), z.enum(["explore", "connections", "compare", "plan"])).default({}),
   itineraryIds: refs.default([]),
   filters: z.record(z.string(), z.string().max(200)).default({}),
   chartAxes: z.record(z.string(), z.number().int().min(0).max(11)).default({}),
@@ -276,6 +280,16 @@ export const CanvasMutationSchema = z.discriminatedUnion("operation", [
     operation: z.literal("select"),
     nodeId: id,
     candidateId: z.string(),
+  }),
+  z.strictObject({
+    operation: z.literal("compare-selection"),
+    nodeId: id,
+    candidateId: z.string().min(1).max(150),
+  }),
+  z.strictObject({
+    operation: z.literal("view"),
+    nodeId: id,
+    mode: z.enum(["explore", "connections", "compare", "plan"]),
   }),
   z.strictObject({
     operation: z.literal("itinerary"),
@@ -516,6 +530,72 @@ export function mutateCanvas(
 
       canvas.selectedCandidateId = mutation.candidateId;
       break;
+
+    case "compare-selection": {
+      if (
+        (node.type !== "discovery" && node.type !== "spatial") ||
+        !node.candidateIds.includes(mutation.candidateId) ||
+        !context.candidates.some(
+          (candidate) =>
+            candidate.id === mutation.candidateId &&
+            candidate.freshness === "current",
+        )
+      ) {
+        throw new Error("Compare only current objects on this canvas.");
+      }
+
+      canvas.comparisonIds = canvas.comparisonIds.includes(mutation.candidateId)
+        ? canvas.comparisonIds.filter((key) => key !== mutation.candidateId)
+        : [...canvas.comparisonIds, mutation.candidateId].slice(-3);
+
+      if (
+        canvas.viewModes[node.id] === "compare" &&
+        canvas.comparisonIds.filter((key) => node.candidateIds.includes(key))
+          .length < 2
+      ) {
+        canvas.viewModes[node.id] = "explore";
+      }
+      break;
+    }
+
+    case "view": {
+      if (node.type !== "discovery" && node.type !== "spatial") {
+        throw new Error("Only discovery surfaces can morph into connected work.");
+      }
+      const current = (candidateId: string) =>
+        node.candidateIds.includes(candidateId) &&
+        context.candidates.some(
+          (candidate) =>
+            candidate.id === candidateId && candidate.freshness === "current",
+        );
+
+      if (
+        mutation.mode === "compare" &&
+        canvas.comparisonIds.filter(current).length < 2
+      ) {
+        throw new Error("Select two current options before comparing.");
+      }
+      if (mutation.mode === "plan") {
+        if (!canvas.selectedCandidateId || !current(canvas.selectedCandidateId)) {
+          throw new Error("Choose a current option before making a plan.");
+        }
+        // Preserve the existing itinerary when returning to the plan. Adding
+        // a newly selected object is an explicit user edit, not model inference.
+        if (!canvas.itineraryIds.includes(canvas.selectedCandidateId)) {
+          canvas.itineraryIds = [
+            ...canvas.itineraryIds.filter((key) =>
+              context.candidates.some(
+                (candidate) =>
+                  candidate.id === key && candidate.freshness === "current",
+              ),
+            ),
+            canvas.selectedCandidateId,
+          ].slice(0, 30);
+        }
+      }
+      canvas.viewModes[node.id] = mutation.mode;
+      break;
+    }
 
     case "itinerary": {
       if (node.type !== "spatial" && node.type !== "discovery") {

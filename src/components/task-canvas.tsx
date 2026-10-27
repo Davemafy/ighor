@@ -24,6 +24,7 @@ import {
 } from "@/core/presentation";
 import { ProductText } from "./product-surfaces";
 import { morphLayout } from "./mobile-transitions";
+import { LiquidDiscovery } from "./liquid-discovery";
 
 const SpatialCanvas = lazy(() => import("./igor-spatial-canvas"));
 type Props = {
@@ -418,49 +419,13 @@ function CanvasTree({
         break;
       case "discovery":
         body = (
-          <div className="ic-discoveries">
-            {node.candidateIds
-              .map((key) => task.candidates.find((c) => c.id === key))
-              .filter((c) => !!c)
-              .map((c) => (
-                <article
-                  key={c.id}
-                  data-selected={task.canvas?.selectedCandidateId === c.id}
-                >
-                  {c.imageUrl && <LoadingImage src={c.imageUrl} />}
-                  <div>
-                    <small>
-                      {c.type === "place"
-                        ? c.place?.address || "Place"
-                        : c.type.replaceAll("_", " ")}
-                    </small>
-                    <h4>{c.name}</h4>
-                    <p>{c.description}</p>
-                    <Sources ids={c.evidenceIds} task={task} />
-                    <button
-                      disabled={busy || c.freshness !== "current"}
-                      aria-pressed={task.canvas?.selectedCandidateId === c.id}
-                      onClick={() =>
-                        mutate({
-                          operation: "select",
-                          nodeId: node.id,
-                          candidateId: c.id,
-                        })
-                      }
-                    >
-                      {task.canvas?.selectedCandidateId === c.id ? (
-                        <Check />
-                      ) : (
-                        <MapPin />
-                      )}
-                      {task.canvas?.selectedCandidateId === c.id
-                        ? "Selected"
-                        : "Choose this"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-          </div>
+          <LiquidDiscovery
+            task={task}
+            node={node}
+            busy={busy}
+            mutate={mutate}
+            onTurn={onTurn}
+          />
         );
         break;
       case "spatial":

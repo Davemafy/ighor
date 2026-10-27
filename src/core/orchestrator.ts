@@ -223,6 +223,29 @@ export async function runTurn(
         });
   task = update.task;
 
+  if (update.uiOnly) {
+    // A conversational view switch is already validated by mutateCanvas.
+    // Commit it like a direct edit: no cultural provider, planner or unrelated
+    // artifact invalidation. A later real task can use this persisted state.
+    task.brief.version++;
+    task.trace = task.trace.slice(-100);
+    appendReceipt(
+      task,
+      input,
+      receiptFromVersion,
+      ["canvas:view"],
+      receiptTraceIds,
+      (model.calls ?? 0) - initialModelCalls,
+      task.status,
+      0,
+    );
+    TaskSchema.parse(task);
+    store.save(task, receiptFromVersion, owner);
+    emit({ type: "done", task: structuredClone(task) });
+
+    return task;
+  }
+
   if (update.conversationOnly) {
     ensureBoundPresentation(task);
 

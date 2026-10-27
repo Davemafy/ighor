@@ -5,6 +5,7 @@ import {
   ConversationActionSchema,
 } from "./contracts";
 import { z } from "zod";
+import { mutateCanvas } from "./presentation";
 
 const normalize = (value: string) =>
   value.normalize("NFKC").trim().toLowerCase();
@@ -107,6 +108,18 @@ export function applyConversationActions(
           break;
         case "select":
           applyPinnedSelection(edit, action);
+          break;
+        case "canvas-view":
+          if (!edit.task.canvas) {
+            throw new Error("There is no live work surface to transform.");
+          }
+          edit.task.canvas = mutateCanvas(
+            edit.task.canvas,
+            edit.task.canvas.surface.id,
+            { operation: "view", nodeId: action.nodeId, mode: action.mode },
+            edit.task,
+          );
+          edit.changed.add("canvas:view");
           break;
         case "artifact":
           applyDocumentCorrection(edit, action);

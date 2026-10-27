@@ -93,10 +93,29 @@ export function ensureBoundPresentation(task: Task) {
     task.canvas.surface.id = previous.surface.id;
     task.canvas.previous = previous.previous;
     task.canvas.selectedCandidateId = previous.selectedCandidateId;
+    task.canvas.comparisonIds = previous.comparisonIds;
+    task.canvas.viewModes = previous.viewModes;
     task.canvas.itineraryIds = previous.itineraryIds;
+    task.canvas.itineraryDays = previous.itineraryDays;
     task.canvas.filters = previous.filters;
+    task.canvas.chartAxes = previous.chartAxes;
     task.canvas.completed = previous.completed;
     task.canvas.answers = previous.answers;
+    // The adapter may have received a different candidate pool. Never leave a
+    // comparison visually active with fewer than two currently offered items.
+    const offered = new Set(
+      task.candidates.filter((candidate) => candidate.freshness === "current")
+        .map((candidate) => candidate.id),
+    );
+    task.canvas.comparisonIds = task.canvas.comparisonIds.filter((id) =>
+      offered.has(id),
+    );
+    if (
+      task.canvas.viewModes.discoveries === "compare" &&
+      task.canvas.comparisonIds.length < 2
+    ) {
+      task.canvas.viewModes.discoveries = "explore";
+    }
   }
 }
 

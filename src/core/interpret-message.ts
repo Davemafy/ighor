@@ -29,17 +29,10 @@ export async function interpretMessage(
   trace: Trace,
   formAnswer?: FormAnswerGrounding,
 ): Promise<TurnUpdate> {
-  // This is a response to our own persisted intake question, not an inferred
-  // preference or consent to persistent memory. Preserve the exact answer.
-  if (
-    !formAnswer &&
-    task.brief.unresolved.includes(
-      "What is one artist, film, book or place you enjoy that could guide this?",
-    ) &&
-    input.text.trim().length <= 100
-  ) {
-    formAnswer = { subject: "you", values: [input.text.trim()] };
-  }
+  // Never reinterpret arbitrary short messages as a taste-profile form answer.
+  // "Go", a correction or a topic switch still belongs to the full conversation
+  // interpreter. Actual question-form submissions arrive with explicit
+  // formAnswer grounding from the validated canvas-answer handler.
 
   const update = unchangedTurn(task);
   const changedDependencies: string[] = [];
@@ -70,6 +63,41 @@ export async function interpretMessage(
         model.timeoutMs ?? 5000,
       ),
     );
+
+    // An actual answer to Igor's outstanding taste question may be a short
+    // artist or film name. Do not misinterpret continuation commands or
+    // unrelated replies as an implicit preference.
+    if (
+      !formAnswer &&
+      task.brief.unresolved.includes(
+        "What is one artist, film, book or place you enjoy that could guide this?",
+      ) &&
+      input.text.trim().length <= 100 &&
+      !/^(?:go|go ahead|continue|next|yes|yep|yeah|okay|ok|no|nah|huh|wait|stop|proceed|do it|the first|the second|the third|that one)$/i.test(
+        input.text.trim(),
+      ) &&
+      parsed.intent === "revision" &&
+      parsed.actions?.some(
+        (action) =>
+          (action.kind === "preference" &&
+            action.participant === "you" &&
+            action.polarity === "like" &&
+            !!action.entityType &&
+            action.value.toLocaleLowerCase() ===
+              input.text.trim().toLocaleLowerCase()) ||
+          (action.kind === "profile" &&
+            action.participant === "you" &&
+            action.preferences.some(
+              (preference) =>
+                preference.polarity === "like" &&
+                !!preference.entityType &&
+                preference.value.toLocaleLowerCase() ===
+                  input.text.trim().toLocaleLowerCase(),
+            )),
+      )
+    ) {
+      formAnswer = { subject: "you", values: [input.text.trim()] };
+    }
 
     if (parsed.intent === "conversation" || parsed.intent === "clarification") {
       for (const id of parsed.replyEvidenceIds) {
@@ -373,9 +401,29 @@ export async function interpretMessage(
     clarification = "Which city or locality should Igor explore?";
   }
 
+  const uiOnly =
+    !clarification &&
+    !!parsed.actions?.length &&
+    parsed.actions.every((action) => action.kind === "canvas-view") &&
+    !parsed.outcome &&
+    !parsed.workActions?.length &&
+    parsed.intent === "revision";
+
+  if (uiOnly) {
+    // The model chose a legal schema action; the actual surface mutation is
+    // already validated against the saved candidate pool.
+    task.messages.push({
+      role: "assistant",
+      kind: "conversation",
+      text: "The workspace view is updated. Your options and previous decisions are preserved.",
+      at: at(),
+    });
+  }
+
   return {
     ...update,
     task,
+    uiOnly,
     workActions: parsed.workActions,
     workAfterDiscovery: !!parsed.workActions?.length,
     changedDependencies,

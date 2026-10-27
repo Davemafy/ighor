@@ -396,6 +396,13 @@ export const ConversationActionSchema = z.discriminatedUnion("kind", [
     candidates: z.array(z.string().min(1).max(120)).max(3),
   }),
   z.strictObject({
+    // The agent can request a trusted structural transformation, not code.
+    // Candidate membership and authorization are checked by mutateCanvas.
+    kind: z.literal("canvas-view"),
+    nodeId: z.string().min(1).max(80),
+    mode: z.enum(["explore", "connections", "compare", "plan"]),
+  }),
+  z.strictObject({
     kind: z.literal("artifact"),
     artifactId: z.enum(["main", "invitation"]),
     content: z.string().min(1).max(10000),
