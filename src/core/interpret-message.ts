@@ -185,9 +185,41 @@ export async function interpretMessage(
 
   if (
     parsed.workActions?.length &&
-    !parsed.actions?.length &&
-    !parsed.outcome
+    !parsed.outcome &&
+    (!parsed.actions?.length ||
+      (parsed.kind === "creative" &&
+        parsed.actions.every((action) => action.kind === "constraints")))
   ) {
+    // Logistics accompanying a document are not a request for taste discovery.
+    const logistics = [...(parsed.actions ?? [])];
+
+    if (parsed.budget !== undefined || parsed.duration !== undefined) {
+      logistics.push({
+        kind: "constraints",
+        budget: parsed.budget,
+        duration: parsed.duration,
+      });
+    }
+
+    if (logistics.length) {
+      const applied = applyConversationActions(
+        task,
+        logistics,
+        input.text,
+        formAnswer,
+      );
+
+      if (!applied.ok) {
+        return { ...update, task, clarification: applied.question };
+      }
+
+      task = applied.task;
+    }
+
+    if (parsed.intent === "goal") {
+      applyInterpretedGoal(task, parsed);
+    }
+
     return { ...update, task, workActions: parsed.workActions };
   }
 

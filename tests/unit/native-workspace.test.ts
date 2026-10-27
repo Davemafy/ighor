@@ -483,3 +483,59 @@ it("does not infer the same profile from an unprompted short message", () => {
   expect(result.ok).toBe(false);
   expect(task.brief.participants).toEqual([]);
 });
+
+it("keeps logistics plus a Chicago itinerary on the planning path without forcing cultural intake", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  stores.push(store);
+  const task = freshTask("chicago-logistics", "owner");
+  task.mode = "qloo-live";
+  task.catalogue = [];
+  task.brief.participants = [];
+  store.create(task);
+  let culturalCalls = 0;
+  const provider = {
+    resolve: async () => {
+      culturalCalls++;
+      throw Error("Unexpected cultural call");
+    },
+    discover: async () => {
+      culturalCalls++;
+      throw Error("Unexpected cultural call");
+    },
+  };
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    { type: "message", text: "Plan a 3-day trip to Chicago.", version: 0 },
+    undefined,
+    provider,
+    {
+      interpret: async () => ({
+        intent: "goal",
+        supported: true,
+        kind: "creative",
+        targetType: "place",
+        goal: "Plan a 3-day trip to Chicago.",
+        actions: [{ kind: "constraints", location: "Chicago" }],
+        workActions: [
+          { kind: "goal", id: "chicago", title: "Chicago trip" },
+          {
+            kind: "document",
+            id: "itinerary",
+            title: "Three days in Chicago",
+            content: "A provisional three-day plan from the test provider.",
+            dependencies: ["goal:chicago"],
+            evidenceIds: [],
+          },
+        ],
+      }),
+    },
+  );
+  expect(culturalCalls).toBe(0);
+  expect(result.status).toBe("ready");
+  expect(result.brief.unresolved).toEqual([]);
+  expect(result.work?.documents[0].title).toBe("Three days in Chicago");
+  expect(result.brief.constraints.location).toBe("Chicago");
+  expect(result.messages.at(-1)?.text).not.toContain("Cultural step remains");
+});
