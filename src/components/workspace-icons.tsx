@@ -53,3 +53,6 @@ export const ArrowLeft = icon("ArrowLeft"),
   Search = icon("Search"),
   Share2 = icon("Share2"),
   X = icon("X");
+
+// Compose a new conversation: established square-and-pencil action glyph.
+export { SquarePen as Compose } from "lucide-react";

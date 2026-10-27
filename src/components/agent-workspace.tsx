@@ -11,7 +11,7 @@ import {
   LoaderCircle,
   Menu,
   MessageCircle,
-  Plus,
+  Compose,
   Save,
   Search,
   Share2,
@@ -277,11 +277,13 @@ export function AgentWorkspace() {
         </nav>
         <button
           className="iw-new"
+          aria-label="New conversation"
+          title="New conversation"
           onClick={() => void fresh()}
           disabled={w.isBusy}
         >
-          <Plus />
-          <span>New thought</span>
+          <Compose />
+          <span>New conversation</span>
         </button>
         <button
           className="iw-menu-toggle"
@@ -373,7 +375,7 @@ export function AgentWorkspace() {
               <span className="iw-workbar-status">
                 {w.isBusy ? (
                   <>
-                    <span className="iw-live-dot" />
+                    <LoaderCircle className="ig-spin" />
                     Working
                   </>
                 ) : (
@@ -414,8 +416,8 @@ export function AgentWorkspace() {
                   onClick={() => void fresh()}
                   disabled={w.isBusy}
                 >
-                  <Plus />
-                  New thought
+                  <Compose />
+                  New conversation
                 </button>
                 <span className="iw-eyebrow">RECENT CONVERSATIONS</span>
                 {w.history.slice(0, 8).map((h) => (
@@ -425,7 +427,6 @@ export function AgentWorkspace() {
                     onClick={() => void open(h.id)}
                     disabled={w.isBusy}
                   >
-                    <MessageCircle />
                     <span>{h.title || h.goal || "A new thought"}</span>
                   </button>
                 ))}
@@ -442,7 +443,16 @@ export function AgentWorkspace() {
                       key={m.id || `${m.at}:${i}`}
                     >
                       <span className="iw-author">
-                        {m.role === "assistant" ? "igor" : "You"}
+                        {m.role === "assistant" ? (
+                          <img
+                            src={assets + "brand/igor-mark-black.svg"}
+                            alt="Igor"
+                            width="24"
+                            height="24"
+                          />
+                        ) : (
+                          "You"
+                        )}
                       </span>
                       <ProductText text={m.text} />
                     </article>
@@ -549,7 +559,6 @@ export function AgentWorkspace() {
                   disabled={w.isBusy}
                   onClick={() => void open(h.id)}
                 >
-                  <MessageCircle />
                   <span>{h.title || h.goal || "A new thought"}</span>
                   <ArrowUpRight />
                 </button>

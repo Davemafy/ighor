@@ -1002,7 +1002,7 @@
     padding-inline: 22px;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-width: 1100px) and (pointer: coarse) {
   .iw-nav {
     top: 14px;
     max-width: calc(100% - 28px);
@@ -1620,7 +1620,7 @@
   color: #222;
   border-color: #ccc;
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-width: 1100px) and (pointer: coarse) {
   .iw-app .iw-workbar h1 {
     font-size: 13px;
     letter-spacing: -0.15px;
@@ -1670,4 +1670,171 @@
   }
 }
 
-.iw-app .ic-place-card-copy small{color:#727272}.iw-app .ic-place-card-fallback{background:#e5e5e2;color:#555}
+.iw-app .ic-place-card-copy small {
+  color: #727272;
+}
+.iw-app .ic-place-card-fallback {
+  background: #e5e5e2;
+  color: #555;
+}
+
+/* Quiet controls: the action is composition, selection is a surface state. */
+.iw-app {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.iw-app > main,
+.iw-workspace,
+.iw-workgrid,
+.iw-thread,
+.iw-result {
+  min-width: 0;
+  max-width: 100%;
+}
+.iw-nav {
+  min-width: 0;
+}
+.iw-nav nav {
+  min-width: 0;
+  gap: 8px;
+}
+.iw-nav nav button {
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: #727272;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.iw-nav nav button[aria-current="page"] {
+  background: #d9d9d9;
+  color: #111;
+}
+.iw-nav nav button[aria-current="page"]:after {
+  content: none;
+  display: none;
+}
+.iw-nav nav button:hover {
+  background: #dedede;
+  color: #111;
+}
+.iw-nav .iw-new {
+  min-height: 40px;
+  background: transparent;
+  color: #222;
+  border-radius: 10px;
+  padding: 10px 13px;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.iw-nav .iw-new:hover {
+  background: #d6d6d6;
+  color: #111;
+}
+.iw-nav .iw-new > svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.8;
+}
+.iw-recent .iw-new-thread {
+  border: 0;
+  background: transparent;
+  color: #222;
+  padding: 11px 9px;
+  margin-bottom: 26px;
+  font-size: 11px;
+  gap: 10px;
+}
+.iw-recent .iw-new-thread:hover {
+  background: #e6e6e6;
+}
+.iw-recent .iw-new-thread svg {
+  width: 17px;
+  height: 17px;
+}
+.iw-recent > button:not(.iw-new-thread) {
+  padding: 12px 11px;
+  min-height: 40px;
+}
+.iw-author {
+  min-height: 24px;
+  margin-bottom: 14px;
+  letter-spacing: 0;
+}
+.iw-author > img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: none;
+}
+.iw-workbar-status > .ig-spin {
+  width: 12px;
+  height: 12px;
+}
+.iw-message .pp-message-text {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.iw-user .pp-message-text {
+  white-space: normal;
+}
+@media (max-width: 760px), (max-width: 1100px) and (pointer: coarse) {
+  .iw-nav {
+    gap: 12px;
+    padding-right: 10px;
+  }
+  .iw-nav nav {
+    display: none;
+  }
+  .iw-nav .iw-new {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 10px;
+    border-radius: 11px;
+    margin-left: auto;
+  }
+  .iw-nav .iw-new > span {
+    display: none;
+  }
+  .iw-nav .iw-new > svg {
+    width: 20px;
+    height: 20px;
+  }
+  .iw-menu-toggle {
+    width: 36px;
+    height: 40px !important;
+    border-radius: 10px;
+  }
+  .iw-menu-toggle:hover {
+    background: #dcdcdc;
+  }
+  .iw-recent {
+    display: none !important;
+  }
+  .iw-workgrid,
+  .iw-with-result .iw-workgrid {
+    width: 100%;
+    display: flex;
+    min-width: 0;
+  }
+  .iw-thread,
+  .iw-result {
+    width: 100%;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .iw-user {
+    max-width: 90%;
+    min-width: 0;
+  }
+  .iw-app .iw-workbar h1 {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 13px;
+  }
+}
