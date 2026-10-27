@@ -152,7 +152,7 @@
   font-size: clamp(34px, 4.5vw, 52px);
   margin-bottom: 30px;
 }
-.iw-app .iw-history-list > button {
+.iw-app :is(.iw-history-list > button, .iw-history-item > button) {
   min-height: 72px;
   font-size: 16px;
 }
@@ -474,7 +474,7 @@
   .iw-app .iw-library h1 {
     font-size: 36px;
   }
-  .iw-app .iw-history-list > button {
+  .iw-app :is(.iw-history-list > button, .iw-history-item > button) {
     font-size: 15px;
   }
   .iw-placeholder-collection-grid {
@@ -635,7 +635,10 @@
 .iw-app .iw-history-page .iw-history-list {
   gap: 10px;
 }
-.iw-app .iw-history-page .iw-history-list > button {
+.iw-app
+  .iw-history-page
+  .iw-history-list
+  > :is(button, .iw-history-item > button) {
   min-height: 104px;
   padding: 18px 20px;
   gap: 18px;
@@ -645,7 +648,10 @@
   color: #191919;
   align-items: center;
 }
-.iw-app .iw-history-page .iw-history-list > button:hover {
+.iw-app
+  .iw-history-page
+  .iw-history-list
+  > :is(button, .iw-history-item > button):hover {
   border-color: #b9b9ae;
   background: #fafaf7;
   color: #191919;
@@ -671,7 +677,10 @@
   color: #72726b;
   overflow-wrap: anywhere;
 }
-.iw-app .iw-history-list > button > .iw-history-meta {
+.iw-app
+  .iw-history-list
+  > :is(button, .iw-history-item > button)
+  > .iw-history-meta {
   display: grid;
   justify-items: end;
   gap: 13px;
@@ -754,7 +763,10 @@
   .iw-history-heading {
     margin-bottom: 24px;
   }
-  .iw-app .iw-history-page .iw-history-list > button {
+  .iw-app
+    .iw-history-page
+    .iw-history-list
+    > :is(button, .iw-history-item > button) {
     padding: 17px;
     min-height: 104px;
     gap: 13px;
@@ -765,4 +777,58 @@
   .iw-app .iw-history-copy > span {
     font-size: 13px;
   }
+}
+
+.iw-app .iw-history-heading {
+  padding-bottom: 22px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dfdfd8;
+}
+.iw-app .iw-history-heading h1 {
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: -1.3px;
+}
+.iw-app .iw-history-heading p {
+  margin-top: 12px;
+}
+.iw-app .iw-history-search {
+  margin-bottom: 30px;
+}
+.iw-app .iw-history-section {
+  font-size: 13px;
+  font-weight: 550;
+  color: #68685f;
+  margin: 0 0 12px;
+  letter-spacing: -0.1px;
+}
+.iw-history-section:empty {
+  display: none;
+}
+.iw-history-item:nth-child(2) {
+  margin-top: 24px;
+}
+.iw-app .iw-history-page .iw-history-item:first-child > button {
+  background: #eeeee5;
+  border-color: #d8d8ca;
+  min-height: 132px;
+  padding: 22px;
+}
+.iw-app .iw-history-item:first-child .iw-history-copy strong {
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.55px;
+}
+.iw-app .iw-history-item:first-child .iw-history-copy {
+  gap: 12px;
+}
+.iw-app .iw-history-page .iw-history-item > button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+.iw-app .iw-history-item > button > .iw-history-copy {
+  flex: 1;
+  min-width: 0;
 }

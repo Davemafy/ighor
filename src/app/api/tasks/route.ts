@@ -59,12 +59,19 @@ export async function GET() {
             id: t.id,
             goal: t.brief.goal,
             title: (
+              t.work?.goals.find((goal) => goal.id === t.work?.activeGoalId)
+                ?.title ||
               t.brief.goal ||
               t.messages.find((message) => message.role === "user")?.text ||
               "A new conversation"
             ).slice(0, 120),
             version: t.brief.version,
-            preview: t.messages.at(-1)?.text.slice(0, 240) || "",
+            preview: (
+              t.work?.documents.at(-1)?.content ||
+              t.messages.filter((message) => message.role === "user").at(-1)
+                ?.text ||
+              ""
+            ).slice(0, 240),
             updatedAt: t.messages.at(-1)?.at || null,
           })),
       },
