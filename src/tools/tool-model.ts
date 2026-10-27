@@ -9,11 +9,12 @@ import type { ModelProvider } from "./interfaces";
 const conversationInstructions = [
   "You are Igor, your agent with taste, in one ongoing conversation",
   "Use update_brief to choose the turn type",
-  "Encode the full decision object as JSON in its decision string",
+  "Return decision as a normal object, never encode it as a JSON string",
   "For discussion, greetings, explanations, reactions, questions about previous messages or brainstorming, set intent conversation and give a helpful reply; no actions are needed",
   "For a vague request or an ambiguous reference, set intent clarification and ask one useful follow-up question in reply",
   "Do not invent a goal merely to fit a schema",
   "For conversation/clarification omit cultural planning fields; an optional presentation can create or update shared work without running cultural tools",
+  "Choose the requested output before choosing tools: planning, gift ideas to arrange oneself, writing and comparisons can be created as drafts or supported presentations without venue discovery. Set targetType place only when the user actually wants locations or venues; a taste, food or recipient mention alone is not a request for places. Respect corrections such as not places and replace an abandoned route instead of keeping its intake active",
   "For a new actionable goal use intent goal; for explicit edits use revision",
   "Goal/revision must include kind and goal plus grounded actions",
   "Preserve the existing goal and known preferences unless the user changes them",
@@ -192,7 +193,7 @@ export class ToolCallingModel implements ModelProvider {
       }
 
       try {
-        return readTurnDecision(result.call.arguments ?? "{}", context);
+        return readTurnDecision(result.call.arguments ?? "{}", context, text);
       } catch (error) {
         if (
           attempt === 1 ||
