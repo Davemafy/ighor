@@ -101,6 +101,9 @@ export class ToolCallingModel implements ModelProvider {
   readonly executionMode = "tool-calling" as const;
 
   timeoutMs = 20000;
+  protected endpoint = "https://api.openai.com/v1/responses";
+  protected providerName: "OpenAI" | "Grok" = "OpenAI";
+  protected requestTimeoutMs = 15000;
 
   calls = 0;
 
@@ -135,7 +138,7 @@ export class ToolCallingModel implements ModelProvider {
 
     this.calls++;
     const response = await this.transport(
-      "https://api.openai.com/v1/responses",
+      this.endpoint,
       {
         method: "POST",
         headers: {
@@ -144,13 +147,13 @@ export class ToolCallingModel implements ModelProvider {
         },
         body,
         redirect: "error",
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(this.requestTimeoutMs),
       },
     );
 
     if (!response.ok) {
       const detail = await readModelResponse(response).catch(() => "");
-      throw new ProviderHttpError("OpenAI", response.status, detail);
+      throw new ProviderHttpError(this.providerName, response.status, detail);
     }
 
     const raw = await readModelResponse(response);

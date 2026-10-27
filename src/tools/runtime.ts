@@ -1,4 +1,5 @@
 import { LiveQlooProvider, SqliteResponseCache } from "./qloo-live";
+import { GrokModel } from "./grok-model";
 import { FallbackModel } from "./fallback-model";
 import { ToolCallingModel } from "./tool-model";
 import { ResponsiveGeminiModel } from "./responsive-gemini";
@@ -47,8 +48,13 @@ export function runtimeModelProvider(mode: Task["mode"]) {
     return new DevelopmentModel();
   }
 
-  const backup =
-    process.env.LLM_API_KEY && process.env.LLM_MODEL
+  const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
+  const backup = grokKey
+    ? new GrokModel(
+        grokKey,
+        process.env.XAI_MODEL || process.env.GROK_MODEL || "grok-4.3",
+      )
+    : process.env.LLM_API_KEY && process.env.LLM_MODEL
       ? new ToolCallingModel(process.env.LLM_API_KEY, process.env.LLM_MODEL)
       : undefined;
   if (process.env.GEMINI_API_KEY) {
@@ -68,7 +74,7 @@ export function runtimeModelProvider(mode: Task["mode"]) {
           executionMode: "tool-calling" as const,
           async interpret(): Promise<never> {
             throw new Error(
-              "No production model configured. Configure GEMINI_API_KEY or LLM_API_KEY and LLM_MODEL.",
+              "No production model configured. Configure GEMINI_API_KEY, XAI_API_KEY, or LLM_API_KEY and LLM_MODEL.",
             );
           },
         })

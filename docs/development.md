@@ -59,3 +59,9 @@ npm run test:browser -- --project=broader-outcomes
 Do not run a build and a browser server against the same `.next` directory simultaneously. `.next/` and `next-env.d.ts` are generated locally and ignored by Git. `npm run typecheck` invokes `next typegen` first, so a fresh clone does not need generated declarations committed.
 
 HTTP acceptance scripts target localhost on port 3300. Start a recorded-data production server with live model keys unset, then run `node scripts/conversation-acceptance.mjs` and `node scripts/reference-acceptance.mjs`. They write actual task snapshots to ignored `artifacts/`; practical facts in those tests are synthetic inputs.
+
+### Grok on Railway
+
+Set `XAI_API_KEY` (or `GROK_API_KEY`). Optionally set `XAI_MODEL` (or `GROK_MODEL`); the default is `grok-4.3`. If Gemini is configured, Grok is its interpretation backup. Otherwise Grok is the primary model. Existing OpenAI settings are only used when no Grok key is configured. Keys remain server-side.
+
+The adapter uses the pinned `https://api.x.ai/v1/responses` endpoint, `store: false`, validated application tools, bounded requests and the existing read-only fallback policy. It does not enable provider-hosted web tools or replay cultural calls and writes. Protocol reference: https://docs.x.ai/developers/rest-api-reference/inference/responses.
