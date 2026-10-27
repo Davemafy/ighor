@@ -315,7 +315,6 @@ export function AgentWorkspace() {
         {page === "work" && !started && (
           <section className="iw-welcome">
             <div className="iw-intro">
-              <span className="iw-eyebrow">YOUR AGENT. WITH TASTE.</span>
               <h1>
                 What’s on
                 <br />
@@ -327,10 +326,7 @@ export function AgentWorkspace() {
                 From a thought to something real.
               </p>
             </div>
-            <div className="iw-welcome-compose">
-              {composer}
-              <span className="iw-footnote">One goal. Connected work.</span>
-            </div>
+            <div className="iw-welcome-compose">{composer}</div>
             <div className="iw-ideas" aria-label="Ways to begin">
               {starts.map((s, i) => (
                 <button
@@ -369,7 +365,6 @@ export function AgentWorkspace() {
                 <ArrowLeft />
               </button>
               <div>
-                <span className="iw-eyebrow">YOUR SPACE</span>
                 <h1 title={title}>{title}</h1>
               </div>
               <span className="iw-workbar-status">
@@ -419,7 +414,7 @@ export function AgentWorkspace() {
                   <Compose />
                   New conversation
                 </button>
-                <span className="iw-eyebrow">RECENT CONVERSATIONS</span>
+
                 {w.history.slice(0, 8).map((h) => (
                   <button
                     key={h.id}
@@ -535,7 +530,6 @@ export function AgentWorkspace() {
         )}
         {page === "history" && (
           <section className="iw-library">
-            <span className="iw-eyebrow">PICK UP THE THREAD</span>
             <h1>Your conversations.</h1>
             {historyError && (
               <p role="alert">
@@ -870,7 +864,6 @@ function Saved({
   const saved = useSavedOutcomes(task, onTask, onTurn);
   return (
     <section className="iw-library">
-      <span className="iw-eyebrow">KEEP WHAT MATTERS</span>
       <h1>Your collection.</h1>
       <ProductCollections
         task={task}
