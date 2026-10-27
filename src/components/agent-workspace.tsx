@@ -39,30 +39,44 @@ const starts = [
   {
     title: "A thoughtful gift",
     caption: "A little more them.",
-    image: "covers/c01.webp",
+    image: "generated/gift-record-640.webp",
     prompt:
       "Help me find a thoughtful gift. Ask who it is for and what matters before suggesting anything.",
   },
   {
     title: "Something together",
     caption: "Room for everyone.",
-    image: "covers/c02.webp",
+    image: "photos/hero-dinner-a-800.webp",
     prompt:
       "Help me plan something with friends. Ask about our location, interests and constraints.",
   },
   {
     title: "A new direction",
     caption: "Give the idea a shape.",
-    image: "covers/c03.webp",
+    image: "photos/gallery-800.webp",
     prompt:
       "Help me develop a creative idea. Ask what I am making and who it is for.",
   },
   {
     title: "A few days away",
     caption: "Somewhere worth going.",
-    image: "covers/c04.webp",
+    image: "photos/london-street-800.webp",
     prompt:
       "Help me plan a short trip. Start with where I am leaving from, my dates and budget.",
+  },
+  {
+    title: "Your next favourite",
+    caption: "Follow what you love.",
+    image: "generated/gift-book-640.webp",
+    prompt:
+      "Help me discover something new through what I already love. Ask me for a few favourites first.",
+  },
+  {
+    title: "Find the right fit",
+    caption: "A decision worth considering.",
+    image: "generated/gift-lamp-640.webp",
+    prompt:
+      "Help me compare a few options. Ask what I am deciding and what matters to me.",
   },
 ];
 type Page = "work" | "history" | "saved";
@@ -315,24 +329,11 @@ export function AgentWorkspace() {
         {page === "work" && !started && (
           <section className="iw-welcome">
             <div className="iw-intro">
-              <span className="iw-eyebrow">YOUR AGENT. WITH TASTE.</span>
-              <h1>
-                What’s on
-                <br />
-                your mind?
-              </h1>
-              <p>
-                Discover, decide and create.
-                <br />
-                From a thought to something real.
-              </p>
+              <h1>What’s on your mind?</h1>
             </div>
-            <div className="iw-welcome-compose">
-              {composer}
-              <span className="iw-footnote">One goal. Connected work.</span>
-            </div>
+            <div className="iw-welcome-compose">{composer}</div>
             <div className="iw-ideas" aria-label="Ways to begin">
-              {starts.map((s, i) => (
+              {starts.map((s) => (
                 <button
                   key={s.title}
                   disabled={!task || w.isBusy}
@@ -343,7 +344,6 @@ export function AgentWorkspace() {
                 >
                   <div className="iw-poster">
                     <img src={assets + s.image} alt="" loading="lazy" />
-                    <span className="iw-poster-number">0{i + 1}</span>
                   </div>
                   <div>
                     <h2>{s.title}</h2>
@@ -369,7 +369,6 @@ export function AgentWorkspace() {
                 <ArrowLeft />
               </button>
               <div>
-                <span className="iw-eyebrow">YOUR SPACE</span>
                 <h1 title={title}>{title}</h1>
               </div>
               <span className="iw-workbar-status">
@@ -419,7 +418,7 @@ export function AgentWorkspace() {
                   <Compose />
                   New conversation
                 </button>
-                <span className="iw-eyebrow">RECENT CONVERSATIONS</span>
+
                 {w.history.slice(0, 8).map((h) => (
                   <button
                     key={h.id}
@@ -535,7 +534,6 @@ export function AgentWorkspace() {
         )}
         {page === "history" && (
           <section className="iw-library">
-            <span className="iw-eyebrow">PICK UP THE THREAD</span>
             <h1>Your conversations.</h1>
             {historyError && (
               <p role="alert">
@@ -870,7 +868,6 @@ function Saved({
   const saved = useSavedOutcomes(task, onTask, onTurn);
   return (
     <section className="iw-library">
-      <span className="iw-eyebrow">KEEP WHAT MATTERS</span>
       <h1>Your collection.</h1>
       <ProductCollections
         task={task}
