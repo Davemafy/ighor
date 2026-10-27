@@ -1026,3 +1026,19 @@
   animation: none;
   mix-blend-mode: normal;
 }
+
+/* Retained components travel with their own geometry inside the work stage. */
+.ic-component,
+.ic-stack,
+.ic-columns {
+  view-transition-class: igor-work-object;
+}
+::view-transition-group(.igor-work-object) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.22, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(.igor-work-object) {
+    animation-duration: 0.01ms !important;
+  }
+}

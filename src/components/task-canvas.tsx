@@ -179,6 +179,11 @@ function CanvasTree({
   mutate: (m: CanvasMutation) => void;
   onTurn: Props["onTurn"];
 }) {
+  // Stable semantic identities let each retained object move independently as
+  // a composition changes, rather than cross-fading the whole work surface.
+  const transitionStyle = (nodeId: string) => ({
+    viewTransitionName: `igor-node-${Array.from(`${surface.id}:${nodeId}`, (char) => char.codePointAt(0)!.toString(16)).join("-")}`,
+  });
   function render(id: string): ReactNode {
     const node = surface.nodes.find((n) => n.id === id);
 
@@ -188,7 +193,7 @@ function CanvasTree({
 
     if (node.type === "stack" || node.type === "columns") {
       return (
-        <div key={id} className={`ic-${node.type}`}>
+        <div key={id} className={`ic-${node.type}`} style={transitionStyle(id)}>
           {node.title && <h3>{node.title}</h3>}
           {node.children.map(render)}
         </div>
@@ -491,7 +496,11 @@ function CanvasTree({
     }
 
     return (
-      <section key={id} className={`ic-component ic-component-${node.type}`}>
+      <section
+        key={id}
+        className={`ic-component ic-component-${node.type}`}
+        style={transitionStyle(id)}
+      >
         {heading}
         {body}
       </section>
