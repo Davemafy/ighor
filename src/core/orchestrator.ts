@@ -1,3 +1,4 @@
+import { groundQuestionAnswer } from "./question-grounding";
 import type { FormAnswerGrounding } from "./conversation";
 import { mutateCanvas } from "./presentation";
 import { ensureBoundPresentation } from "./presentation-default";
@@ -76,10 +77,7 @@ export async function runTurn(
       task,
     );
     const answers = task.canvas.answers[`${input.surfaceId}:${question.id}`];
-    formAnswer = {
-      subject: question.subject,
-      values: Object.values(answers).filter(Boolean),
-    };
+    formAnswer = groundQuestionAnswer(question, answers);
     const text = [
       question.title || question.prompt,
       ...question.fields.map(
@@ -279,6 +277,7 @@ export async function runTurn(
         task,
         update.workActions,
         input.type === "message" ? input.text : undefined,
+        formAnswer,
       );
       trace(
         "planner.work",
@@ -415,6 +414,7 @@ export async function runTurn(
         task,
         update.workActions,
         input.type === "message" ? input.text : undefined,
+        formAnswer,
       );
       changedDependencies.push("work");
       trace(

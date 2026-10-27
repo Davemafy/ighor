@@ -1,3 +1,4 @@
+import { groundQuestionAnswer } from "../core/question-grounding";
 import type { Task } from "../core/contracts";
 
 const historyBudget = 64000;
@@ -45,6 +46,52 @@ export function modelContext(task: Task, message: string) {
       (left, right) => left.index - right.index,
     );
   }
+
+  const confirmed = new Set(
+    (task.receipts ?? []).flatMap((receipt) => receipt.changed),
+  );
+
+  if (task.work?.budget?.confirmed) {
+    confirmed.add("budget");
+  }
+
+  let supplied: Record<string, number | string> = {};
+  let current: Record<string, number | string> = {};
+
+  for (const surface of task.canvas
+    ? [...task.canvas.previous].reverse().concat(task.canvas.surface)
+    : []) {
+    for (const node of surface.nodes) {
+      if (node.type !== "question") {
+        continue;
+      }
+
+      const answers = task.canvas?.answers[`${surface.id}:${node.id}`];
+
+      if (!answers) {
+        continue;
+      }
+
+      const grounded = groundQuestionAnswer(node, answers).constraints ?? {};
+      supplied = { ...supplied, ...grounded };
+      const answerText = [
+        node.title || node.prompt,
+        ...node.fields.map(
+          (field) => `${field.label}: ${answers[field.id] || "Not supplied"}`,
+        ),
+      ].join("\n");
+
+      if (message === answerText) {
+        current = { ...current, ...grounded };
+      }
+    }
+  }
+
+  const constraint = (field: "budget" | "duration" | "location") =>
+    current[field] ??
+    (confirmed.has(field)
+      ? task.brief.constraints[field]
+      : (supplied[field] ?? null));
 
   return {
     thread: {
@@ -104,7 +151,35 @@ export function modelContext(task: Task, message: string) {
     kind: task.brief.kind,
     targetType: task.brief.targetType,
     outcome: task.brief.outcome,
-    constraints: task.brief.constraints,
+    constraints: {
+      ...task.brief.constraints,
+      budget: constraint("budget"),
+      duration: confirmed.has("duration")
+        ? task.brief.constraints.duration
+        : null,
+      location: confirmed.has("location")
+        ? task.brief.constraints.location
+        : null,
+    },
+    interfaceCapabilities: {
+      nodes: [
+        "question",
+        "document",
+        "table",
+        "chart",
+        "timeline",
+        "discovery",
+        "spatial",
+        "findings",
+        "sources",
+        "stack",
+        "columns",
+        "tabs",
+      ],
+      arbitraryHtmlCssOrThemeChanges: false,
+      mapsRequireGroundedCoordinates: true,
+      imagesRequireReturnedCandidateImages: true,
+    },
     participants: task.brief.participants,
     selected: task.brief.selected,
     unresolved: task.brief.unresolved,
@@ -122,6 +197,10 @@ export function modelContext(task: Task, message: string) {
           availabilitySource: candidate.availabilitySource,
           eligibility: candidate.eligibility,
           missing: candidate.missing,
+          hasImage: !!candidate.imageUrl,
+          hasCoordinates:
+            Number.isFinite(candidate.place?.latitude) &&
+            Number.isFinite(candidate.place?.longitude),
           fitReason: candidate.fitReason,
           evidenceIds: candidate.evidenceIds,
           freshness: candidate.freshness,

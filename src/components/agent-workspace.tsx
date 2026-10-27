@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AdaptiveStage } from "./adaptive-stage";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -155,10 +156,9 @@ export function AgentWorkspace({
     if (
       region &&
       (scrolledTask.current !== task?.id ||
-        w.isBusy ||
         region.scrollHeight - region.scrollTop - region.clientHeight < 180)
     ) {
-      end.current?.scrollIntoView({ block: "end", behavior: "instant" });
+      region.scrollTop = region.scrollHeight;
       scrolledTask.current = task?.id ?? null;
     }
   }, [task?.id, task?.messages.length, w.isBusy, w.isLoadingWorkspace]);
@@ -445,7 +445,7 @@ export function AgentWorkspace({
         )}
         {page === "work" && started && (
           <section
-            className={`iw-workspace ${hasResult ? "iw-with-result" : ""}`}
+            className={`iw-workspace iw-inline-workspace ${hasResult ? "iw-with-result" : ""}`}
             data-pane={pane}
             aria-busy={w.isLoadingWorkspace}
           >
@@ -477,32 +477,6 @@ export function AgentWorkspace({
                 )}
               </span>
             </header>
-            {hasResult && (
-              <div
-                className="iw-pane-tabs"
-                role="tablist"
-                aria-label="Workspace view"
-              >
-                <button
-                  role="tab"
-                  aria-selected={pane === "thread"}
-                  aria-controls="iw-thread"
-                  onClick={() => morphLayout(() => setPane("thread"))}
-                >
-                  <MessageCircle />
-                  Conversation
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={pane === "work"}
-                  aria-controls="iw-result"
-                  onClick={() => morphLayout(() => setPane("work"))}
-                >
-                  <FileText />
-                  Your work
-                </button>
-              </div>
-            )}
             <div className="iw-workgrid">
               <section
                 className="iw-thread"
@@ -583,81 +557,50 @@ export function AgentWorkspace({
                           ))}
                         </div>
                       ))}
-                    {task &&
-                      !hasResult &&
-                      questions
-                        .filter(
-                          (node) =>
-                            !task.canvas?.answers[
-                              `${task.canvas.surface.id}:${node.id}`
-                            ],
-                        )
-                        .map((node) => (
-                          <TaskCanvas
-                            key={node.id}
-                            task={task}
-                            busy={w.isBusy || w.isLoadingWorkspace}
-                            onTurn={turn}
-                            focusNodeId={node.id}
-                            inline
-                          />
-                        ))}
-                    {task && hasResult && (
-                      <button
-                        className="iw-work-entry"
-                        onClick={() => {
-                          morphLayout(() => setPane("work"));
-                          requestAnimationFrame(() =>
-                            document
-                              .getElementById("iw-result")
-                              ?.focus({ preventScroll: true }),
-                          );
-                        }}
-                      >
-                        <FileText />
-                        <span>
-                          {task.canvas?.surface.title ||
-                            task.work?.goals.find(
-                              (g) => g.id === task.work?.activeGoalId,
-                            )?.title ||
-                            task.artifacts[0]?.title ||
-                            "Your connections"}
-                          <small>
-                            {w.isBusy
-                              ? "Work in progress"
-                              : "Open your saved work"}
-                          </small>
-                        </span>
-                        <ArrowUpRight />
-                      </button>
-                    )}
+                    <AdaptiveStage>
+                      {task &&
+                        questions
+                          .filter(
+                            (node) =>
+                              !task.canvas?.answers[
+                                `${task.canvas.surface.id}:${node.id}`
+                              ],
+                          )
+                          .map((node) => (
+                            <TaskCanvas
+                              key={node.id}
+                              task={task}
+                              busy={w.isBusy || w.isLoadingWorkspace}
+                              onTurn={turn}
+                              focusNodeId={node.id}
+                              inline
+                            />
+                          ))}
+                      {hasResult && (
+                        <section
+                          className="iw-inline-output"
+                          aria-label="Your work"
+                          aria-busy={w.isBusy}
+                        >
+                          {task ? (
+                            <Work
+                              key={task.id}
+                              task={task}
+                              busy={w.isBusy || w.isLoadingWorkspace}
+                              onTurn={turn}
+                              onTask={w.acceptTask}
+                              onLoad={open}
+                            />
+                          ) : (
+                            <LoadingSurface mode="output" />
+                          )}
+                        </section>
+                      )}
+                    </AdaptiveStage>
                     <div ref={end} />
                   </div>
                 </div>
               </section>
-              {hasResult && (
-                <section
-                  className="iw-result"
-                  id="iw-result"
-                  aria-label="Your work"
-                  aria-busy={w.isBusy || w.isLoadingWorkspace}
-                  data-updating={w.isBusy}
-                  tabIndex={-1}
-                >
-                  {task ? (
-                    <Work
-                      key={task.id}
-                      task={task}
-                      busy={w.isBusy || w.isLoadingWorkspace}
-                      onTurn={turn}
-                      onTask={w.acceptTask}
-                      onLoad={open}
-                    />
-                  ) : (
-                    <LoadingSurface mode="output" />
-                  )}
-                </section>
-              )}
             </div>
             <footer className="iw-workspace-footer">
               <div className="iw-dock">
@@ -811,8 +754,12 @@ function Work({
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",
   );
+  const hasCanvasWork = task.canvas?.surface.nodes.some(
+    (node) =>
+      !["question", "stack", "columns", "tabs", "activity"].includes(node.type),
+  );
   const resources = [
-    ...(task.canvas ? [{ id: "workspace", title: "Workspace" }] : []),
+    ...(hasCanvasWork ? [{ id: "workspace", title: "Current view" }] : []),
     ...(task.work?.documents.length
       ? [{ id: "documents", title: "Documents" }]
       : []),
@@ -856,7 +803,7 @@ function Work({
         </nav>
       )}
       {active === "workspace" && (
-        <TaskCanvas task={task} busy={busy} onTurn={onTurn} />
+        <TaskCanvas task={task} busy={busy} onTurn={onTurn} excludeQuestions />
       )}
       {active === "documents" && (
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />

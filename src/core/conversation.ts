@@ -29,7 +29,9 @@ function findUnambiguous<T>(
 
 type ConversationAction = z.infer<typeof ConversationActionSchema>;
 export type FormAnswerGrounding = {
-  subject: "you" | "group";
+  subject: string;
+  constraints?: { budget?: number; duration?: number; location?: string };
+  question?: string;
   values: string[];
 };
 
@@ -173,11 +175,16 @@ function applyConstraintCorrection(
     action.budget !== undefined &&
     action.budget !== task.brief.constraints.budget
   ) {
-    requireExplicitNumber(
-      text,
-      action.budget,
-      "What budget would you like to use?",
-    );
+    const fromForm = edit.formAnswer?.constraints?.budget === action.budget;
+
+    if (!fromForm) {
+      requireExplicitNumber(
+        text,
+        action.budget,
+        "What budget would you like to use?",
+      );
+    }
+
     const amount = String(action.budget).replaceAll(".", "\\.");
     const explicitBudget = new RegExp(
       `\\bbudget(?:\\s+(?:is|to|of))?\\s*[:=]?\\s*\\$?\\s*${amount}(?!\\d|\\.\\d)`,
@@ -185,6 +192,7 @@ function applyConstraintCorrection(
     ).test(text);
 
     if (
+      !fromForm &&
       !explicitBudget &&
       (/\bbudget\b/i.test(text) ||
         !new RegExp(`\\$\\s*${amount}(?!\\d|\\.\\d)`).test(text))
@@ -223,6 +231,7 @@ function applyConstraintCorrection(
     ];
 
     if (
+      edit.formAnswer?.constraints?.duration !== action.duration &&
       !hours.some(
         (m) =>
           Math.round((words[m[1].toLowerCase()] ?? Number(m[1])) * 60) ===
@@ -376,7 +385,15 @@ function applyProfile(
       );
     }
   } else {
-    requireExplicitText(text, action.participant);
+    const fromForm =
+      edit.formAnswer &&
+      action.preferences.every((preference) =>
+        isGroundedFormPreference(edit, action.participant, preference.value),
+      );
+
+    if (!fromForm) {
+      requireExplicitText(text, action.participant);
+    }
   }
 
   // A real opening profile replaces demo people; it never inherits their taste.
@@ -705,10 +722,27 @@ function isGroundedFormPreference(
   participant: string,
   value: string,
 ) {
-  return (
-    edit.formAnswer?.subject === participant &&
-    edit.formAnswer.values.some(
-      (answer) => normalize(answer) === normalize(value),
-    )
+  const answer = edit.formAnswer;
+
+  if (
+    !answer ||
+    !answer.values.some((item) => normalize(item) === normalize(value))
+  ) {
+    return false;
+  }
+
+  const person = edit.task.brief.participants.find(
+    (item) => item.id === participant,
+  );
+  const names = [participant, ...(person ? [person.name] : [])].map(normalize);
+
+  return names.some(
+    (name) =>
+      normalize(answer.subject) === name ||
+      (answer.question?.toLocaleLowerCase().includes(name) &&
+        edit.task.messages.some(
+          (message) =>
+            message.role === "user" && normalize(message.text).includes(name),
+        )),
   );
 }

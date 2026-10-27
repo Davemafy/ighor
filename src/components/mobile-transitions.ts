@@ -2,20 +2,50 @@
 
 import { flushSync } from "react-dom";
 
-/**
- * Match a result card to its expanded surface when the browser supports
- * native view transitions. Preserve immediate state changes on older devices
- * and for people who prefer reduced motion.
- */
+type Transition = { finished: Promise<void>; skipTransition: () => void };
+let active: Transition | undefined;
+let generation = 0;
+
+export function isMorphing() {
+  return !!active;
+}
+
+/** Server-backed updates share one transition. Newer snapshots supersede older animation. */
 export function morphLayout(update: () => void) {
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const currentGeneration = ++generation;
   const browser = document as Document & {
-    startViewTransition?: (callback: () => void) => unknown;
+    startViewTransition?: (callback: () => void) => Transition;
   };
-  if (reduced || !browser.startViewTransition) {
+
+  if (
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !browser.startViewTransition
+  ) {
     update();
+
     return;
   }
 
-  browser.startViewTransition(() => flushSync(update));
+  active?.skipTransition();
+  let committed = false;
+
+  try {
+    const transition = browser.startViewTransition(() =>
+      flushSync(() => {
+        if (currentGeneration !== generation) {return;}
+
+        committed = true;
+        update();
+      }),
+    );
+    active = transition;
+    void transition.finished
+      .catch(() => {})
+      .finally(() => {
+        if (active === transition) {active = undefined;}
+      });
+  } catch (error) {
+    if (!committed) {update();}
+    else {throw error;}
+  }
 }

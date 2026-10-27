@@ -238,32 +238,21 @@ export async function interpretMessage(
   // All model-supplied numeric and wording patches use the same grounding rules,
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
+
   // A grounded intake answer is not permission to rewrite an invitation.
   // Keep supported taste extraction without letting an invented document edit
   // reject the entire answer or modify existing wording.
-  const answeringTaste =
-    !!formAnswer &&
-    proposals.some(
-      (action) =>
-        (action.kind === "profile" &&
-          action.preferences.some((preference) =>
-            formAnswer.values.includes(preference.value),
-          )) ||
-        (action.kind === "preference" &&
-          formAnswer.values.includes(action.value)),
-    );
+  // A generated document rewrite is never a user-authored replacement.
+  // Drop it before the batch guard, without changing the original document.
+  for (let index = proposals.length - 1; index >= 0; index--) {
+    const action = proposals[index];
 
-  if (answeringTaste) {
-    for (let index = proposals.length - 1; index >= 0; index--) {
-      const action = proposals[index];
-
-      if (action.kind === "artifact" && !input.text.includes(action.content)) {
-        proposals.splice(index, 1);
-        trace(
-          "proposal.ignored",
-          "Ignored an unrequested document rewrite while accepting the supplied taste answer.",
-        );
-      }
+    if (action.kind === "artifact" && !input.text.includes(action.content)) {
+      proposals.splice(index, 1);
+      trace(
+        "proposal.ignored",
+        "Ignored document wording that was not supplied by the user.",
+      );
     }
   }
 
@@ -277,7 +266,7 @@ export async function interpretMessage(
 
   if (
     parsed.wording &&
-    (!answeringTaste || input.text.includes(parsed.wording)) &&
+    input.text.includes(parsed.wording) &&
     !proposals.some(
       (action) =>
         action.kind === "artifact" &&

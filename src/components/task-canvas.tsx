@@ -31,6 +31,7 @@ type Props = {
   onTurn: (action: TaskAction) => void;
   focusNodeId?: string;
   inline?: boolean;
+  excludeQuestions?: boolean;
 };
 const basisLabel = {
   "general-knowledge": "General knowledge · current facts need verification",
@@ -39,7 +40,14 @@ const basisLabel = {
   draft: "Working draft",
 };
 
-export function TaskCanvas({ task, busy, onTurn, focusNodeId, inline }: Props) {
+export function TaskCanvas({
+  task,
+  busy,
+  onTurn,
+  focusNodeId,
+  inline,
+  excludeQuestions,
+}: Props) {
   const [full, setFull] = useState(false);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const canvas = task.canvas;
@@ -77,6 +85,7 @@ export function TaskCanvas({ task, busy, onTurn, focusNodeId, inline }: Props) {
         <CanvasTree
           surface={valid.data}
           focusNodeId={focusNodeId}
+          excludeQuestions={excludeQuestions}
           task={task}
           busy={readOnly}
           mutate={mutate}
@@ -134,6 +143,7 @@ export function TaskCanvas({ task, busy, onTurn, focusNodeId, inline }: Props) {
         <CanvasTree
           surface={valid.data}
           focusNodeId={focusNodeId}
+          excludeQuestions={excludeQuestions}
           task={task}
           busy={readOnly}
           mutate={mutate}
@@ -155,6 +165,7 @@ export function TaskCanvas({ task, busy, onTurn, focusNodeId, inline }: Props) {
 function CanvasTree({
   surface,
   focusNodeId,
+  excludeQuestions,
   task,
   busy,
   mutate,
@@ -162,6 +173,7 @@ function CanvasTree({
 }: {
   surface: Presentation;
   focusNodeId?: string;
+  excludeQuestions?: boolean;
   task: Task;
   busy: boolean;
   mutate: (m: CanvasMutation) => void;
@@ -170,7 +182,7 @@ function CanvasTree({
   function render(id: string): ReactNode {
     const node = surface.nodes.find((n) => n.id === id);
 
-    if (!node) {
+    if (!node || (excludeQuestions && node.type === "question")) {
       return null;
     }
 
@@ -907,7 +919,15 @@ function CanvasQuestion({
         field.type === "choice" ? (
           <fieldset key={field.id} disabled={busy}>
             <legend>
-              {field.label}
+              {(
+                {
+                  budget: "Budget (USD)",
+                  "budget-per-person": "Budget per person (USD)",
+                  "duration-minutes": "Duration (minutes)",
+                  "duration-hours": "Duration (hours)",
+                  location: "Location",
+                } as Record<string, string>
+              )[field.binding || ""] || field.label}
               {!field.required && <small>Optional</small>}
             </legend>
             <div>
@@ -933,7 +953,15 @@ function CanvasQuestion({
           </fieldset>
         ) : (
           <label className="ic-question-field" key={field.id}>
-            {field.label}
+            {(
+              {
+                budget: "Budget (USD)",
+                "budget-per-person": "Budget per person (USD)",
+                "duration-minutes": "Duration (minutes)",
+                "duration-hours": "Duration (hours)",
+                location: "Location",
+              } as Record<string, string>
+            )[field.binding || ""] || field.label}
             {!field.required && <small>Optional</small>}
             <input
               type={field.type}

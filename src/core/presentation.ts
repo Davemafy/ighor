@@ -19,6 +19,15 @@ const QuestionFieldSchema = z
     label: z.string().min(1).max(120),
     type: z.enum(["text", "number", "date", "choice"]),
     required: z.boolean().default(true),
+    binding: z
+      .enum([
+        "budget",
+        "budget-per-person",
+        "duration-minutes",
+        "duration-hours",
+        "location",
+      ])
+      .optional(),
     placeholder: z.string().max(100).optional(),
     options: z.array(z.string().min(1).max(120)).min(2).max(8).optional(),
   })
@@ -96,7 +105,7 @@ export const PresentationNodeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     ...base,
     type: z.literal("question"),
-    subject: z.enum(["you", "group"]).default("you"),
+    subject: z.string().trim().min(1).max(60).default("you"),
     prompt: z.string().min(1).max(500),
     fields: z.array(QuestionFieldSchema).min(1).max(6),
   }),
@@ -292,6 +301,8 @@ type GroundingContext = {
   candidates: { id: string; freshness: string }[];
   evidence: { id: string }[];
   artifacts: { id: string }[];
+  messages?: { role: string; text: string }[];
+  brief?: { participants: { id: string; name: string }[] };
 };
 
 export function validatePresentation(
@@ -303,6 +314,25 @@ export function validatePresentation(
   const candidates = new Set(context.candidates.map((c) => c.id));
 
   for (const node of surface.nodes) {
+    if (node.type === "question" && !["you", "group"].includes(node.subject)) {
+      const subject = node.subject.toLocaleLowerCase();
+      const known =
+        context.brief?.participants.some((person) =>
+          [person.id, person.name].some(
+            (value) => value.toLocaleLowerCase() === subject,
+          ),
+        ) ||
+        context.messages?.some(
+          (message) =>
+            message.role === "user" &&
+            message.text.toLocaleLowerCase().includes(subject),
+        );
+
+      if (!known) {
+        throw new Error("Question subject must be supplied by the user.");
+      }
+    }
+
     const ids =
       node.type === "sources"
         ? node.evidenceIds

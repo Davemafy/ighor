@@ -1,3 +1,4 @@
+import type { FormAnswerGrounding } from "./conversation";
 import type { Task } from "./contracts";
 import { invalidate } from "./revision";
 import {
@@ -12,6 +13,7 @@ export function applyWorkActions(
   task: Task,
   actions: WorkAction[],
   text?: string,
+  formAnswer?: FormAnswerGrounding,
 ) {
   const work = structuredClone(task.work ?? emptyWork());
   const affected = new Set<string>();
@@ -126,9 +128,7 @@ export function applyWorkActions(
         }
 
         work.activeGoalId = action.id;
-        notes.push(
-          `Working on ${action.title}; previous goals and documents retained.`,
-        );
+        notes.push(`Started ${action.title}.`);
         break;
       }
 
@@ -158,9 +158,10 @@ export function applyWorkActions(
               );
 
             if (
-              !match ||
-              Number(match[1].replaceAll(",", "")) !== action.amount ||
-              /\d\s*%/.test(match[0])
+              formAnswer?.constraints?.budget !== action.amount &&
+              (!match ||
+                Number(match[1].replaceAll(",", "")) !== action.amount ||
+                /\d\s*%/.test(match[0]))
             ) {
               throw new Error("Budget amount must be explicitly supplied.");
             }
@@ -488,13 +489,9 @@ export function applyWorkActions(
     .map((a) => work.documents.find((d) => d.id === a.id)!)
     .filter(Boolean);
 
-  return [
-    summary,
-    ...documents.map(
-      (d) =>
-        `\n${d.title} (v${d.version}, ${d.status}, ${d.freshness}; creative proposal)\n${d.content}${d.conflict ? `\nNeeds review: ${d.conflict}` : ""}`,
-    ),
-  ].join("\n\n");
+  return documents.length
+    ? `${documents.map((document) => document.title).join(", ")} ${documents.length === 1 ? "is" : "are"} ready to review below.${documents.some((document) => document.conflict) ? " Some changes need your review." : ""}`
+    : summary;
 }
 
 function validateDependencies(work: WorkState) {

@@ -253,30 +253,65 @@ function ExecutionFeedback({
   );
 }
 export function ProductText({ text }: { text: string }) {
-  return (
-    <div className="pp-message-text">
-      {text
-        .split(/\n\n+/)
-        .map((block, i) =>
-          /^#{1,3} /.test(block) ? (
-            <h3 key={i}>{block.replace(/^#{1,3} /, "")}</h3>
-          ) : (
-            <p key={i}>
-              {block
-                .split(/(\*\*[^*]+\*\*)/g)
-                .map((part, j) =>
-                  part.startsWith("**") ? (
-                    <strong key={j}>{part.slice(2, -2)}</strong>
-                  ) : (
-                    part
-                  ),
-                )}
-            </p>
-          ),
-        )}
-    </div>
-  );
+  const blocks: ReactNode[] = [];
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const inline = (value: string) =>
+    value
+      .split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g)
+      .map((part, index) =>
+        part.startsWith("**") ? (
+          <strong key={index}>{part.slice(2, -2)}</strong>
+        ) : part.startsWith("*") ? (
+          <em key={index}>{part.slice(1, -1)}</em>
+        ) : part.startsWith("`") ? (
+          <code key={index}>{part.slice(1, -1)}</code>
+        ) : (
+          part
+        ),
+      );
+  for (let index = 0; index < lines.length;) {
+    const line = lines[index].trim();
+    if (!line) {
+      index++;
+      continue;
+    }
+    const heading = /^#{1,6}\s+(.+)$/.exec(line);
+    if (heading) {
+      blocks.push(<h3 key={index}>{inline(heading[1])}</h3>);
+      index++;
+      continue;
+    }
+    const ordered = /^\d+[.)]\s+/.test(line);
+    if (ordered || /^[-*+]\s+/.test(line)) {
+      const start = index;
+      const items: ReactNode[] = [];
+      const pattern = ordered ? /^\d+[.)]\s+/ : /^[-*+]\s+/;
+      while (index < lines.length && pattern.test(lines[index].trim())) {
+        items.push(
+          <li key={index}>
+            {inline(lines[index].trim().replace(pattern, ""))}
+          </li>,
+        );
+        index++;
+      }
+      blocks.push(
+        ordered ? <ol key={start}>{items}</ol> : <ul key={start}>{items}</ul>,
+      );
+      continue;
+    }
+    const start = index;
+    const paragraph: string[] = [];
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)/.test(lines[index].trim())
+    )
+      paragraph.push(lines[index++].trim());
+    blocks.push(<p key={start}>{inline(paragraph.join(" "))}</p>);
+  }
+  return <div className="pp-message-text">{blocks}</div>;
 }
+
 function Artwork({ candidate }: { candidate: Candidate }) {
   const [failed, setFailed] = useState(false);
   return (

@@ -852,3 +852,122 @@
     gap: 20px;
   }
 }
+
+/* One live work surface in the conversation; expansion uses its own controls. */
+.iw-app .iw-inline-workspace .iw-workgrid {
+  display: flex;
+}
+.iw-app .iw-inline-workspace .iw-thread {
+  display: flex !important;
+  width: 100%;
+}
+.iw-app .iw-inline-workspace .iw-workspace-footer {
+  display: block;
+}
+.iw-inline-output {
+  margin: 24px 0 32px;
+  min-width: 0;
+  padding: 22px;
+  background: #efeee8;
+  border-radius: 18px;
+  border: 1px solid #e3e2da;
+}
+.iw-inline-output .iw-result-content {
+  max-width: none;
+}
+.iw-app .iw-inline-output .ic-canvas {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.iw-app .iw-inline-output .ic-canvas-header {
+  padding: 12px 0;
+}
+.iw-app .iw-inline-output .ic-canvas-meta {
+  padding-inline: 0;
+}
+.iw-app .iw-inline-output .pp-message-text :is(ul, ol) {
+  margin: 12px 0;
+  padding-left: 23px;
+}
+.iw-app .pp-message-text li {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.iw-app .pp-message-text h3 {
+  margin: 20px 0 10px;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.iw-app .pp-message-text code {
+  font-size: 0.9em;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #00000006;
+}
+.iw-app .ic-inline .ic-component-question > h3 {
+  display: none;
+}
+@media (max-width: 760px) {
+  .iw-inline-output {
+    padding: 16px;
+    margin-inline: -6px;
+    border-radius: 14px;
+  }
+}
+
+.iw-adaptive-stage {
+  min-width: 0;
+  border-radius: 20px;
+  overflow: clip;
+  overflow-clip-margin: 5px;
+}
+.iw-adaptive-content {
+  display: flow-root;
+  min-width: 0;
+}
+::view-transition-group(igor-adaptive-stage),
+::view-transition-group(igor-task-canvas),
+::view-transition-group(igor-composer) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.22, 0.8, 0.22, 1);
+}
+::view-transition-image-pair(igor-adaptive-stage),
+::view-transition-image-pair(igor-task-canvas) {
+  isolation: isolate;
+  border-radius: 20px;
+  overflow: clip;
+}
+::view-transition-old(igor-adaptive-stage) {
+  animation: iw-stage-out 180ms ease-out both;
+  mix-blend-mode: normal;
+}
+::view-transition-new(igor-adaptive-stage) {
+  animation: iw-stage-in 320ms 65ms ease-out both;
+  mix-blend-mode: normal;
+}
+@keyframes iw-stage-out {
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes iw-stage-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+}
