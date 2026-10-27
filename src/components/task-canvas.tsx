@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingImage } from "./workspace-loading";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   ArrowDown,
@@ -426,7 +427,7 @@ function CanvasTree({
                   key={c.id}
                   data-selected={task.canvas?.selectedCandidateId === c.id}
                 >
-                  {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" />}
+                  {c.imageUrl && <LoadingImage src={c.imageUrl} />}
                   <div>
                     <small>
                       {c.type === "place"

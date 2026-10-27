@@ -838,7 +838,7 @@ function Work({
               .filter((c) => c.freshness === "current")
               .map((c) => (
                 <article key={c.id}>
-                  {c.imageUrl && <img src={c.imageUrl} alt="" loading="lazy" />}
+                  {c.imageUrl && <LoadingImage src={c.imageUrl} />}
                   <small>{c.type.replaceAll("_", " ")}</small>
                   <h3>{c.name}</h3>
                   <p>{c.description}</p>

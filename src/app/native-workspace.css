@@ -1527,3 +1527,315 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Igor's visual language: collected sleeves, paper notes and postcard backs. */
+.iw-app .iw-ideas {
+  align-items: start;
+  gap: 28px 22px;
+}
+.iw-app .iw-ideas > button {
+  padding: 9px 9px 16px;
+  background: #fffdf7;
+  border: 1px solid #e5dfd2;
+  border-radius: 3px;
+  box-shadow:
+    0 3px 4px #30271b06,
+    0 10px 24px #30271b0b;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+.iw-app .iw-ideas > button:nth-child(2n + 1) {
+  transform: rotate(-1.2deg);
+}
+.iw-app .iw-ideas > button:nth-child(2n) {
+  transform: rotate(1deg) translateY(10px);
+}
+.iw-app .iw-ideas > button:hover,
+.iw-app .iw-ideas > button:focus-visible {
+  transform: translateY(-5px) rotate(0deg);
+  box-shadow: 0 14px 30px #30271b17;
+}
+.iw-app .iw-ideas .iw-poster {
+  border-radius: 1px;
+  box-shadow: none;
+}
+.iw-app .iw-ideas > button > div:last-of-type {
+  margin-top: 15px;
+  padding-inline: 5px;
+}
+.iw-app .iw-ideas h2 {
+  font-size: clamp(17px, 1.7vw, 23px);
+  font-weight: 650;
+  letter-spacing: -0.6px;
+}
+.iw-app .iw-ideas > button > p {
+  margin: 7px 5px 0;
+  font:
+    italic 14px/1.4 Georgia,
+    serif;
+  color: #736858;
+}
+.iw-app .iw-assistant .iw-author img {
+  width: 29px;
+  height: 29px;
+  padding: 5px;
+  box-sizing: content-box;
+  border: 1px solid #dad3c5;
+  border-radius: 50%;
+  background: #fffdf7;
+}
+.iw-app .iw-assistant .pp-message-text {
+  max-width: 66ch;
+}
+.iw-app .iw-assistant .pp-message-text > p:first-child {
+  font-size: 17px;
+  line-height: 1.75;
+}
+.iw-app .iw-inline-output {
+  border-radius: 4px;
+  border: 1px solid #dcd5c5;
+  background: #fffdf6e8;
+  box-shadow:
+    0 4px 0 -2px #f1ecdf,
+    0 5px 0 -2px #dcd5c5,
+    0 15px 35px #30271b09;
+}
+.iw-app
+  .iw-inline-output
+  :is(.ic-canvas-header h2, .ig-connected-work-header h2) {
+  font-size: clamp(23px, 3vw, 34px);
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+.iw-app .iw-inline-output .ic-component > h3 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ded7c8;
+}
+.iw-app .iw-references article,
+.iw-app .ic-discoveries > article {
+  border-radius: 3px;
+  background: #fffdf7;
+  box-shadow: 0 5px 18px #30271b09;
+}
+.iw-app .iw-references article > .iw-loading-image,
+.iw-app .ic-discoveries > article > .iw-loading-image {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 240px;
+  margin-bottom: 14px;
+  border-radius: 1px;
+  background: #eae7de;
+}
+.iw-app .iw-references article > .iw-loading-image > img,
+.iw-app .ic-discoveries > article > .iw-loading-image > img {
+  object-fit: contain;
+}
+.iw-app .iw-references h3,
+.iw-app .ic-discoveries h4 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.55px;
+}
+.iw-app .iw-references article > small,
+.iw-app .ic-discoveries article small {
+  font:
+    italic 13px/1.4 Georgia,
+    serif;
+  color: #736858;
+}
+.iw-app .iw-agent-working {
+  padding: 0 0 20px;
+  border: 0;
+  background: transparent;
+}
+.iw-app .iw-agent-working-heading {
+  color: #51493e;
+  font-size: 13px;
+  gap: 12px;
+}
+.iw-app .iw-thinking-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d9d0bf;
+  background: #fffdf7;
+  border-radius: 50%;
+}
+.iw-app .iw-thinking-mark > img {
+  animation: igor-consider 2.8s ease-in-out infinite;
+}
+.iw-app .iw-thinking-dots {
+  display: none;
+}
+.iw-app .iw-working-detail {
+  margin-left: 50px;
+  font:
+    italic 13px/1.5 Georgia,
+    serif;
+  color: #786f60;
+}
+.iw-reply-proof {
+  margin: 18px 0 0 50px;
+}
+.iw-proof-reply {
+  display: grid;
+  gap: 10px;
+  max-width: 460px;
+}
+.iw-proof-reply > i {
+  height: 9px;
+  width: 90%;
+}
+.iw-proof-reply > i:last-child {
+  width: 58%;
+}
+.iw-proof-sleeves,
+.iw-proof-postcards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 560px;
+}
+.iw-proof-card {
+  padding: 6px 6px 12px;
+  background: #fffdf7;
+  border: 1px solid #ded7c8;
+  box-shadow: 0 3px 9px #30271b08;
+}
+.iw-proof-card:nth-child(2) {
+  transform: rotate(2deg) translateY(5px);
+}
+.iw-proof-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2/3;
+  height: auto;
+  border-radius: 0;
+}
+.iw-proof-postcards .iw-proof-image {
+  aspect-ratio: 3/2;
+}
+.iw-proof-card > i {
+  display: block;
+  width: 72%;
+  height: 6px;
+  margin-top: 10px;
+}
+.iw-app .iw-skeleton {
+  background: #e9e3d6;
+}
+.iw-app .iw-skeleton:after {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    #fffdf6aa 50%,
+    transparent 80%
+  );
+}
+.iw-image-proof:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/marketing/assets/brand/igor-mark-black.svg") center / 24px
+    no-repeat;
+  opacity: 0.16;
+}
+.iw-image-unavailable {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: #766e60;
+  font:
+    italic 12px Georgia,
+    serif;
+}
+.iw-image-unavailable > img {
+  opacity: 0.35;
+}
+.iw-app .iw-placeholder-collection-grid > div {
+  padding: 8px 8px 18px;
+  background: #fffdf7;
+  border: 1px solid #e0d8c8;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px #30271b08;
+}
+.iw-app .iw-placeholder-collection-grid > div:nth-child(2) {
+  transform: rotate(1deg);
+}
+.iw-app .iw-error {
+  background: #fffaf0;
+  color: #42372c;
+  border: 1px solid #cfaa88;
+  border-radius: 5px;
+  box-shadow: 0 7px 30px #30271b12;
+}
+.iw-app .iw-error:before {
+  content: "";
+  flex: none;
+  width: 23px;
+  height: 23px;
+  background: url("/marketing/assets/brand/igor-mark-black.svg") center /
+    contain no-repeat;
+}
+@keyframes igor-consider {
+  0%,
+  100% {
+    transform: rotate(-8deg) scale(0.94);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotate(8deg) scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .iw-app .iw-inline-workspace .iw-message.iw-assistant {
+    animation: igor-reply-arrive 360ms ease-out both;
+  }
+}
+@keyframes igor-reply-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 760px) {
+  .iw-app .iw-ideas {
+    gap: 20px 14px;
+  }
+  .iw-app .iw-ideas > button {
+    padding: 6px 6px 12px;
+  }
+  .iw-app .iw-ideas > button > p {
+    font-size: 12px;
+  }
+  .iw-reply-proof {
+    margin-left: 0;
+  }
+  .iw-proof-sleeves,
+  .iw-proof-postcards {
+    gap: 8px;
+  }
+  .iw-app .iw-assistant .pp-message-text > p:first-child {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app .iw-thinking-mark > img,
+  .iw-app .iw-assistant {
+    animation: none !important;
+  }
+  .iw-app .iw-ideas > button {
+    transition: none;
+  }
+}

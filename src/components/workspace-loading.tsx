@@ -76,7 +76,20 @@ function ImagePlaceholder({ src }: { src: string }) {
 
   return (
     <span className="iw-loading-image" data-ready={ready || failed}>
-      {!ready && !failed && <span className="iw-skeleton" aria-hidden="true" />}
+      {!ready && !failed && (
+        <span className="iw-skeleton iw-image-proof" aria-hidden="true" />
+      )}
+      {failed && (
+        <span className="iw-image-unavailable">
+          <img
+            src="/marketing/assets/brand/igor-mark-black.svg"
+            alt=""
+            width="24"
+            height="24"
+          />
+          <span>Image unavailable</span>
+        </span>
+      )}
       <img
         src={src}
         alt=""
@@ -119,8 +132,15 @@ export function AgentActivity({
                 feedback.action.mutation.operation === "answer"
               ? "Working with your answers"
               : feedback.action.type === "message"
-                ? "Thinking"
+                ? "Considering your request"
                 : "Saving your changes";
+  // Only the visual placeholder changes; routing and execution stay server-owned.
+  const input = feedback.input || "";
+  const format = /\b(?:films?|movies?|cinema|watch)\b/i.test(input)
+    ? "sleeves"
+    : /\b(?:trip|travel|places?|getaway|itinerary)\b/i.test(input)
+      ? "postcards"
+      : "reply";
   const events = (feedback.activities ?? [])
     .filter(
       (item) =>
@@ -157,6 +177,21 @@ export function AgentActivity({
         </span>
       </div>
       {message && !quiet && <p className="iw-working-detail">{message}</p>}
+      <div className={`iw-reply-proof iw-proof-${format}`} aria-hidden="true">
+        {format === "reply" ? (
+          <>
+            <i className="iw-skeleton" />
+            <i className="iw-skeleton" />
+          </>
+        ) : (
+          [0, 1, 2].map((index) => (
+            <div className="iw-proof-card" key={index}>
+              <span className="iw-proof-image iw-skeleton" />
+              <i className="iw-skeleton" />
+            </div>
+          ))
+        )}
+      </div>
       {events.length > 0 && (
         <details className="iw-live-activity">
           <summary>
