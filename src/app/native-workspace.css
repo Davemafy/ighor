@@ -971,3 +971,58 @@
     animation-delay: 0ms !important;
   }
 }
+
+.iw-decision-work > h2 {
+  font-size: 23px;
+  letter-spacing: -0.5px;
+}
+.iw-decision-work > p {
+  margin: 8px 0 20px;
+  font-size: 12px;
+  color: #77776b;
+}
+.iw-decision-work > article {
+  background: #fff;
+  border: 1px solid #ddded3;
+  border-radius: 14px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.iw-app .iw-decision-work > article > button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+  padding: 18px;
+  gap: 18px;
+  font-size: 16px;
+}
+.iw-decision-work small {
+  display: block;
+  margin-top: 7px;
+  font-size: 12px;
+  color: #73736a;
+}
+.iw-decision-work > article > div {
+  padding: 0 18px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.iw-decision-work > article > div > p {
+  margin-top: 12px;
+  color: #73736a;
+}
+.iw-app .ig-connected-paper .pp-message-text {
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: normal;
+}
+.iw-app .iw-adaptive-stage .ic-canvas,
+.iw-app .iw-inline-workspace .iw-message {
+  animation: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

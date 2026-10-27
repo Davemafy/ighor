@@ -102,13 +102,43 @@ it("exposes actual decision fields and both conversation/action intent alternati
       "revision",
     ]),
   });
-  expect(schema.anyOf.some((branch) => branch.required.includes("reply"))).toBe(
-    true,
-  );
-  expect(
-    schema.anyOf.some(
-      (branch) =>
-        branch.required.includes("kind") && branch.required.includes("goal"),
-    ),
-  ).toBe(true);
+  expect(schema.required).toContain("intent");
+  expect(schema.properties.reply).toMatchObject({ type: "string" });
+  expect(schema.properties.goal).toMatchObject({ type: "string" });
+});
+
+it("keeps provider schemas to simple supported field types while the application rejects invalid decisions", () => {
+  const properties = turnTool().parameters.properties.decision.properties;
+  const keys: string[] = [];
+
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+    } else if (value && typeof value === "object") {
+      for (const [key, child] of Object.entries(value)) {
+        keys.push(key);
+
+        if (key !== "description") {
+          walk(child);
+        }
+      }
+    }
+  };
+
+  walk(properties);
+
+  for (const unsupported of [
+    "const",
+    "pattern",
+    "anyOf",
+    "oneOf",
+    "$ref",
+    "$schema",
+  ]) {
+    expect(keys).not.toContain(unsupported);
+  }
+
+  expect(() =>
+    readTurnDecision(JSON.stringify({ decision: { intent: "goal" } })),
+  ).toThrow();
 });

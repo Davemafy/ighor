@@ -2,7 +2,10 @@ import { modelContext } from "./model-context";
 import { readModelResponse } from "./response-body";
 import { z } from "zod";
 import type { Task } from "../core/contracts";
-import { interpretationFailure } from "../core/interpretation-failure";
+import {
+  interpretationFailure,
+  ProviderHttpError,
+} from "../core/interpretation-failure";
 import { turnTool, readTurnDecision } from "./turn-protocol";
 import type { ModelProvider } from "./interfaces";
 
@@ -140,7 +143,8 @@ export class ToolCallingModel implements ModelProvider {
     );
 
     if (!response.ok) {
-      throw new Error(`OpenAI returned HTTP ${response.status}; no retry.`);
+      const detail = await readModelResponse(response).catch(() => "");
+      throw new ProviderHttpError("OpenAI", response.status, detail);
     }
 
     const raw = await readModelResponse(response);

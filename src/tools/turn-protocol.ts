@@ -2,48 +2,113 @@ import { z } from "zod";
 import { validatePresentation } from "../core/presentation";
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 
-/** One transport envelope for both providers; the engine owns the complete decision schema. */
+/** Provider guidance uses simple JSON field types; Zod remains the execution authority. */
+function providerShape(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
+  const alternatives = (schema.anyOf ?? schema.oneOf) as
+    Record<string, unknown>[] | undefined;
+
+  if (alternatives) {
+    const objects = alternatives.filter((branch) => branch.type === "object");
+
+    if (objects.length) {
+      const properties: Record<string, unknown> = {};
+
+      for (const branch of objects) {
+        for (const [key, value] of Object.entries(
+          (branch.properties ?? {}) as Record<string, Record<string, unknown>>,
+        )) {
+          const next = providerShape(value);
+          const previous = properties[key] as
+            Record<string, unknown> | undefined;
+
+          if (previous?.enum && next.enum) {
+            next.enum = [
+              ...new Set([
+                ...(previous.enum as unknown[]),
+                ...(next.enum as unknown[]),
+              ]),
+            ];
+          }
+
+          properties[key] = next;
+        }
+      }
+
+      return { type: "object", properties, additionalProperties: true };
+    }
+
+    const types = [
+      ...new Set(alternatives.map((branch) => branch.type).filter(Boolean)),
+    ];
+    const values = alternatives.flatMap(
+      (branch) =>
+        (branch.enum as unknown[]) ??
+        (Object.hasOwn(branch, "const") ? [branch.const] : []),
+    );
+
+    return {
+      ...(types.length ? { type: types.length === 1 ? types[0] : types } : {}),
+      ...(values.length ? { enum: values } : {}),
+    };
+  }
+
+  const result: Record<string, unknown> = {};
+
+  for (const key of ["type", "description", "enum"]) {
+    if (schema[key] !== undefined) {
+      result[key] = schema[key];
+    }
+  }
+
+  if (Object.hasOwn(schema, "const")) {
+    result.enum = [schema.const];
+  }
+
+  if (schema.type === "object") {
+    result.properties = Object.fromEntries(
+      Object.entries(
+        (schema.properties ?? {}) as Record<string, Record<string, unknown>>,
+      ).map(([key, value]) => [key, providerShape(value)]),
+    );
+    result.additionalProperties = true;
+  }
+
+  if (schema.items) {
+    result.items = providerShape(schema.items as Record<string, unknown>);
+  }
+
+  return result;
+}
+
+/** Native object envelope avoids double-encoding strings and works across both adapters. */
 export function turnTool() {
-  type Branch = { properties?: Record<string, unknown>; required?: string[] };
   const schema = z.toJSONSchema(LiveDecisionSchema, { io: "input" });
-  const branches = (schema.anyOf ?? schema.oneOf ?? [schema]) as Branch[];
-  const properties: Record<string, unknown> = Object.assign(
-    {},
-    ...branches.map((branch) => branch.properties ?? {}),
-  );
-  const intents = branches.flatMap(
-    (branch) =>
-      (branch.properties?.intent as { enum?: string[] } | undefined)?.enum ??
-      [],
-  );
-  properties.intent = { type: "string", enum: [...new Set(intents)] };
+
+  const guidance = providerShape(schema);
 
   return {
     type: "function",
     name: "update_brief",
     description:
-      "Return one decision object. Conversation or clarification needs a reply; goal or revision needs kind and goal. Include actual supported UI or work actions when creating work. Never JSON-encode the decision object as a string.",
+      "Return one decision object, never a JSON-encoded string. Conversation/clarification requires reply. Goal/revision requires kind and goal. Use only supported components/actions.",
     parameters: {
       type: "object",
       additionalProperties: false,
       properties: {
         decision: {
+          ...guidance,
           type: "object",
-          properties,
+          properties: guidance.properties as Record<string, unknown>,
           required: ["intent"],
-          anyOf: branches.map((branch) => ({
-            properties: { intent: branch.properties?.intent },
-            required: branch.required ?? [],
-          })),
-          additionalProperties: false,
           description:
-            'A validated decision with optional "presentation" or workActions. Use conversation/clarification with reply, or goal/revision with kind, goal and grounded actions.',
+            'The complete application schema follows. Return an object with these fields including optional "presentation", not a JSON string: ' +
+            JSON.stringify(schema),
         },
       },
       required: ["decision"],
     },
-    // Conditional branches are validated by the provider schema and again by
-    // the application's complete grounding/ownership checks before execution.
     strict: false,
   };
 }

@@ -1,3 +1,4 @@
+import { ProviderHttpError } from "../core/interpretation-failure";
 import { readModelResponse } from "./response-body";
 import { z } from "zod";
 import { ToolCallingModel } from "./tool-model";
@@ -168,7 +169,8 @@ export class GeminiModel extends ToolCallingModel {
     }
 
     if (!response.ok) {
-      throw new Error(`Gemini returned HTTP ${response.status}; no retry.`);
+      const detail = await readModelResponse(response).catch(() => "");
+      throw new ProviderHttpError("Gemini", response.status, detail);
     }
 
     const raw = await readModelResponse(response);

@@ -2,6 +2,10 @@ import { z } from "zod";
 
 /** Report only known categories and schema paths, never raw provider content or credentials. */
 export function interpretationFailure(error: unknown): string {
+  if (error instanceof ProviderHttpError) {
+    return `provider HTTP ${error.status} (${error.provider})${error.schemaKeywords.length ? `; schema keywords: ${error.schemaKeywords.join(", ")}` : ""}`;
+  }
+
   if (error instanceof z.ZodError) {
     const fields = new Set([
       "decision",
@@ -114,4 +118,34 @@ function flattenIssues(
       ? issue.errors.flatMap((branch) => flattenIssues(branch, depth + 1))
       : [issue],
   );
+}
+
+/** Preserve only fixed diagnostic keywords; never retain the upstream body. */
+export class ProviderHttpError extends Error {
+  readonly schemaKeywords: string[];
+  constructor(
+    readonly provider: "OpenAI" | "Gemini",
+    readonly status: number,
+    body: string,
+  ) {
+    super(`${provider} returned HTTP ${status}; no retry.`);
+    this.schemaKeywords = [
+      "anyOf",
+      "oneOf",
+      "const",
+      "pattern",
+      "additionalProperties",
+      "required",
+      "properties",
+      "items",
+      "parameters",
+      "depth",
+      "complex",
+      "unsupported",
+      "strict",
+      "enum",
+      "format",
+      "type",
+    ].filter((keyword) => body.includes(keyword));
+  }
 }

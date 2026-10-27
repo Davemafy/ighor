@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DecisionWork } from "./decision-work";
 import { AdaptiveStage } from "./adaptive-stage";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -114,6 +115,7 @@ export function AgentWorkspace({
             ].includes(node.type),
         ) ||
         task?.work?.documents.length ||
+        task?.work?.decisions.length ||
         task?.artifacts.length ||
         task?.candidates.length
       );
@@ -763,6 +765,9 @@ function Work({
     ...(task.work?.documents.length
       ? [{ id: "documents", title: "Documents" }]
       : []),
+    ...(task.work?.decisions.length && !task.work?.documents.length
+      ? [{ id: "options", title: "Options" }]
+      : []),
     ...(task.artifacts.length ? [{ id: "drafts", title: "Drafts" }] : []),
     ...(placeNode ? [{ id: "places", title: "Places" }] : []),
   ];
@@ -808,6 +813,7 @@ function Work({
       {active === "documents" && (
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
       )}
+      {active === "options" && <DecisionWork task={task} />}
       {active === "drafts" && (
         <ArtifactWork task={task} busy={busy} onTurn={onTurn} onTask={onTask} />
       )}

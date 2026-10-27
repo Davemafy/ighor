@@ -1,9 +1,16 @@
 "use client";
+import { ProductText } from "./product-surfaces";
 
 import { useEffect, useState } from "react";
 import {
-  ArrowLeft, Check, ChevronDown, FileText, History, Pencil,
-  ShieldCheck, X,
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  FileText,
+  History,
+  Pencil,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { morphLayout } from "./mobile-transitions";
@@ -25,7 +32,8 @@ export function ConnectedWorkCanvas({
   const work = task.work;
   const documents = work?.documents ?? [];
   const [activeId, setActiveId] = useState<string | null>(null);
-  const selected = documents.find((item) => item.id === activeId) ??
+  const selected =
+    documents.find((item) => item.id === activeId) ??
     documents.find((item) => item.goalId === work?.activeGoalId) ??
     documents[0];
   const [editing, setEditing] = useState(false);
@@ -49,8 +57,10 @@ export function ConnectedWorkCanvas({
       setVersion(selected.version);
       setEditing(false);
       setRevision("current");
-    } else if (version !== selected.version &&
-      (!dirty || selected.content === draft.trim())) {
+    } else if (
+      version !== selected.version &&
+      (!dirty || selected.content === draft.trim())
+    ) {
       // A successful server save changes the authoritative version. A failed
       // save does not: retain the local draft for a truthful retry.
       setDraft(selected.content);
@@ -77,11 +87,13 @@ export function ConnectedWorkCanvas({
   }, [full]);
 
   if (!work || !selected) return null;
-  const historical = revision === "current" ? null :
-    selected.history.find((r) => String(r.version) === revision);
+  const historical =
+    revision === "current"
+      ? null
+      : selected.history.find((r) => String(r.version) === revision);
   const display = historical?.content ?? (editing ? draft : content);
   const decisions = work.decisions.filter((d) => d.goalId === selected.goalId);
-  const send = (actions: Extract<TaskAction, {type: "work"}>["actions"]) =>
+  const send = (actions: Extract<TaskAction, { type: "work" }>["actions"]) =>
     onTurn({ type: "work", actions });
   const choose = (doc: Document) => {
     if (dirty || busy || doc.id === selected.id) return;
@@ -97,8 +109,10 @@ export function ConnectedWorkCanvas({
     >
       <header className="ic-canvas-header">
         <div>
-          <span className="ic-eyebrow">Connected to your conversation</span>
-          <h2>{work.goals.find((g) => g.id === selected.goalId)?.title || "Your work"}</h2>
+          <h2>
+            {work.goals.find((g) => g.id === selected.goalId)?.title ||
+              "Your work"}
+          </h2>
         </div>
         <button
           type="button"
@@ -108,7 +122,11 @@ export function ConnectedWorkCanvas({
           {full ? <X /> : <FileText />}
         </button>
       </header>
-      <div className="ig-connected-doc-tabs" role="group" aria-label="Connected documents">
+      <div
+        className="ig-connected-doc-tabs"
+        role="group"
+        aria-label="Connected documents"
+      >
         {documents.map((doc) => (
           <button
             type="button"
@@ -186,13 +204,18 @@ export function ConnectedWorkCanvas({
             <div className="ig-connected-edit-actions">
               <button
                 type="button"
-                disabled={!dirty || !draft.trim() || busy ||
-                  selected.content !== base}
-                onClick={() => send([{
-                  kind: "edit",
-                  id: selected.id,
-                  content: draft.trim(),
-                }])}
+                disabled={
+                  !dirty || !draft.trim() || busy || selected.content !== base
+                }
+                onClick={() =>
+                  send([
+                    {
+                      kind: "edit",
+                      id: selected.id,
+                      content: draft.trim(),
+                    },
+                  ])
+                }
               >
                 <Check /> {busy ? "Saving…" : "Save changes"}
               </button>
@@ -209,14 +232,14 @@ export function ConnectedWorkCanvas({
             </div>
             {selected.content !== base && (
               <p role="alert">
-                This document changed since you began editing.
-                Copy your draft and review the latest version before saving.
+                This document changed since you began editing. Copy your draft
+                and review the latest version before saving.
               </p>
             )}
           </div>
         ) : (
           <div className="ig-connected-paper" aria-label="Document preview">
-            <pre>{display}</pre>
+            <ProductText text={display} />
           </div>
         )}
         {historical && (
@@ -234,12 +257,21 @@ export function ConnectedWorkCanvas({
           </button>
         )}
         <div className="ig-connected-approval">
-          <span><ShieldCheck /> {selected.status === "approved" ? "Approved" : "Proposed · not yet approved"}</span>
+          <span>
+            <ShieldCheck />{" "}
+            {selected.status === "approved"
+              ? "Approved"
+              : "Proposed · not yet approved"}
+          </span>
           {selected.status !== "approved" && (
             <button
               type="button"
-              disabled={busy || dirty ||
-                selected.freshness !== "current" || Boolean(selected.conflict)}
+              disabled={
+                busy ||
+                dirty ||
+                selected.freshness !== "current" ||
+                Boolean(selected.conflict)
+              }
               onClick={() => send([{ kind: "approve", id: selected.id }])}
             >
               Approve document
@@ -248,7 +280,10 @@ export function ConnectedWorkCanvas({
         </div>
       </div>
       {decisions.length > 0 && (
-        <section className="ig-connected-decisions" aria-label="Connected decisions">
+        <section
+          className="ig-connected-decisions"
+          aria-label="Connected decisions"
+        >
           <h3>Decisions connected to this work</h3>
           {decisions.map((decision) => (
             <article key={decision.id}>
@@ -258,18 +293,28 @@ export function ConnectedWorkCanvas({
               </div>
               <p>{decision.value}</p>
               <details>
-                <summary>Why this was proposed <ChevronDown /></summary>
+                <summary>
+                  Why this was proposed <ChevronDown />
+                </summary>
                 <p>{decision.rationale}</p>
               </details>
               {decision.conflict && <p role="status">{decision.conflict}</p>}
               {decision.status === "proposed" && (
                 <div>
-                  <button type="button" disabled={busy} onClick={() =>
-                    send([{kind: "approve", id: decision.id}])
-                  }>Approve</button>
-                  <button type="button" disabled={busy} onClick={() =>
-                    send([{kind: "reject", id: decision.id}])
-                  }>Reject</button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => send([{ kind: "approve", id: decision.id }])}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => send([{ kind: "reject", id: decision.id }])}
+                  >
+                    Reject
+                  </button>
                 </div>
               )}
             </article>
