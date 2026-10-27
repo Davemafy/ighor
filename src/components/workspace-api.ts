@@ -6,7 +6,13 @@ import {
   type TaskAction,
 } from "@/core/contracts";
 
-export type WorkspaceSummary = { id: string; goal: string; title?: string };
+export type WorkspaceSummary = {
+  id: string;
+  goal: string;
+  title?: string;
+  preview?: string;
+  updatedAt?: string | null;
+};
 
 export class TurnRequestError extends Error {
   constructor(

@@ -567,3 +567,202 @@
     max-height: 100dvh;
   }
 }
+
+/* History is a utility view, not a second marketing hero. */
+.iw-app .iw-history-page {
+  width: 100%;
+  max-width: 840px;
+  padding: 54px 32px 48px;
+}
+.iw-history-heading {
+  margin-bottom: 26px;
+}
+.iw-app .iw-history-heading h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+  font-weight: 600;
+  font-stretch: 100%;
+  font-variation-settings:
+    "wdth" 100,
+    "wght" 600;
+  text-transform: none;
+  letter-spacing: -1.1px;
+}
+.iw-app .iw-history-heading p {
+  margin-top: 9px;
+  font-size: 14px;
+  color: #6a6a64;
+  line-height: 1.5;
+}
+.iw-history-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 15px;
+  min-height: 48px;
+  border: 1px solid #deded8;
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.iw-app .iw-history-search > svg {
+  width: 18px;
+  height: 18px;
+  color: #777770;
+}
+.iw-history-search input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-size: 16px;
+  background: transparent;
+  border: 0;
+  color: #191919;
+  padding: 13px 0;
+  outline: none;
+}
+.iw-history-search:focus-within {
+  border-color: #8b8b80;
+  box-shadow: 0 0 0 3px #11111105;
+}
+.iw-app .iw-history-search input:focus-visible {
+  outline: none;
+}
+.iw-app .iw-history-search input::placeholder {
+  color: #808078;
+}
+.iw-app .iw-history-page .iw-history-list {
+  gap: 10px;
+}
+.iw-app .iw-history-page .iw-history-list > button {
+  min-height: 104px;
+  padding: 18px 20px;
+  gap: 18px;
+  border: 1px solid #e2e2dc;
+  border-radius: 14px;
+  background: #fff;
+  color: #191919;
+  align-items: center;
+}
+.iw-app .iw-history-page .iw-history-list > button:hover {
+  border-color: #b9b9ae;
+  background: #fafaf7;
+  color: #191919;
+}
+.iw-app .iw-history-copy {
+  display: grid;
+  gap: 7px;
+}
+.iw-app .iw-history-copy strong {
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 550;
+  letter-spacing: -0.25px;
+  overflow-wrap: anywhere;
+}
+.iw-app .iw-history-copy > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #72726b;
+  overflow-wrap: anywhere;
+}
+.iw-app .iw-history-list > button > .iw-history-meta {
+  display: grid;
+  justify-items: end;
+  gap: 13px;
+  flex: none;
+  align-self: stretch;
+  align-content: space-between;
+  padding-block: 1px;
+}
+.iw-history-meta time {
+  font-size: 11px;
+  color: #77776e;
+  white-space: nowrap;
+}
+.iw-app .iw-history-meta svg {
+  width: 17px;
+  height: 17px;
+  color: #66665d;
+}
+.iw-history-empty {
+  padding: 34px 12px;
+  text-align: center;
+}
+.iw-app .iw-history-empty h2 {
+  font-size: 21px;
+  font-weight: 550;
+  letter-spacing: -0.4px;
+}
+.iw-app .iw-history-empty p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #72726b;
+  margin-top: 9px;
+  overflow-wrap: anywhere;
+}
+.iw-app .iw-history-empty button {
+  margin-top: 20px;
+  min-height: 44px;
+  padding: 11px 17px;
+  border-radius: 24px;
+  background: #111;
+  color: #fff;
+  font-size: 13px;
+}
+.iw-history-page .iw-placeholder-history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  min-height: 104px;
+  padding: 18px 20px;
+  border: 1px solid #e2e2dc;
+  border-radius: 14px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+.iw-placeholder-history-row > span {
+  display: grid;
+  gap: 13px;
+  flex: 1;
+}
+.iw-history-page .iw-placeholder-history-row > span i:first-child {
+  width: 58%;
+}
+.iw-history-page .iw-placeholder-history-row > span i:last-child {
+  width: 86%;
+  height: 11px;
+}
+.iw-history-page .iw-placeholder-history-row > i {
+  width: 32px;
+  height: 10px;
+  align-self: flex-start;
+}
+@media (max-width: 760px) {
+  .iw-app .iw-history-page {
+    padding: 32px 22px 40px;
+  }
+  .iw-app .iw-history-heading h1 {
+    font-size: 29px;
+    letter-spacing: -0.9px;
+  }
+  .iw-history-heading {
+    margin-bottom: 24px;
+  }
+  .iw-app .iw-history-page .iw-history-list > button {
+    padding: 17px;
+    min-height: 104px;
+    gap: 13px;
+  }
+  .iw-app .iw-history-copy strong {
+    font-size: 16px;
+  }
+  .iw-app .iw-history-copy > span {
+    font-size: 13px;
+  }
+}

@@ -38,6 +38,10 @@ export function LoadingSurface({
         ) : mode === "history" ? (
           [0, 1, 2, 3].map((id) => (
             <div className="iw-placeholder-history-row" key={id}>
+              <span>
+                <i className="iw-skeleton" />
+                <i className="iw-skeleton" />
+              </span>
               <i className="iw-skeleton" />
             </div>
           ))

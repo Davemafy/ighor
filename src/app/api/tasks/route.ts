@@ -64,6 +64,8 @@ export async function GET() {
               "A new conversation"
             ).slice(0, 120),
             version: t.brief.version,
+            preview: t.messages.at(-1)?.text.slice(0, 240) || "",
+            updatedAt: t.messages.at(-1)?.at || null,
           })),
       },
       { headers: { "Cache-Control": "no-store" } },

@@ -92,6 +92,7 @@ export function AgentWorkspace({
   const [menu, setMenu] = useState(false);
   const [pane, setPane] = useState<"thread" | "work">(initialPane);
   const [historyError, setHistoryError] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -121,6 +122,18 @@ export function AgentWorkspace({
   const questions =
     task?.canvas?.surface.nodes.filter((node) => node.type === "question") ??
     [];
+  const matchingHistory = w.history
+    .filter((item) =>
+      `${conversationTitle(item.title || item.goal)} ${item.preview || ""}`
+        .toLocaleLowerCase()
+        .includes(historySearch.trim().toLocaleLowerCase()),
+    )
+    .sort((a, b) => {
+      const left = Date.parse(a.updatedAt || "");
+      const right = Date.parse(b.updatedAt || "");
+
+      return Number.isFinite(left) && Number.isFinite(right) ? right - left : 0;
+    });
   const title = task?.brief.goal || "Your conversation";
 
   useEffect(() => {
@@ -648,8 +661,21 @@ export function AgentWorkspace({
           </section>
         )}
         {page === "history" && (
-          <section className="iw-library">
-            <h1>Your conversations.</h1>
+          <section className="iw-library iw-history-page">
+            <header className="iw-history-heading">
+              <h1>Conversations</h1>
+              <p>Pick up where you left off.</p>
+            </header>
+            <label className="iw-history-search">
+              <Search />
+              <span className="iw-sr">Search conversations</span>
+              <input
+                type="search"
+                placeholder="Find a conversation"
+                value={historySearch}
+                onChange={(event) => setHistorySearch(event.target.value)}
+              />
+            </label>
             {historyError && (
               <p role="alert">
                 {historyError}
@@ -667,21 +693,53 @@ export function AgentWorkspace({
             )}
             {historyLoading && <LoadingSurface mode="history" />}
             <div className="iw-history-list" aria-busy={historyLoading}>
-              {w.history.map((h) => (
+              {matchingHistory.map((h) => (
                 <button
                   key={h.id}
                   disabled={w.isBusy || w.isLoadingWorkspace}
                   onClick={() => void open(h.id)}
                 >
-                  <span>{conversationTitle(h.title || h.goal)}</span>
-                  <ArrowUpRight />
+                  <span className="iw-history-copy">
+                    <strong>{conversationTitle(h.title || h.goal)}</strong>
+                    {h.preview && <span>{h.preview}</span>}
+                  </span>
+                  <span className="iw-history-meta">
+                    {h.updatedAt &&
+                      Number.isFinite(Date.parse(h.updatedAt)) && (
+                        <time dateTime={h.updatedAt}>
+                          {new Intl.DateTimeFormat(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          }).format(new Date(h.updatedAt))}
+                        </time>
+                      )}
+                    <ArrowRight />
+                  </span>
                 </button>
               ))}
             </div>
+            {!historyLoading &&
+              !!w.history.length &&
+              !matchingHistory.length && (
+                <div className="iw-history-empty" role="status">
+                  <p>No conversations match “{historySearch.trim()}”.</p>
+                  <button onClick={() => setHistorySearch("")}>
+                    Clear search
+                  </button>
+                </div>
+              )}
             {!historyLoading && !w.history.length && !historyError && (
-              <p>
-                Every idea starts somewhere. Start a thought and find it here.
-              </p>
+              <div className="iw-history-empty">
+                <h2>A place to come back to.</h2>
+                <p>Your conversations will appear here as you go.</p>
+                <button
+                  onClick={() => void fresh()}
+                  disabled={w.isBusy || w.isLoadingWorkspace}
+                >
+                  Start a conversation
+                  <ArrowRight />
+                </button>
+              </div>
             )}
           </section>
         )}
