@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DecisionWork } from "./decision-work";
 import { AppearanceControl } from "./appearance-control";
+import { EditorialMotion } from "./editorial-motion";
 import { AdaptiveStage } from "./adaptive-stage";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
@@ -44,6 +45,7 @@ import "../app/connected-work.css";
 import "../app/spatial-morph.css";
 import "../app/workbench.css";
 import "../app/native-workspace.css";
+import "../app/editorial-workspace.css";
 
 const assets = "/marketing/assets/";
 const starts = [
@@ -330,6 +332,7 @@ export function AgentWorkspace({
   return (
     <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
       <AppearanceControl />
+      <EditorialMotion />
       <a className="iw-skip" href="#iw-main">
         Skip to content
       </a>

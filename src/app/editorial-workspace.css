@@ -1,0 +1,267 @@
+@font-face {
+  font-family: Igor Display;
+  src: url("/marketing/vendor/anton-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+.iw-app {
+  --studio-blue: #2948a1;
+  --studio-red: #c8312e;
+  --studio-paper: #f3f0e3;
+  --studio-ink: #232b41;
+  background: var(--studio-paper);
+  color: var(--studio-ink);
+}
+.iw-app::before {
+  opacity: 0.3;
+}
+.iw-app .iw-welcome {
+  max-width: 1160px;
+  margin-inline: auto;
+  padding: 40px 40px 72px;
+}
+.iw-app .iw-intro {
+  padding: 42px 28px 36px;
+  margin: 0 auto;
+  background: var(--studio-blue);
+  color: var(--studio-paper);
+  position: relative;
+}
+.iw-app .iw-intro::after {
+  content: "";
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  bottom: -18px;
+  right: 30px;
+  border: 1px solid var(--studio-red);
+  border-radius: 50%;
+  background: var(--studio-paper)
+    url("/marketing/assets/brand/igor-mark-black.svg") center / 24px no-repeat;
+  transform: rotate(12deg);
+}
+.iw-app .iw-intro h1 {
+  font-family:
+    Igor Display,
+    Archivo,
+    sans-serif;
+  font-size: clamp(64px, 8vw, 108px);
+  font-weight: 400;
+  line-height: 0.99;
+  letter-spacing: -0.025em;
+  color: inherit;
+}
+.iw-app .iw-intro p {
+  margin-top: 22px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: inherit;
+}
+.iw-app .iw-welcome-compose {
+  margin-top: 34px;
+}
+.iw-app .iw-composer {
+  background: #fffdf7;
+  border: 1px solid #cdc7b6;
+  border-radius: 8px;
+  box-shadow: 0 5px 18px #232b4108;
+}
+.iw-app .iw-composer:focus-within {
+  border-color: var(--studio-blue);
+  box-shadow: 0 0 0 2px #2948a112;
+}
+.iw-app .iw-composer button:not(:disabled) {
+  background: var(--studio-blue);
+  color: #fffdf7;
+}
+.iw-app .iw-ideas {
+  gap: 26px;
+  margin-top: 38px;
+}
+.iw-app .iw-ideas > button {
+  padding: 8px 8px 15px;
+  border: 1px solid #cfc8b8;
+  border-radius: 0;
+  background: #fffdf7;
+  box-shadow: 4px 5px 0 #ded9c9;
+}
+.iw-app .iw-ideas .iw-poster {
+  border-radius: 0;
+}
+.iw-app .iw-ideas h2 {
+  color: var(--studio-blue);
+  font-weight: 650;
+  font-size: 17px;
+}
+.iw-app .iw-poster-number {
+  color: var(--studio-blue);
+  background: var(--studio-paper);
+  border-radius: 50%;
+}
+.iw-app .iw-workbar {
+  border-bottom: 1px solid #d2cbbb;
+  background: #f3f0e3e8;
+}
+.iw-app .iw-workbar h1 {
+  color: var(--studio-blue);
+  font-weight: 600;
+}
+.iw-app .iw-user .pp-message-text {
+  background: #e8e3d5;
+  color: #232b41;
+  border: 0;
+}
+.iw-app .iw-author > a,
+.iw-app .iw-author > img {
+  background: #fffdf7;
+}
+.iw-app .iw-inline-output {
+  border: 1px solid #cdc6b5;
+  border-radius: 4px;
+  background: #fffdf7;
+  box-shadow: 5px 6px 0 #e1dbcb;
+}
+.iw-app .iw-inline-output::before {
+  opacity: 0.2;
+}
+.iw-app .iw-references > header h3,
+.iw-app .ic-node > h2 {
+  font-family:
+    Igor Display,
+    Archivo,
+    sans-serif;
+  font-weight: 400;
+  color: var(--studio-blue);
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.1;
+}
+.iw-app .iw-references > article,
+.iw-app .ic-discoveries > article {
+  padding: 9px 9px 18px;
+  border: 1px solid #d4ccba;
+  background: #fffdf7;
+  border-radius: 2px;
+  box-shadow: 3px 4px 0 #e9e3d6;
+}
+.iw-app .iw-references h3,
+.iw-app .ic-discoveries h3 {
+  color: var(--studio-blue);
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.17;
+}
+.iw-app .iw-references article > .iw-loading-image,
+.iw-app .ic-discoveries article > .iw-loading-image {
+  border-radius: 0;
+}
+.iw-app .ic-document {
+  background: #fffdf7;
+  padding: clamp(20px, 4vw, 44px);
+  border-color: #d4ccba;
+  border-radius: 0;
+}
+.iw-app .ic-document h2,
+.iw-app .ic-document h3 {
+  color: var(--studio-blue);
+}
+.iw-app .iw-history > h1,
+.iw-app .iw-library > h1 {
+  font-family:
+    Igor Display,
+    Archivo,
+    sans-serif;
+  font-weight: 400;
+  color: var(--studio-blue);
+  letter-spacing: -0.02em;
+}
+.iw-app .iw-reply-proof .iw-proof-card {
+  border-color: #c8bda5;
+  box-shadow: 3px 4px 0 #d8d1bf;
+}
+.iw-app .iw-proof-card:nth-child(2) {
+  border-color: #c8312e66;
+}
+.iw-app .iw-appearance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.iw-sound-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border: 1px solid #cfc7b8;
+  border-radius: 30px;
+  background: #fffdf7;
+  color: #2948a1;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 3px 12px #30271b14;
+}
+.iw-sound-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+.iw-sound-bars i {
+  display: block;
+  width: 2px;
+  height: 4px;
+  background: currentColor;
+}
+.iw-sound-bars i:nth-child(2),
+.iw-sound-bars i:nth-child(4) {
+  height: 11px;
+}
+.iw-sound-bars i:nth-child(3) {
+  height: 15px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .iw-sound-control[aria-pressed="true"] i {
+    animation: igor-sound 1.1s ease-in-out infinite alternate;
+  }
+  .iw-sound-control[aria-pressed="true"] i:nth-child(2n) {
+    animation-delay: -0.6s;
+  }
+}
+@keyframes igor-sound {
+  to {
+    transform: scaleY(0.35);
+  }
+}
+.iw-app[data-motion="off"] .iw-sound-control i {
+  animation: none;
+}
+@media (max-width: 760px) {
+  .iw-app .iw-welcome {
+    padding: 28px 20px 48px;
+  }
+  .iw-app .iw-intro {
+    padding: 36px 20px 30px;
+  }
+  .iw-app .iw-intro h1 {
+    font-size: clamp(54px, 13vw, 80px);
+  }
+  .iw-app .iw-intro p {
+    font-size: 14px;
+  }
+  .iw-app .iw-ideas {
+    gap: 20px 14px;
+  }
+  .iw-app .iw-ideas h2 {
+    font-size: 15px;
+  }
+  .iw-app .iw-sound-control {
+    padding: 9px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+  .iw-app .iw-sound-control > span:last-child {
+    display: none;
+  }
+  .iw-app .iw-appearance {
+    top: 76px;
+  }
+}

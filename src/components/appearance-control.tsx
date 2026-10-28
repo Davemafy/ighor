@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Palette, X } from "lucide-react";
+import { SoundControl } from "./sound-control";
 
 const palettes = [
   { id: "aurora", label: "Aurora", colors: "#c5b6f4, #f5c7b6, #accdf1" },
@@ -18,24 +19,40 @@ export function AppearanceControl() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("igor-appearance") || "null",
-      );
-      if (palettes.some((item) => item.id === saved?.palette))
-        setPalette(saved.palette);
-      if (typeof saved?.motion === "boolean") setMotion(saved.motion);
-    } catch {
-      /* Unavailable storage keeps the default appearance. */
-    }
-    setLoaded(true);
+    // Hydrate browser preferences on the first frame after matching server markup.
+    const frame = requestAnimationFrame(() => {
+      try {
+        const saved = JSON.parse(
+          localStorage.getItem("igor-appearance") || "null",
+        );
+
+        if (palettes.some((item) => item.id === saved?.palette)) {
+          setPalette(saved.palette);
+        }
+
+        if (typeof saved?.motion === "boolean") {
+          setMotion(saved.motion);
+        }
+      } catch {
+        // Unavailable storage keeps the default appearance.
+      }
+
+      setLoaded(true);
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
     const app = anchor.current?.closest<HTMLElement>(".iw-app");
-    if (!app || !loaded) return;
+
+    if (!app || !loaded) {
+      return;
+    }
+
     app.dataset.palette = palette;
     app.dataset.motion = motion ? "on" : "off";
+
     try {
       localStorage.setItem(
         "igor-appearance",
@@ -47,15 +64,21 @@ export function AppearanceControl() {
   }, [palette, motion, loaded]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
+
     const dismiss = (event: PointerEvent) => {
       if (
         event.target instanceof Node &&
         !anchor.current?.contains(event.target)
-      )
+      ) {
         setOpen(false);
+      }
     };
+
     document.addEventListener("pointerdown", dismiss);
+
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [open]);
 
@@ -72,6 +95,7 @@ export function AppearanceControl() {
         }
       }}
     >
+      <SoundControl />
       <button
         className="iw-appearance-trigger"
         aria-expanded={open}
