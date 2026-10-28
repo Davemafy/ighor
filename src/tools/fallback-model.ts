@@ -3,7 +3,7 @@ import { ProviderHttpError } from "../core/interpretation-failure";
 import type { Task } from "../core/contracts";
 import type { ModelProvider } from "./interfaces";
 import type { ResearchSource } from "./live-research";
-import type { ResearchStep } from "./interfaces";
+import type { ResearchStep, AgentToolBrief, AgentToolChoice } from "./interfaces";
 
 function recoverableModelError(error: unknown) {
   return (
@@ -128,6 +128,23 @@ export class FallbackModel implements ModelProvider {
         : undefined,
     );
     return choice ?? { action: "finish" };
+  }
+  async chooseAgentAction(
+    goal: string,
+    tools: AgentToolBrief[],
+    observations: {tool: string; status: string; summary: string}[],
+    context: Task,
+  ): Promise<AgentToolChoice> {
+    const choice = await this.readOnly(
+      this.primary.chooseAgentAction
+        ? () => this.primary.chooseAgentAction!(goal, tools, observations, context)
+        : undefined,
+      this.backup.chooseAgentAction
+        ? () => this.backup.chooseAgentAction!(goal, tools, observations, context)
+        : undefined,
+    );
+    if (!choice) throw new Error("No model provider supports agent actions.");
+    return choice;
   }
   async synthesizeResearch(
     question: string,
