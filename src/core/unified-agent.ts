@@ -124,11 +124,28 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
     persist();
 
     const start = Date.now();
+    // A provider promise can settle after our deadline. Tools execute against
+    // an isolated working copy; late results cannot mutate committed work.
+    const workingTask = structuredClone(task);
+    const workingSources = structuredClone(sources);
+    const workingContext = { ...ctx, task: workingTask, sources: workingSources };
     let outcome: Awaited<ReturnType<typeof selected.execute>>;
     try {
-      outcome = await withToolDeadline(selected.execute(args, ctx), 17000);
+      outcome = await withToolDeadline(selected.execute(args, workingContext), 17000);
+      if (outcome.status === "ok" || outcome.status === "partial") {
+        task.entities = workingTask.entities;
+        task.catalogue = workingTask.catalogue;
+        task.evidence = workingTask.evidence;
+        task.artifacts = workingTask.artifacts;
+        sources.splice(0, sources.length, ...workingSources);
+      }
     } catch {
-      outcome = { status: "error", summary: "Tool execution failed without verified output.", requests: 0 };
+      outcome = {
+        status: "error",
+        summary: "Tool execution failed or timed out; no late mutation was accepted.",
+        // Conservatively reserve a request for potentially in-flight paid I/O.
+        requests: selected.name === "task.inspect" || selected.name === "document.create" ? 0 : 1,
+      };
     }
     run.requests += outcome.requests;
     run.steps.push({
