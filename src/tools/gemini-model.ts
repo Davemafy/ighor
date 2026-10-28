@@ -24,6 +24,7 @@ const Function = z.object({
     "compose_draft",
     "choose_research_step",
     "choose_agent_action",
+    "interpret_agent_requirements",
   ]),
   description: z.string(),
   parameters: z.record(z.string(), z.unknown()),

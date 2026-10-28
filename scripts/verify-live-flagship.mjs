@@ -29,7 +29,10 @@ try {
       root + `/api/tasks/${task.id}/turn`,
       {
         headers: { Origin: root },
-        data: { type: "message", text, version: task.brief.version },
+        data: {
+          ...(typeof text === "string" ? { type: "message", text } : text),
+          version: task.brief.version,
+        },
         timeout: 600000,
       },
     );
@@ -44,12 +47,32 @@ try {
     await page.reload();
     return structuredClone(task);
   }
-  const first = await turn(
+  let first = await turn(
     "Create and save a practical proposal for an unexpected Brooklyn community experience inspired by Sade, Radiohead and Wong Kar-wai. Keep the total budget within $3,000. Include a defensible cultural direction, provisional schedule and budget, and a partner pitch. Use cultural discovery to inform the actual choices; label unverified practical facts.",
   );
   await page.screenshot({
     path: "test-results/live-flagship/01-proposal.png",
     fullPage: true,
+  });
+  // A real owner-authored independent constraint, explicitly saved and approved.
+  // This is not model output or Qloo evidence.
+  await turn({
+    type: "work",
+    actions: [
+      {
+        kind: "document",
+        id: "access-principle",
+        title: "Access principle",
+        content:
+          "Owner requirement: keep step-free access as a venue-selection constraint. Verify accessibility with any proposed partner before committing.",
+        dependencies: [],
+        evidenceIds: [],
+      },
+    ],
+  });
+  first = await turn({
+    type: "work",
+    actions: [{ kind: "approve", id: "access-principle" }],
   });
   const second = await turn(
     "Replace Radiohead with Bad Bunny. Keep the $3,000 budget, Sade and Wong Kar-wai, and preserve approved independent work. Revise only dependent decisions and save the revised proposal.",
@@ -66,9 +89,14 @@ try {
   const newEvidence = cultural(second).filter(
     (e) => !cultural(first).some((old) => old.id === e.id),
   );
-  const approved = first.artifacts.filter((a) => a.locked);
+  const approved = (first.work?.documents ?? []).filter(
+    (a) => a.status === "approved",
+  );
   const approvedPreserved = approved.every((a) =>
-    loaded.artifacts.some((b) => b.id === a.id && b.content === a.content),
+    (loaded.work?.documents ?? []).some(
+      (b) =>
+        b.id === a.id && b.content === a.content && b.status === "approved",
+    ),
   );
   report = {
     ...report,
@@ -84,6 +112,8 @@ try {
     approvedCount: approved.length,
     approvedPreserved,
   };
+  const compared = await turn({ type: "baseline" });
+  report.samePoolEvaluation = compared.evaluation ?? null;
   report.passed =
     first.agentRun?.acceptance?.status === "satisfied" &&
     second.agentRun?.acceptance?.status === "satisfied" &&

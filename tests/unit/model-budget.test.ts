@@ -123,3 +123,45 @@ it("clamps step configuration and never buys backup requests after exhaustion", 
   expect(backup.interpret).not.toHaveBeenCalled();
   expect(interpretationFailure(error)).toBe("model request_budget exhausted");
 });
+
+it("Gemini accepts the agent requirements tool before transport", async () => {
+  const { freshTask } = await import("../../src/data/fixtures");
+  const requirements = {
+    culturalDecision: true,
+    culturalReferences: ["Sade", "Radiohead", "Wong Kar-wai"],
+    deliverables: ["proposal", "budget", "partner-pitch"],
+  };
+  const transport = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      candidates: [
+        {
+          finishReason: "STOP",
+          content: {
+            role: "model",
+            parts: [
+              {
+                functionCall: {
+                  name: "interpret_agent_requirements",
+                  args: requirements,
+                  id: "requirements",
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }),
+  );
+  const model = new GeminiModel(
+    "unit-private-credential",
+    "gemini-3.5-flash-lite",
+    transport,
+  );
+  expect(
+    await model.interpretAgentRequirements(
+      "Build the Brooklyn proposal",
+      freshTask("requirements", "owner"),
+    ),
+  ).toEqual(requirements);
+  expect(transport).toHaveBeenCalledOnce();
+});
