@@ -592,3 +592,28 @@ it("preserves provider-neutral candidate identity across evidence and decisions"
       .every((e) => e.entityIds.includes(c.providerId!)),
   ).toBe(true);
 });
+
+it("honors an explicit Edit main instruction and persists only supplied wording", async () => {
+  const { store, task } = await complete();
+  const content =
+    "A quiet opening, followed by a discussion. Owner-authored direction.";
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    {
+      type: "message",
+      text: `Edit main: ${content}`,
+      version: task.brief.version,
+    },
+    undefined,
+    undefined,
+    new DevelopmentModel(),
+  );
+  expect(result.artifacts.find((a) => a.id === "main")?.content).toBe(content);
+  expect(
+    store.load(task.id, "owner").artifacts.find((a) => a.id === "main")
+      ?.content,
+  ).toBe(content);
+  expect(result.brief.constraints.budget).toBe(task.brief.constraints.budget);
+});

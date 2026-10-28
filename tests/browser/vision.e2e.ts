@@ -30,6 +30,10 @@ async function turn(
 async function gathering(page: Page) {
   let task = (await (await page.request.post("/api/tasks")).json()) as Task;
 
+  // Explicitly opt into the same sample profiles used by this recorded journey.
+  // A fresh personal workspace must never silently inherit those tastes.
+  task = await turn(page, task, { type: "sample", example: "common" });
+
   for (const text of [
     "Plan a gathering for six friends, budget $60 and 180 minutes.",
     "Use Moonlight from 2016.",

@@ -471,6 +471,7 @@ export async function interpretMessage(
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
   const explicitDocumentEdit =
+    /^edit\s+(?:main|invitation)\s*:\s*\S/i.test(input.text.trim()) ||
     // An explicitly addressed document with verbatim supplied replacement
     // wording is a direct edit, even without the redundant verb "edit".
     /^(?:edit\s+)?(?:invitation|invite|wording)\s*:\s*\S/i.test(
