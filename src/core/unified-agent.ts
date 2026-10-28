@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { applyWorkActions } from "./connected-work";
 import { agentStepLimit } from "../tools/model-budget";
 import { interpretationFailure } from "./interpretation-failure";
@@ -163,6 +164,7 @@ export async function runUnifiedAgent(
 
   const attempted = new Set<string>();
   let modelFinished = false;
+  let argumentRepairs = 0;
   task.agentRun.status = "reasoning";
 
   try {
@@ -192,17 +194,31 @@ export async function runUnifiedAgent(
         throw new Error("Unbound budget source");
       }
 
+      // Validate even an unchanged budget, without dirtying approved dependents.
       applyWorkActions(
-        task,
+        structuredClone(task),
         [{ kind: "budget", amount: budget.amount }],
         budget.sourceText,
       );
+
+      if (
+        task.brief.constraints.budget !== budget.amount ||
+        task.work?.budget?.amount !== budget.amount ||
+        !task.work.budget.confirmed
+      ) {
+        applyWorkActions(
+          task,
+          [{ kind: "budget", amount: budget.amount }],
+          budget.sourceText,
+        );
+      }
     }
 
     if (!task.brief.goal) {
       task.brief.goal = input.goal;
     }
   } catch (error) {
+    task.agentRun.requirements = undefined;
     trace("agent.requirements.error", interpretationFailure(error));
     task.agentRun.warnings.push(
       "Could not interpret acceptance requirements; completion remains unverified.",
@@ -239,6 +255,7 @@ export async function runUnifiedAgent(
             name: t.name,
             description: t.description,
             permission: t.permission,
+            inputSchema: z.toJSONSchema(t.schema),
           })),
           run.steps.map((s) => ({
             tool: s.tool,
@@ -284,8 +301,24 @@ export async function runUnifiedAgent(
       run.warnings.push(`Invalid arguments for ${selected.name}`);
       trace(
         "agent.action.blocked",
-        "Tool argument schema rejected the proposal.",
+        "Tool argument schema rejected the proposal; no tool executed.",
       );
+
+      if (argumentRepairs++ === 0) {
+        run.steps.push({
+          id: randomUUID(),
+          tool: selected.name,
+          status: "blocked",
+          requests: 0,
+          summary:
+            "Arguments rejected before execution. Correct the arguments using this tool's declared inputSchema. No tool was executed.",
+          at: now(),
+          durationMs: 0,
+        });
+        persist();
+        continue;
+      }
+
       break;
     }
 

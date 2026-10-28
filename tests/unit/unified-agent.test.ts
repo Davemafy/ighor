@@ -761,6 +761,55 @@ it("grounds and persists a comma-formatted budget through the existing work cont
     ).toBe("satisfied");
     expect(saved.brief.constraints.budget).toBe(3000);
     expect(saved.work?.budget).toMatchObject({ amount: 3000, confirmed: true });
+    const { applyWorkActions } = await import("../../src/core/connected-work");
+    applyWorkActions(task, [
+      { kind: "goal", id: "access", title: "Access requirement" },
+      {
+        kind: "document",
+        id: "access-note",
+        title: "Access note",
+        content: "Preserve the approved access requirement.",
+        dependencies: ["budget"],
+        evidenceIds: [],
+      },
+      { kind: "approve", id: "access-note" },
+    ]);
+    const expected = task.brief.version;
+    task.brief.version++;
+    store.save(task, expected, "owner");
+    await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: "Keep the total budget within $3,000.",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: [],
+        budget: {
+          amount: 3000,
+          sourceText: "Keep the total budget within $3,000.",
+        },
+      },
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async () => ({
+          name: "agent.finish",
+          arguments: {},
+        }),
+      },
+      research: { research: vi.fn() },
+      trace: vi.fn(),
+    });
+    const reloaded = store.load(task.id, "owner");
+    expect(
+      reloaded.work?.documents.find((doc) => doc.id === "access-note"),
+    ).toMatchObject({
+      status: "approved",
+      freshness: "current",
+      content: "Preserve the approved access requirement.",
+    });
+    expect(reloaded.work?.budgetHistory).toEqual(saved.work?.budgetHistory);
   } finally {
     store.close();
   }
@@ -797,6 +846,68 @@ it("does not confirm an invented budget quote", async () => {
     expect(saved.brief.constraints.budget).toBe(task.brief.constraints.budget);
     expect(saved.work?.budget?.confirmed).not.toBe(true);
     expect(saved.agentRun?.status).toBe("partially_completed");
+  } finally {
+    store.close();
+  }
+});
+
+it("supplies real tool schemas and permits one pre-execution argument repair", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("schema-repair", "owner");
+  store.create(task);
+  const search = vi.fn(async () => ({
+    status: "partial" as const,
+    sources: [source()],
+    requests: 1,
+  }));
+  let calls = 0;
+
+  try {
+    await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: "Find an official venue source",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: [],
+      },
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async (_goal, tools, observations) => {
+          expect(
+            tools.find((tool) => tool.name === "web.search")?.inputSchema,
+          ).toMatchObject({
+            type: "object",
+            properties: { query: { type: "string" } },
+          });
+          calls++;
+
+          if (calls === 1) {
+            return { name: "web.search", arguments: { search: "wrong field" } };
+          }
+
+          if (calls === 2) {
+            expect(observations[0].status).toBe("blocked");
+
+            return {
+              name: "web.search",
+              arguments: { query: "official venue" },
+            };
+          }
+
+          return { name: "agent.finish", arguments: {} };
+        },
+      },
+      research: { research: vi.fn(), searchOnce: search },
+      trace: vi.fn(),
+    });
+    expect(calls).toBe(3);
+    expect(search).toHaveBeenCalledOnce();
+    const run = store.load(task.id, "owner").agentRun!;
+    expect(run.requests).toBe(1);
+    expect(run.steps[0]).toMatchObject({ status: "blocked", requests: 0 });
   } finally {
     store.close();
   }

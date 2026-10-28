@@ -143,17 +143,20 @@ test("recorded cultural outcome → collection → export → independent review
   try {
     await guest.goto(url);
     await expect(
-      guest.getByRole("heading", { name: "Your perspective", exact: true }),
+      guest.getByRole("heading", { name: "A fresh perspective.", exact: true }),
     ).toBeVisible();
     await guest
-      .getByLabel("What works, or needs changing?")
+      .getByLabel("What works, or needs a little thought?")
       .fill("Please retain the listening interlude.");
     await guest
-      .getByRole("button", { name: "Send review", exact: true })
+      .getByRole("button", { name: "Send feedback", exact: true })
       .click();
     await expect(guest.getByRole("status")).toContainText(
-      "source plan has not changed",
+      "They choose whether to apply it.",
     );
+    await guest
+      .getByText("Suggest a taste correction", { exact: true })
+      .click();
     await guest.getByLabel("Artist, film or interest").fill("Radiohead");
     await guest
       .getByLabel("Preference", { exact: true })
@@ -167,6 +170,7 @@ test("recorded cultural outcome → collection → export → independent review
     const before = (await (
       await page.request.get(`/api/tasks/${task.id}`)
     ).json()) as Task;
+    expect(before.artifacts).toEqual(task.artifacts);
     expect(
       before.brief.participants[0].preferences.find(
         (p) => p.value === "Radiohead",
@@ -205,8 +209,8 @@ test("recorded cultural outcome → collection → export → independent review
     await page.getByRole("button", { name: "Revoke", exact: true }).click();
     await guest.reload();
     await expect(
-      guest.getByRole("alert").filter({ hasText: "unavailable or expired" }),
-    ).toContainText("unavailable or expired");
+      guest.getByRole("alert").filter({ hasText: /unavailable.*expired/ }),
+    ).toContainText("unavailable or has expired");
   } finally {
     await guestContext.close();
   }

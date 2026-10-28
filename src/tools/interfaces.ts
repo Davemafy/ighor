@@ -84,6 +84,7 @@ export type ResearchStep =
   | { action: "read"; sourceId: string };
 
 export interface AgentToolBrief {
+  inputSchema?: Record<string, unknown>;
   name: string;
   description: string;
   permission: "read" | "internal";

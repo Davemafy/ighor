@@ -128,6 +128,7 @@ try {
     firstStatus: first.agentRun?.status ?? first.status,
     firstRun: first.agentRun
       ? {
+          warnings: first.agentRun.warnings,
           usage: first.agentRun.usage,
           steps: first.agentRun.steps.map(
             ({ tool, status, requests, summary }) => ({
@@ -142,6 +143,7 @@ try {
       : null,
     revisionRun: second.agentRun
       ? {
+          warnings: second.agentRun.warnings,
           usage: second.agentRun.usage,
           steps: second.agentRun.steps.map(
             ({ tool, status, requests, summary }) => ({

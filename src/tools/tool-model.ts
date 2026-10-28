@@ -528,6 +528,7 @@ export class ToolCallingModel implements ModelProvider {
   async chooseAgentAction(
     goal: string,
     tools: {
+      inputSchema?: Record<string, unknown>;
       name: string;
       description: string;
       permission: "read" | "internal";
@@ -547,7 +548,7 @@ export class ToolCallingModel implements ModelProvider {
           role: "system",
           content: [
             "You are Igor, a general-purpose agent deciding ONE next action based on the user's goal and REAL observed tool results.",
-            "Use the available tools only. Return the tool name and a JSON STRING containing its arguments.",
+            "Use the available tools only. Each available tool includes its real inputSchema. Use exactly those field names and enum values; do not invent aliases. Return the tool name and a JSON STRING containing its arguments.",
             "Do not invent tool results, Qloo scores, IDs, prices, venue opening times, browser actions or completed external work.",
             "Prefer the cheapest sufficient tool. Use Qloo for relevant cultural links, Google Places for locations, web search for fresh evidence, and page reads only for observed IDs.",
             "After observations, create all requested editable work using document.create before agent.finish. Its arguments are {title,content,sourceIds,evidenceIds?,candidateIds?,fulfills?}; fulfills must name the interpreted deliverable keys; candidateIds identifies the cultural decisions supported by cited evidenceIds. Qloo evidence IDs belong in evidenceIds. Clearly label estimates and unknowns. Never retry identical failed arguments.",

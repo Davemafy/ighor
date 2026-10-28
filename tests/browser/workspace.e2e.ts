@@ -54,6 +54,7 @@ test("mobile messaging supports keyboard entry, a saved reply and no horizontal 
   await page.goto("/app");
   const composer = page.getByRole("textbox", { name: "Message Igor" });
   await expect(composer).toBeInViewport();
+  await expect(composer).toBeEnabled();
   await composer.focus();
   await page.keyboard.type("hey");
   await page.keyboard.press("Enter");
