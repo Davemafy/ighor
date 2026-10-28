@@ -269,7 +269,40 @@ export const ScheduleSchema = z.object({
   candidateId: z.string().nullable(),
 });
 
+/** Durable, per-task agent ledger; evidence bodies remain bounded. */
+export const AgentRunSchema = z.object({
+  id: z.string().uuid(),
+  goal: z.string().max(3000),
+  status: z.enum(["created", "reasoning", "executing_tool", "observing", "verifying", "completed", "partially_completed", "interrupted", "failed", "awaiting_approval", "cancelled"]),
+  startedAt: z.string(),
+  updatedAt: z.string(),
+  maxSteps: z.number().int().min(1).max(12),
+  maxRequests: z.number().int().min(1).max(40),
+  requests: z.number().int().nonnegative(),
+  modelSteps: z.number().int().nonnegative(),
+  steps: z.array(z.object({
+    id: z.string().uuid(),
+    tool: z.string().max(70),
+    status: z.enum(["ok", "partial", "blocked", "error"]),
+    requests: z.number().int().nonnegative(),
+    summary: z.string().max(600),
+    at: z.string(),
+    durationMs: z.number().nonnegative(),
+  })).max(12),
+  sources: z.array(z.object({
+    id: z.string(),
+    title: z.string().max(220),
+    url: z.string().url().max(2048),
+    snippet: z.string().max(900),
+    excerpt: z.string().max(6000).optional(),
+    retrievedAt: z.string(),
+    imageUrl: z.string().url().max(2048).optional(),
+  })).max(12),
+  warnings: z.array(z.string().max(500)).max(20),
+});
+
 export const TaskSchema = z.object({
+  agentRun: AgentRunSchema.optional(),
   canvas: CanvasStateSchema.optional(),
   work: WorkStateSchema.optional(),
   evidenceArchive: z.array(EvidenceSchema).optional(),
