@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { AccountDialog } from "./account-panel";
+import { Connections } from "./connections-view";
 import { DecisionWork } from "./decision-work";
 import { AppearanceControl } from "./appearance-control";
 import { AdaptiveStage } from "./adaptive-stage";
@@ -92,6 +94,7 @@ export function AgentWorkspace({
   initialPane?: "thread" | "work";
 }) {
   const w = useWorkspace();
+  const [accountOpen, setAccountOpen] = useState(false);
   const [page, setPage] = useState<Page>(initialPage);
   const [prompt, setPrompt] = useState("");
   const [menu, setMenu] = useState(false);
@@ -335,6 +338,7 @@ export function AgentWorkspace({
   return (
     <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
       <AppearanceControl />
+      {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} />}
       <a className="iw-skip" href="#iw-main">
         Skip to content
       </a>
@@ -371,6 +375,13 @@ export function AgentWorkspace({
             <span>Saved</span>
           </button>
         </nav>
+        <button
+          type="button"
+          onClick={() => setAccountOpen(true)}
+          aria-label="Account"
+        >
+          Account
+        </button>
         <button
           className="iw-new"
           aria-label="New conversation"
@@ -879,6 +890,9 @@ function Work({
       ? [{ id: "drafts", title: research ? "Research notes" : "Drafts" }]
       : []),
     ...(placeNode ? [{ id: "places", title: "Places" }] : []),
+    ...(task.candidates.some((candidate) => candidate.cultural)
+      ? [{ id: "connections", title: "Connections" }]
+      : []),
   ];
   const active = resources.some((item) => item.id === resource)
     ? resource
@@ -931,6 +945,7 @@ function Work({
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
       )}
       {active === "options" && <DecisionWork task={task} />}
+      {active === "connections" && <Connections task={task} onTurn={onTurn} />}
       {active === "drafts" && (
         <ArtifactWork task={task} busy={busy} onTurn={onTurn} onTask={onTask} />
       )}
@@ -1166,6 +1181,14 @@ function WorkSharing({
         Save and share
         <ChevronDown />
       </summary>
+      {task.artifacts.some((artifact) => artifact.id === "main") && (
+        <a
+          href={`/api/tasks/${task.id}/export?format=markdown&version=${task.brief.version}`}
+          download
+        >
+          Download Markdown
+        </a>
+      )}
       <ProductSharing
         task={task}
         shares={saved.data.shares}

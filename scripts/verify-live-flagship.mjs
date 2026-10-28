@@ -17,7 +17,6 @@ let report = {
 };
 
 try {
-  await page.goto(root + "/app");
   const created = await page.request.post(root + "/api/tasks", {
     headers: { Origin: root },
   });
@@ -27,8 +26,11 @@ try {
   }
 
   let task = await created.json();
-  await page.evaluate((id) => localStorage.setItem("igor-task", id), task.id);
-  await page.reload();
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
+  await page.goto(root + "/app");
 
   async function turn(text) {
     const response = await page.request.post(

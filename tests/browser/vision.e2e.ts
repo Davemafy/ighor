@@ -58,13 +58,19 @@ test("recorded cultural outcome → collection → export → independent review
   browser,
 }) => {
   const task = await gathering(page);
-  await page.getByRole("tab", { name: "Connections", exact: true }).click();
+  await page.getByRole("button", { name: "Connections", exact: true }).click();
   await expect(
     page.getByText("From a taste to a new direction."),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Keep & share", exact: true }).click();
   await page
-    .getByLabel("Collection name", { exact: true })
+    .getByRole("button", { name: "Saved", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: "New collection", exact: true })
+    .click();
+  await page
+    .getByLabel("Give it a name", { exact: true })
     .fill("Screening references");
   const checkSize = await page
     .getByRole("checkbox", { name: /Children of Men/ })
@@ -78,32 +84,27 @@ test("recorded cultural outcome → collection → export → independent review
   await expect(
     page.getByRole("heading", { name: "Screening references", exact: true }),
   ).toBeVisible();
-  await page.getByText("Edit reference board", { exact: true }).click();
+  await page.getByRole("button", { name: /Screening references/ }).click();
   await page
-    .getByLabel("Board title", { exact: true })
+    .getByLabel("Collection name", { exact: true })
     .fill("Screening references — revised");
   await page
-    .getByLabel("Your creative interpretation", { exact: true })
+    .getByLabel("Your notes", { exact: true })
     .fill("Keep the opening intimate. This is an owner-authored direction.");
   await page
-    .getByRole("button", { name: "Move down", exact: true })
+    .getByRole("button", { name: "Move Children of Men down", exact: true })
     .first()
     .click();
-  await page
-    .getByRole("button", { name: "Save board changes", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(
-    page.getByRole("heading", {
+    page.getByRole("dialog").getByRole("heading", {
       name: "Screening references — revised",
       exact: true,
     }),
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Your interpretation: Keep the opening intimate. This is an owner-authored direction.",
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expect(page.getByLabel("Your notes", { exact: true })).toHaveValue(
+    "Keep the opening intimate. This is an owner-authored direction.",
+  );
   const savedBoards = await (
     await page.request.get(`/api/tasks/${task.id}/outputs`)
   ).json();
@@ -113,6 +114,10 @@ test("recorded cultural outcome → collection → export → independent review
     path: "/tmp/igor-current-desktop.png",
     fullPage: true,
   });
+  await page
+    .getByRole("button", { name: "Open conversation", exact: true })
+    .click();
+  await page.getByText("Save and share", { exact: true }).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download Markdown" }).click();
   const download = await downloadPromise;
@@ -121,13 +126,15 @@ test("recorded cultural outcome → collection → export → independent review
   expect(text).toContain("## Evidence");
   expect(text).toContain("CACHED");
   expect(text).not.toContain(task.brief.owner);
-  await page.getByLabel("Review permission").selectOption("amara");
-  await page.getByRole("checkbox", { name: /I reviewed this text/ }).check();
+  await page.getByLabel("Who is reviewing?").selectOption("amara");
+  await page
+    .getByRole("checkbox", { name: /I have reviewed the document/ })
+    .check();
   await page
     .getByRole("button", { name: "Create review link", exact: true })
     .click();
-  await expect(page.getByLabel("Private review URL")).toBeVisible();
-  const url = await page.getByLabel("Private review URL").inputValue();
+  await expect(page.getByLabel("Your review link")).toBeVisible();
+  const url = await page.getByLabel("Your review link").inputValue();
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
 
@@ -165,7 +172,7 @@ test("recorded cultural outcome → collection → export → independent review
     ).toBe("like");
     await page
       .getByRole("button", {
-        name: "Refresh reviews & collections",
+        name: "Refresh",
         exact: true,
       })
       .click();
@@ -174,7 +181,7 @@ test("recorded cultural outcome → collection → export → independent review
     ).toBeVisible();
     await page
       .getByRole("button", {
-        name: "Accept this participant's correction",
+        name: "Apply proposed preference",
         exact: true,
       })
       .click();
