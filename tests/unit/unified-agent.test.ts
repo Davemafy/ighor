@@ -71,6 +71,7 @@ describe("unified tool orchestration", () => {
         trace() {},
       });
       expect(response.sources).toHaveLength(1);
+      expect(response.status).toBe("ok");
       expect(task.agentRun?.status).toBe("completed");
       expect(task.agentRun?.steps.map((s) => s.tool)).toEqual([
         "web.search", "qloo.resolve_entity", "qloo.discover", "document.create",
@@ -182,6 +183,7 @@ describe("unified tool orchestration", () => {
         trace() {},
       });
       expect(readSource).toHaveBeenCalledTimes(1);
+      expect(result.status).toBe("ok");
       expect(result.sources[0].excerpt).toContain("Saturday tabletop nights");
       expect(task.agentRun?.steps.map((step) => step.tool)).toEqual([
         "web.search", "web.read", "document.create",
@@ -254,6 +256,7 @@ describe("unified tool orchestration", () => {
         trace() {},
       });
       expect(result.sources).toHaveLength(1);
+      expect(result.status).toBe("partial");
       expect(task.agentRun?.status).toBe("partially_completed");
       expect(task.agentRun?.warnings.join(" ")).toContain(
         "before a verified completion decision",
