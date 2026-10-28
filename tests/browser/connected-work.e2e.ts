@@ -63,6 +63,9 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
   await surface
     .getByRole("button", { name: "Launch brief", exact: true })
     .click();
+  const overview = surface.getByRole("region", { name: "Saved work overview" });
+  await expect(overview).toContainText("Launch brief");
+  await expect(overview).toContainText("WORKING PROPOSAL");
   await surface.getByRole("button", { name: "Expand connected work" }).click();
   await expect(surface).toHaveClass(/ic-fullscreen/);
   await surface.getByRole("button", { name: "Edit document" }).click();
@@ -86,6 +89,13 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
     "Invite a small pilot community. This sentence is my exact wording.",
   );
   await surface.getByRole("button", { name: "Preview" }).click();
+  await surface.getByRole("button", { name: "Compare saved versions" }).click();
+  const compared = surface.locator(".ig-work-version-pair");
+  await expect(compared).toContainText("PREVIOUS");
+  await expect(compared).toContainText("CURRENT");
+  await expect(compared).toContainText("This sentence is my exact wording.");
+  await surface.getByRole("button", { name: "Hide saved version comparison" }).click();
+  await expect(compared).toHaveCount(0);
   await surface
     .getByRole("combobox", { name: "Document revision" })
     .selectOption(String(oldVersion));
