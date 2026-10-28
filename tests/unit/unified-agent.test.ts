@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { runUnifiedAgent } from "../../src/core/unified-agent";
 import { runTurn } from "../../src/core/orchestrator";
+import { ToolCallingModel } from "../../src/tools/tool-model";
 import { freshTask } from "../../src/data/fixtures";
 import { SqliteTaskStore } from "../../src/data/store";
 import type { ResearchProvider } from "../../src/tools/live-research";
@@ -197,6 +198,29 @@ describe("unified tool orchestration", () => {
       expect(reloaded.artifacts).toEqual(result.artifacts);
       expect(reloaded.evidence.length).toBe(result.evidence.length);
     } finally { store.close(); }
+  });
+
+
+  it("accepts an agent route and delegates tool choice to the unified executor", async () => {
+    const transport = vi.fn<typeof fetch>(async () => Response.json({
+      status: "completed", output: [{
+        type: "function_call", name: "route_conversation", call_id: "r-agent",
+        arguments: JSON.stringify({
+          intent: "agent",
+          query: "Research listening bars in Berlin with Radiohead cultural context",
+        }),
+      }],
+    }));
+    const model = new ToolCallingModel("test-key","model-test",transport);
+    const route = await model.routeConversation(
+      "Explore Berlin listening bars and connect them to Radiohead",
+      freshTask("routing","owner"),
+    );
+    expect(route).toMatchObject({
+      intent: "research",
+      query: "Research listening bars in Berlin with Radiohead cultural context",
+    });
+    expect(transport).toHaveBeenCalledTimes(1);
   });
 
 
