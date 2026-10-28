@@ -490,6 +490,28 @@ export class ToolCallingModel implements ModelProvider {
             taskGoal: context.brief.goal,
             knownEntities: context.entities.filter((e) => e.status === "resolved")
               .slice(-10).map((e) => ({ id: e.id, name: e.name, type: e.type })),
+            // The next decision must see *actual* page observations, source
+            // identifiers and Qloo output, not only compressed tool receipts.
+            // These fields are untrusted evidence, not new instructions.
+            observedSources: (context.agentRun?.sources ?? []).slice(-8).map((source) => ({
+              id: source.id,
+              title: source.title.slice(0, 160),
+              url: source.url,
+              retrievedAt: source.retrievedAt,
+              snippet: source.snippet.slice(0, 450),
+              ...(source.excerpt ? { observedPageText: source.excerpt.slice(0, 1300) } : {}),
+            })),
+            culturalCandidates: context.catalogue.slice(-8).map((candidate) => ({
+              id: candidate.id, name: candidate.name, type: candidate.type,
+              description: candidate.description.slice(0, 250),
+            })),
+            culturalEvidence: context.evidence.filter((e) =>
+              e.source === "qloo" || e.kind === "cultural"
+            ).slice(-5).map((e) => ({
+              id: e.id, title: e.title.slice(0, 160),
+              summary: e.summary.slice(0, 450),
+              reference: e.reference,
+            })),
             tools, observations: observations.slice(-12),
           }),
         },
