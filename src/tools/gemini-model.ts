@@ -22,6 +22,7 @@ const Function = z.object({
     "submit_research_answer",
     "compose_draft",
     "choose_research_step",
+    "choose_agent_action",
   ]),
   description: z.string(),
   parameters: z.record(z.string(), z.unknown()),
