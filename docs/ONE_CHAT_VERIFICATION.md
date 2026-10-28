@@ -25,6 +25,7 @@ No merge, deployment, credentials, repository visibility or submission changed.
 | Lint                              | PASS with 24 warnings, zero errors                                                                                                                                         |
 | Unit suite                        | 419 passed; two assertions and five suites blocked by missing `qloo-cultural.json.gz` (six red files total)                                                                |
 | Blinded-evaluation harness tests  | 6 passed; this is harness correctness, not Qloo effectiveness                                                                                                              |
+| Full existing browser suite       | 14 passed, 12 failed (legacy selectors and recorded-provider turn errors); not a clean release gate                                                                        |
 | Integrated Chromium               | 2 passed: 1440×900 and 390×844; inspect, keyboard focus, Escape return, server-owned selection, reload, two-candidate comparison, horizontal overflow and zero page errors |
 | Live Qloo/model flagship          | BLOCKED: no authorized runtime credentials available to this checkout                                                                                                      |
 | Qloo/no-Qloo same-pool experiment | NOT RUN; no claim of material advantage                                                                                                                                    |
@@ -68,6 +69,6 @@ Visual review: the captured samples have clear text and touch targets; mobile ha
 - [Desktop comparison](evidence/one-chat/desktop-comparison.png)
 - [Actual desktop browser recording](evidence/one-chat/desktop.webm)
 
-`proof`, `attack`, and `test:flagship` were invoked and failed because those scripts are absent on PR19; no substitute success is claimed. The full browser run is red: legacy route/selector tests and archived-provider journeys fail. The new integration suite is independently green, not a replacement for those failures.
+`proof`, `attack`, and `test:flagship` were invoked and failed because those scripts are absent on PR19; no substitute success is claimed. The full browser run is red: legacy route/selector tests and archived-provider journeys fail. The new integration suite is independently green, not a replacement for those failures. Final targeted regressions: 25 passed.
 
 A bounded source scan for xAI/Anthropic/Google/OpenAI key-shaped literals found no matches in src, scripts, tests, docs and workflows. This is not an exhaustive credential or public-release audit.
