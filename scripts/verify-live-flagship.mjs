@@ -15,15 +15,21 @@ let report = {
   provenance: "LIVE attempt; never sample/recorded",
   passed: false,
 };
+
 try {
   await page.goto(root + "/app");
   const created = await page.request.post(root + "/api/tasks", {
     headers: { Origin: root },
   });
-  if (!created.ok()) throw Error("task_creation");
+
+  if (!created.ok()) {
+    throw Error("task_creation");
+  }
+
   let task = await created.json();
   await page.evaluate((id) => localStorage.setItem("igor-task", id), task.id);
   await page.reload();
+
   async function turn(text) {
     const response = await page.request.post(
       root + `/api/tasks/${task.id}/turn`,
@@ -36,17 +42,27 @@ try {
         timeout: 600000,
       },
     );
-    if (!response.ok()) throw Error("turn_http_" + response.status());
+
+    if (!response.ok()) {
+      throw Error("turn_http_" + response.status());
+    }
+
     const events = (await response.text())
       .split("\n\n")
       .filter((s) => s.startsWith("data: "))
       .map((s) => JSON.parse(s.slice(6)));
     const done = events.findLast((e) => e.type === "done");
-    if (!done) throw Error("turn_incomplete");
+
+    if (!done) {
+      throw Error("turn_incomplete");
+    }
+
     task = done.task;
     await page.reload();
+
     return structuredClone(task);
   }
+
   let first = await turn(
     "Create and save a practical proposal for an unexpected Brooklyn community experience inspired by Sade, Radiohead and Wong Kar-wai. Keep the total budget within $3,000. Include a defensible cultural direction, provisional schedule and budget, and a partner pitch. Use cultural discovery to inform the actual choices; label unverified practical facts.",
   );
@@ -135,4 +151,7 @@ try {
   await context.close();
   await browser.close();
 }
-if (!report.passed) process.exitCode = 1;
+
+if (!report.passed) {
+  process.exitCode = 1;
+}

@@ -33,3 +33,15 @@ This executor has no bound XAI_API_KEY, GROK_API_KEY, ANTHROPIC_API_KEY, GEMINI_
 The GitHub connector cannot retrieve binary fixtures: contents returns empty data for the 1.3 MB archive, and blob fetch rejects non-UTF-8. Original archives are retained in the git tree and must not be replaced. The prior private Actions checkout verified their hashes and passed unit tests.
 
 Prior exact-base CI: https://github.com/Davemafy/qloo-test/actions/runs/40756819924 . Formatting failed in three files (now formatted). Four browser failures remain: continuity cultural outcome/export/review/revocation; HTTP ownership/bounds/memory/shares; local account registration/logout/login; broader-outcomes listening programme/editable source. Their assertion causes are not established by the public redacted log. Do not relabel them selector failures or claim they are fixed.
+
+## Confirmed Gemini protocol regression
+
+The Gemini adapter's local `Function` schema omitted `interpret_agent_requirements`. Every requirements call through that adapter failed local schema parsing before provider I/O. Added the missing allowed name and a regression using the actual Gemini transport (`model-budget.test.ts`). This is a confirmed local cause, independent of credentials and the request-budget mismatch.
+
+## Archived browser diagnosis from exact-SHA CI
+
+At `966c78825ee6302be807335c95fae140734d0f62`, https://github.com/Davemafy/qloo-test/actions/runs/40771953831 passed install, original archive integrity, formatting, typecheck, lint, units, evaluation harness and build. Browser assertions: three at `vision.e2e.ts:42` (the shared gathering-ready precondition), one at `broader.e2e.ts:97` (owner-supplied document edit did not persist).
+
+The shared helper assumed profiles on a new personal task. It now explicitly invokes the existing sample action before its recorded gathering turns, preserving fresh-user privacy. All downstream ownership/export/account assertions remain unchanged. The real edit regression was the grounding guard rejecting `Edit main:` even though the DevelopmentModel correctly parsed that explicit legacy artifact command. The guard now recognizes the anchored, explicit `main`/`invitation` form; supplied-content checks remain. A new workflow regression verifies exact text, SQLite reload and budget retention (36 workflow tests pass locally).
+
+The Actions presence-only check confirms existing Qloo and Gemini secret bindings, with no Grok/Claude binding in that repository. Binding presence is not proof of provider authorization; live verification must establish actual access. No credentials were changed or printed.
