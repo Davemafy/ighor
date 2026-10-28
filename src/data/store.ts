@@ -262,6 +262,20 @@ function readStoredState(text: string): Task {
       "Live research was interrupted before an answer was confirmed. Your request and earlier work are saved; retry research to continue.";
   }
 
+  // Persisted agent steps are authoritative after a crash. Do not replay a
+  // possibly completed paid call automatically; expose the interruption and
+  // let a new user turn continue from the saved observations.
+  if (
+    task.agentRun &&
+    ["created", "reasoning", "executing_tool", "observing", "verifying"].includes(task.agentRun.status) &&
+    Number.isFinite(Date.parse(task.agentRun.updatedAt)) &&
+    Date.now() - Date.parse(task.agentRun.updatedAt) > 120000
+  ) {
+    task.agentRun.status = "interrupted";
+    task.status = "partial";
+    task.error = "Agent execution was interrupted. Completed observations are saved; no external action was automatically repeated.";
+  }
+
   messageIds(task);
 
   return task;
