@@ -212,8 +212,14 @@ export function createAgentToolRegistry(context: AgentToolContext): AgentToolDef
           return { status: "blocked", requests: 0, summary: "Document cited an unobserved source." };
         }
         const evidenceIds = sourceIds.map((id) => `${ctx.task.id}:agent:${ctx.runId}:${id}`);
+        const count = ctx.task.artifacts.filter((artifact) =>
+          artifact.id.startsWith(`agent-doc-${ctx.runId}-`)
+        ).length;
+        if (count >= 3) {
+          return { status: "blocked", requests: 0, summary: "Per-run document limit reached." };
+        }
         ctx.task.artifacts.push({
-          id: `agent-doc-${ctx.runId}`, kind: "research-report",
+          id: `agent-doc-${ctx.runId}-${count + 1}`, kind: "research-report",
           title, content, version: ctx.task.brief.version, dependencies: ["evidence:research"],
           evidenceIds, assumptions: ["This document distinguishes confirmed source observations from remaining uncertainties."],
           freshness: "current", edited: false,
