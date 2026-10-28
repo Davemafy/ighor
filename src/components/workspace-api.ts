@@ -159,9 +159,10 @@ export function completedTurnAfter(
 ) {
   return (
     task.brief.version > version &&
-    ["ready", "partial"].includes(task.status) &&
+    ["ready", "partial", "draft", "clarification"].includes(task.status) &&
     task.messages
       .slice(messageCount)
       .some((message) => message.role === "assistant")
   );
 }
+

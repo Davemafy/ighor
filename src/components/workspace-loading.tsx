@@ -179,25 +179,8 @@ export function AgentActivity({
       <div className={`iw-reply-proof iw-proof-${format}`} aria-hidden="true">
         {[0, 1, 2].map((index) => (
           <div className="iw-proof-card" key={index}>
-            <span className="iw-proof-image">
-              {/* Existing brand artwork is decorative, never a claimed result. */}
-              <img
-                src={`/marketing/assets/covers/c0${index + 1}.webp`}
-                alt=""
-                width="180"
-                height="180"
-              />
-            </span>
-            <span className="iw-proof-caption">
-              <img
-                src="/marketing/assets/brand/igor-mark-black.svg"
-                alt=""
-                width="12"
-                height="12"
-              />
-              <span className="iw-skeleton" />
-              <small>0{index + 1}</small>
-            </span>
+            <span className="iw-proof-image iw-skeleton" />
+            <i className="iw-skeleton" />
           </div>
         ))}
       </div>

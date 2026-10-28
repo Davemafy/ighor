@@ -32,7 +32,7 @@ it("keeps the postcard identity on general and short messages", () => {
   expect(loadingFormat("Hello")).toBe("postcards");
   expect(loadingFormat("Try another with images")).toBe("postcards");
 });
-it("renders three decorative covers while a message is pending", () => {
+it("renders the three paper placeholders without unrelated welcome artwork", () => {
   const html = renderToStaticMarkup(
     createElement(AgentActivity, {
       busy: true,
@@ -51,6 +51,8 @@ it("renders three decorative covers while a message is pending", () => {
   expect(html).toContain('aria-hidden="true"');
   expect(html).toContain("Considering your request");
   expect(html).not.toContain("iw-proof-reply");
+  expect(html.match(/class="iw-proof-image iw-skeleton"/g)).toHaveLength(3);
+  expect(html).not.toContain("/marketing/assets/covers/");
 });
 it("removes the pending artwork when the request finishes", () => {
   expect(

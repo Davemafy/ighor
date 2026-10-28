@@ -86,3 +86,19 @@ it("uses a separately configured backup for the observed Grok credential rejecti
   expect(primary.interpret).toHaveBeenCalledOnce();
   expect(backup.interpret).toHaveBeenCalledTimes(2);
 });
+
+it.each(["draft", "clarification"] as const)(
+  "recognises a saved %s reply after a dropped connection without replaying it",
+  (status) => {
+    const task = freshTask("reconnect-intake", "owner");
+    task.status = status;
+    task.brief.version = 2;
+    task.messages = [{ role: "assistant", text: "Earlier reply", at: new Date().toISOString() }];
+    expect(completedTurnAfter(task, 1, 1)).toBe(false);
+    task.messages.push({ role: "assistant", text: "New reply", at: new Date().toISOString() });
+    expect(completedTurnAfter(task, 1, 1)).toBe(true);
+    expect(completedTurnAfter(task, 2, 1)).toBe(false);
+    task.status = "running";
+    expect(completedTurnAfter(task, 1, 1)).toBe(false);
+  },
+);
