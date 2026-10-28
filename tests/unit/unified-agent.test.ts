@@ -85,6 +85,56 @@ describe("unified tool orchestration", () => {
     } finally { store.close(); }
   });
 
+  it("provides the model actual bounded source excerpts and Qloo evidence when choosing a next action", async () => {
+    const task = freshTask("observed-decisions", "owner");
+    const observedText = "PRIMARY SOURCE: We host tabletop games on Saturdays. " + "A".repeat(5000);
+    task.agentRun = {
+      id: "11111111-1111-4111-8111-111111111111",
+      goal: "Compare venues and a band with cultural relevance",
+      status: "observing",
+      startedAt: "2026-10-28T10:00:00.000Z",
+      updatedAt: "2026-10-28T10:00:01.000Z",
+      maxSteps: 4, maxRequests: 8, requests: 1, modelSteps: 1,
+      steps: [],
+      sources: [{...source(), excerpt: observedText }],
+      warnings: [],
+    };
+    task.evidence.push({
+      id: "qloo-signal", source: "provider-returned", kind: "cultural",
+      at: "2026-10-28T10:00:00.000Z", reference: "qloo:observed",
+      title: "Cultural association", entityIds: [],
+      summary: "Qloo returned this association for the named artist.",
+      limitations: [], explanation: null, dependencies: [],
+      freshness: "current",
+    });
+    const transport = vi.fn<typeof fetch>(async (_url, init) => {
+      const request = JSON.parse(String(init?.body));
+      const context = JSON.parse(request.input[1].content);
+      expect(context.observedSources[0]).toMatchObject({
+        id: "web-1", title: "Official venue",
+      });
+      expect(context.observedSources[0].observedPageText).toContain(
+        "We host tabletop games on Saturdays",
+      );
+      expect(context.observedSources[0].observedPageText.length).toBe(1300);
+      expect(context.culturalEvidence[0].summary).toContain("Qloo returned");
+      expect(context.observations).toEqual([]);
+      return Response.json({
+        status: "completed", output: [{
+          type: "function_call", name: "choose_agent_action", call_id: "agent",
+          arguments: JSON.stringify({name: "agent.finish", argumentsJson: "{}"}),
+        }],
+      });
+    });
+    const model = new ToolCallingModel("fake-test-key", "test-model", transport);
+    const selected = await model.chooseAgentAction(
+      "Decide how to use the observed results",
+      [{name: "agent.finish", description: "Stop", permission: "read"}], [], task,
+    );
+    expect(selected).toEqual({name: "agent.finish", arguments: {}});
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+
   it("preserves partial status when a run found sources but exhausted its steps before producing a deliverable", async () => {
     const store = new SqliteTaskStore(":memory:");
     const task = freshTask("partial-discovery", "owner");
