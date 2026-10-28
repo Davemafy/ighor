@@ -76,11 +76,13 @@ for (const mobile of [false, true]) {
       task.id,
     );
     await page.goto("/app");
+
     if (mobile) {
       const work = page.getByRole("button", { name: "Your work", exact: true });
       await expect(work).toBeVisible();
       await work.click();
     }
+
     const card = page.locator('[data-candidate-id="moonrise"]');
     await expect(card).toBeVisible();
     await card.getByRole("button", { name: "Read details" }).click();
