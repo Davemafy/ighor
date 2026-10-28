@@ -40,6 +40,8 @@ import { applyWorkActions } from "./connected-work";
 import { recordArtifactChanges } from "./preserve-artifacts";
 import { agentEmitter } from "./agent-events";
 import { agentResearchLoop } from "./agent-research";
+import { runUnifiedAgent } from "./unified-agent";
+import { runtimePlacesProvider } from "../tools/google-maps";
 
 export { ExecutionBudget } from "./execution";
 
@@ -256,8 +258,9 @@ export async function runTurn(
     if (update.practicalLocation && task.mode === "qloo-live") {
       provider ??= runtimeCulturalProvider(task.mode);
     }
+    const autonomousAgent = Boolean(model.chooseAgentAction);
     const localityLookup =
-      update.practicalLocation && provider?.exploreLocality
+      !autonomousAgent && update.practicalLocation && provider?.exploreLocality
         ? (() => {
             trace(
               "tool.invoke:qloo_locality",
@@ -275,17 +278,30 @@ export async function runTurn(
     const liveResearch = researchProvider ?? runtimeResearchProvider();
     let research: ResearchResult;
     try {
-      research = await withToolDeadline(
-        liveResearch.research(
-          update.researchQuery,
-        ),
-        40000,
-      );
-    } catch {
+      if (autonomousAgent) {
+        // The same persisted task and provider contracts now feed one
+        // model-directed execution loop; no fixed tool order is imposed.
+        provider ??= task.mode === "qloo-live"
+          ? runtimeCulturalProvider(task.mode) : undefined;
+        research = await runUnifiedAgent({
+          task, store, owner,
+          goal: input.type === "message" ? input.text : update.researchQuery,
+          model, research: liveResearch,
+          cultural: provider, places: runtimePlacesProvider(),
+          trace, send: emit,
+        });
+      } else {
+        research = await withToolDeadline(
+          liveResearch.research(update.researchQuery),
+          40000,
+        );
+      }
+    } catch (error) {
+      // Optimistic write conflicts must propagate. They mean the user made a
+      // newer edit, which always wins over a late agent observation.
+      if (error instanceof ConflictError) throw error;
       research = {
-        status: "error",
-        sources: [],
-        requests: 0,
+        status: "error", sources: [], requests: 0,
         warning: "Live research failed before source verification.",
       };
     }
@@ -298,15 +314,12 @@ export async function runTurn(
     // Real agentic continuation: inspect the actual web observations before
     // deciding whether a second search or a verified-source read is useful.
     // The runtime enforces exact observed source IDs and a finite tool budget.
-    research = await agentResearchLoop(
-      input.type === "message" ? input.text : update.researchQuery,
-      update.researchQuery,
-      research,
-      liveResearch,
-      model,
-      task,
-      trace,
-    );
+    if (!autonomousAgent) {
+      research = await agentResearchLoop(
+        input.type === "message" ? input.text : update.researchQuery,
+        update.researchQuery, research, liveResearch, model, task, trace,
+      );
+    }
     const locality = await localityLookup;
     const qlooPlaces = locality?.data.places ?? [];
     const qlooEvidence = locality?.data.evidence ?? [];
@@ -322,7 +335,9 @@ export async function runTurn(
     }
     task.evidence.push(...qlooEvidence);
     const researchEvidenceIds = research.sources.map(
-      (source) => `${task.id}:web:${receiptFromVersion + 1}:${source.id}`,
+      (source) => task.agentRun
+        ? `${task.id}:agent:${task.agentRun.id}:${source.id}`
+        : `${task.id}:web:${receiptFromVersion + 1}:${source.id}`,
     );
     for (const [index, source] of research.sources.entries()) {
       const previewImageUrl = source.imageUrl ??
@@ -523,7 +538,7 @@ export async function runTurn(
       culturalRequestDelta() ?? 0,
     );
     TaskSchema.parse(task);
-    store.save(task, researchStageVersion, owner);
+    store.save(task, task.brief.version - 1, owner);
     emit({ type: "done", task: structuredClone(task) });
     return task;
   }
