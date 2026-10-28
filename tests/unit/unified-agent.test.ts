@@ -135,6 +135,66 @@ describe("unified tool orchestration", () => {
     expect(transport).toHaveBeenCalledTimes(1);
   });
 
+  it("actually reads a returned source before creating an evidence-grounded document", async () => {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask("read-then-write", "owner");
+    store.create(task);
+    const readSource = vi.fn(async (url: string) => {
+      expect(url).toBe("https://example.org/venue");
+      return {
+        status: "ok" as const, requests: 1,
+        excerpt: "Official venue page explicitly confirms Saturday tabletop nights.",
+      };
+    });
+    const choose = vi.fn(async (
+      _goal: string, _tools: unknown, observed: {tool: string}[], context: typeof task,
+    ) => {
+      if (!observed.length) {
+        return {name: "web.search", arguments: {query: "Saturday venue Berlin"}};
+      }
+      if (observed.length === 1) {
+        expect(context.agentRun?.sources[0].id).toBe("web-1");
+        return {name: "web.read", arguments: {sourceId: "web-1"}};
+      }
+      expect(context.agentRun?.sources[0].excerpt).toContain(
+        "explicitly confirms Saturday tabletop nights",
+      );
+      return {name: "document.create", arguments: {
+        title: "Observed Saturday venue",
+        content: "Saturday tabletop nights confirmed on venue page; other facts remain unverified.",
+        sourceIds: ["web-1"],
+      }};
+    });
+    try {
+      const result = await runUnifiedAgent({
+        task, store, owner: "owner", goal: "Find verified Saturday tabletop venues",
+        research: {
+          research: vi.fn(),
+          searchOnce: vi.fn(async () => ({
+            status: "ok" as const, sources: [source()], requests: 1,
+          })),
+          readSource,
+        },
+        model: {
+          chooseAgentAction: choose,
+          async interpret() { throw new Error("unused"); },
+        },
+        trace() {},
+      });
+      expect(readSource).toHaveBeenCalledTimes(1);
+      expect(result.sources[0].excerpt).toContain("Saturday tabletop nights");
+      expect(task.agentRun?.steps.map((step) => step.tool)).toEqual([
+        "web.search", "web.read", "document.create",
+      ]);
+      expect(task.agentRun?.status).toBe("completed");
+      expect(task.artifacts[0].evidenceIds).toContain(
+        `read-then-write:agent:${task.agentRun?.id}:web-1`,
+      );
+      expect(store.load(task.id, "owner").agentRun?.sources[0].excerpt)
+        .toContain("Saturday tabletop nights");
+    } finally { store.close(); }
+  });
+
   it("preserves partial status when a run found sources but exhausted its steps before producing a deliverable", async () => {
     const store = new SqliteTaskStore(":memory:");
     const task = freshTask("partial-discovery", "owner");
