@@ -453,6 +453,10 @@ export async function runTurn(
       // chat promise. Each run creates a traceable, editable research document,
       // with evidence IDs resolving to provider-returned source URLs.
       // We never replace previous manually edited or locked documents.
+      const alreadyComposed = task.agentRun?.steps.some(
+        (step) => step.tool === "document.create" && step.status === "ok",
+      );
+      if (!alreadyComposed) {
       const report = [
         "# Explored options",
         ...(update.practicalLocation
@@ -500,9 +504,12 @@ export async function runTurn(
         freshness: "current",
         edited: false,
       });
+      }
       trace(
         "compose.research",
-        "Saved a sourced, editable research document with open verification questions.",
+        alreadyComposed
+          ? "Agent already created its editable document; no duplicate research report was generated."
+          : "Saved a sourced, editable research document with open verification questions.",
         0,
         allEvidenceIds,
       );
