@@ -14,19 +14,15 @@
     "test:connected:browser": "playwright test --config tests/connected-work.playwright.config.mts",
     "test:e2e": "node scripts/check-browser.mjs",
     "verify": "npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:eval && npm run build",
-    "prebuild": "node scripts/sync-brand-assets.mjs && node scripts/clean-build.mjs",
+    "prebuild": "node scripts/clean-build.mjs",
     "dev:recorded": "node scripts/dev-recorded.mjs",
     "test:browser": "node scripts/check-browser.mjs",
     "verify:all": "npm run verify && npm run test:browser",
-    "test:eval": "node --test scripts/igor-blind-eval.test.mjs",
-    "predev": "node scripts/sync-brand-assets.mjs"
+    "test:eval": "node --test scripts/igor-blind-eval.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/xai": "5.0.32",
-    "@fontsource/anton": "5.3.0",
     "ai": "7.0.155",
-    "gsap": "3.15.0",
-    "lenis": "1.3.27",
     "lucide-react": "^1.61.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
