@@ -506,9 +506,9 @@ export class ToolCallingModel implements ModelProvider {
               description: candidate.description.slice(0, 250),
             })),
             culturalEvidence: context.evidence.filter((e) =>
-              e.source === "qloo" || e.kind === "cultural"
+              e.kind === "cultural"
             ).slice(-5).map((e) => ({
-              id: e.id, title: e.title.slice(0, 160),
+              id: e.id, title: e.title?.slice(0, 160) ?? "Cultural evidence",
               summary: e.summary.slice(0, 450),
               reference: e.reference,
             })),
