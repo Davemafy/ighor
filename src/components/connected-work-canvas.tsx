@@ -43,6 +43,7 @@ export function ConnectedWorkCanvas({
   const [version, setVersion] = useState<number | null>(null);
   const [revision, setRevision] = useState<string>("current");
   const [full, setFull] = useState(false);
+  const [compareRevisions, setCompareRevisions] = useState(false);
   const dirty = draft !== base;
   const content = selected?.content ?? "";
 
@@ -112,6 +113,19 @@ export function ConnectedWorkCanvas({
       : selected.history.find((r) => String(r.version) === revision);
   const display = historical?.content ?? (editing ? draft : content);
   const decisions = work.decisions.filter((d) => d.goalId === selected.goalId);
+  const approved = decisions.filter((decision) => decision.status === "approved");
+  const previous = selected.history.at(-1);
+  // Source-linked project imagery only. The model cannot invent photo URLs.
+  const relatedArtwork = task.candidates
+    .filter(
+      (candidate) =>
+        candidate.freshness === "current" &&
+        !candidate.sample &&
+        Boolean(candidate.imageUrl) &&
+        (candidate.id === task.canvas?.selectedCandidateId ||
+          candidate.evidenceIds.some((id) => selected.evidenceIds.includes(id))),
+    )
+    .slice(0, 3);
   const send = (actions: Extract<TaskAction, { type: "work" }>["actions"]) =>
     onTurn({ type: "work", actions });
 
@@ -214,6 +228,65 @@ export function ConnectedWorkCanvas({
             {editing ? "Preview" : "Edit document"}
           </button>
         </div>
+        {!editing && !historical && (
+          <section className="ig-work-showcase" aria-label="Saved work overview">
+            <div className="ig-work-showcase-intro">
+              <span className="ig-work-overline">
+                <span aria-hidden="true" className="ig-work-signal" />
+                IGOR / CONNECTED WORK
+              </span>
+              <div className="ig-work-showcase-heading">
+                <p className="ig-work-showcase-kicker">
+                  {selected.status === "approved" ? "APPROVED WORK" : "WORKING PROPOSAL"}
+                  {"  /  "} VERSION {selected.version}
+                </p>
+                <h3>{selected.title}</h3>
+                <p className="ig-work-showcase-subtitle">
+                  Your editable result, connected to decisions in this conversation.
+                </p>
+              </div>
+              <div className="ig-work-showcase-facts">
+                {work.budget && (
+                  <div>
+                    <span>Confirmed budget</span>
+                    <strong>
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: work.budget.currency,
+                        maximumFractionDigits: 0,
+                      }).format(work.budget.amount)}
+                    </strong>
+                  </div>
+                )}
+                <div>
+                  <span>Saved decisions</span>
+                  <strong>{decisions.length}</strong>
+                </div>
+                <div>
+                  <span>Approved decisions</span>
+                  <strong>{approved.length}</strong>
+                </div>
+              </div>
+            </div>
+            {relatedArtwork.length > 0 && (
+              <div
+                className="ig-work-showcase-gallery"
+                aria-label="Selected and source-linked project imagery"
+              >
+                {relatedArtwork.map((candidate, index) => (
+                  <figure key={candidate.id} className="ig-work-showcase-tile">
+                    <img
+                      src={candidate.imageUrl!}
+                      alt={candidate.name}
+                      loading={index === 0 ? "eager" : "lazy"}
+                    />
+                    <figcaption>{candidate.name}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
         {editing && !historical ? (
           <div className="ig-connected-edit">
             <label htmlFor={`ig-doc-${selected.id}`}>Document text</label>
@@ -264,6 +337,36 @@ export function ConnectedWorkCanvas({
           <div className="ig-connected-paper" aria-label="Document preview">
             <ProductText text={display} />
           </div>
+        )}
+        {!editing && !historical && previous && (
+          <section className="ig-work-version-review">
+            <button
+              type="button"
+              aria-expanded={compareRevisions}
+              aria-controls={`ig-work-versions-${selected.id}`}
+              onClick={() => setCompareRevisions((open) => !open)}
+            >
+              <History aria-hidden="true" />
+              {compareRevisions ? "Hide saved version comparison" : "Compare saved versions"}
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {compareRevisions && (
+              <div
+                id={`ig-work-versions-${selected.id}`}
+                className="ig-work-version-pair"
+                aria-label="Previous and current saved document versions"
+              >
+                <div>
+                  <span>PREVIOUS / V{previous.version}</span>
+                  <pre>{previous.content}</pre>
+                </div>
+                <div>
+                  <span>CURRENT / V{selected.version}</span>
+                  <pre>{selected.content}</pre>
+                </div>
+              </div>
+            )}
+          </section>
         )}
         {historical && (
           <button
