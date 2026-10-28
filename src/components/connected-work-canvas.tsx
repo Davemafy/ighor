@@ -113,7 +113,9 @@ export function ConnectedWorkCanvas({
       : selected.history.find((r) => String(r.version) === revision);
   const display = historical?.content ?? (editing ? draft : content);
   const decisions = work.decisions.filter((d) => d.goalId === selected.goalId);
-  const approved = decisions.filter((decision) => decision.status === "approved");
+  const approved = decisions.filter(
+    (decision) => decision.status === "approved",
+  );
   const previous = selected.history.at(-1);
   // Source-linked project imagery only. The model cannot invent photo URLs.
   const relatedArtwork = task.candidates
@@ -123,7 +125,9 @@ export function ConnectedWorkCanvas({
         !candidate.sample &&
         Boolean(candidate.imageUrl) &&
         (candidate.id === task.canvas?.selectedCandidateId ||
-          candidate.evidenceIds.some((id) => selected.evidenceIds.includes(id))),
+          candidate.evidenceIds.some((id) =>
+            selected.evidenceIds.includes(id),
+          )),
     )
     .slice(0, 3);
   const send = (actions: Extract<TaskAction, { type: "work" }>["actions"]) =>
@@ -229,7 +233,10 @@ export function ConnectedWorkCanvas({
           </button>
         </div>
         {!editing && !historical && (
-          <section className="ig-work-showcase" aria-label="Saved work overview">
+          <section
+            className="ig-work-showcase"
+            aria-label="Saved work overview"
+          >
             <div className="ig-work-showcase-intro">
               <span className="ig-work-overline">
                 <span aria-hidden="true" className="ig-work-signal" />
@@ -237,12 +244,15 @@ export function ConnectedWorkCanvas({
               </span>
               <div className="ig-work-showcase-heading">
                 <p className="ig-work-showcase-kicker">
-                  {selected.status === "approved" ? "APPROVED WORK" : "WORKING PROPOSAL"}
+                  {selected.status === "approved"
+                    ? "APPROVED WORK"
+                    : "WORKING PROPOSAL"}
                   {"  /  "} VERSION {selected.version}
                 </p>
                 <h3>{selected.title}</h3>
                 <p className="ig-work-showcase-subtitle">
-                  Your editable result, connected to decisions in this conversation.
+                  Your editable result, connected to decisions in this
+                  conversation.
                 </p>
               </div>
               <div className="ig-work-showcase-facts">
@@ -347,7 +357,9 @@ export function ConnectedWorkCanvas({
               onClick={() => setCompareRevisions((open) => !open)}
             >
               <History aria-hidden="true" />
-              {compareRevisions ? "Hide saved version comparison" : "Compare saved versions"}
+              {compareRevisions
+                ? "Hide saved version comparison"
+                : "Compare saved versions"}
               <ChevronDown aria-hidden="true" />
             </button>
             {compareRevisions && (

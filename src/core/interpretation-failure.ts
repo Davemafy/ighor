@@ -1,7 +1,12 @@
+import { ModelRequestBudgetError } from "../tools/model-budget";
 import { z } from "zod";
 
 /** Report only known categories and schema paths, never raw provider content or credentials. */
 export function interpretationFailure(error: unknown): string {
+  if (error instanceof ModelRequestBudgetError) {
+    return "model request_budget exhausted";
+  }
+
   if (error instanceof ProviderHttpError) {
     return `provider HTTP ${error.status} (${error.provider})${error.category ? `; category: ${error.category}` : ""}${error.schemaKeywords.length ? `; schema keywords: ${error.schemaKeywords.join(", ")}` : ""}`;
   }

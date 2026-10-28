@@ -1,3 +1,4 @@
+import { ModelRequestBudgetError } from "./model-budget";
 import { ProviderHttpError } from "../core/interpretation-failure";
 import { readModelResponse } from "./response-body";
 import { z } from "zod";
@@ -81,7 +82,7 @@ export class GeminiModel extends ToolCallingModel {
     }
 
     if (this.calls >= this.maxCalls) {
-      throw new Error("Model request budget reached.");
+      throw new ModelRequestBudgetError();
     }
 
     const functions = tools.map((tool) => Function.parse(tool));

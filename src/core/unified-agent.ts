@@ -1,3 +1,5 @@
+import { agentStepLimit } from "../tools/model-budget";
+import { interpretationFailure } from "./interpretation-failure";
 import {
   AgentRequirementsSchema,
   type AgentRequirements,
@@ -65,7 +67,12 @@ export async function runUnifiedAgent(
       : fallback;
   };
 
-  const maxSteps = clamp("IGOR_AGENT_MAX_STEPS", 8, 12);
+  const maxSteps = agentStepLimit();
+  const callsBefore = model.calls ?? 0;
+  const decisionDeadline = Math.max(
+    18000,
+    Math.min(120000, model.timeoutMs ?? 18000),
+  );
   const maxRequests = clamp("IGOR_AGENT_MAX_REQUESTS", 8, 40);
   const runId = randomUUID();
   const now = () => new Date().toISOString();
@@ -140,7 +147,10 @@ export async function runUnifiedAgent(
     task.agentRun!.updatedAt = now();
 
     if (task.agentRun!.usage) {
-      task.agentRun!.usage.modelCalls = task.agentRun!.modelSteps;
+      task.agentRun!.usage.modelCalls = Math.max(
+        0,
+        (model.calls ?? callsBefore) - callsBefore,
+      );
       task.agentRun!.usage.providerRequests = task.agentRun!.requests;
     }
 
@@ -164,11 +174,12 @@ export async function runUnifiedAgent(
       task.agentRun.requirements = AgentRequirementsSchema.parse(
         await withToolDeadline(
           model.interpretAgentRequirements(input.goal, structuredClone(task)),
-          18000,
+          decisionDeadline,
         ),
       );
     }
-  } catch {
+  } catch (error) {
+    trace("agent.requirements.error", interpretationFailure(error));
     task.agentRun.warnings.push(
       "Could not interpret acceptance requirements; completion remains unverified.",
     );
@@ -212,16 +223,13 @@ export async function runUnifiedAgent(
           })),
           structuredClone(task),
         ),
-        18000,
+        decisionDeadline,
       );
-    } catch {
+    } catch (error) {
       run.warnings.push(
         "Agent decision provider failed; completed observations are preserved.",
       );
-      trace(
-        "agent.decision.error",
-        "Model could not produce an authorized next action.",
-      );
+      trace("agent.decision.error", interpretationFailure(error));
       break;
     }
 

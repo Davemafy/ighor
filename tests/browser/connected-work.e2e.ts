@@ -94,7 +94,9 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
   await expect(compared).toContainText("PREVIOUS");
   await expect(compared).toContainText("CURRENT");
   await expect(compared).toContainText("This sentence is my exact wording.");
-  await surface.getByRole("button", { name: "Hide saved version comparison" }).click();
+  await surface
+    .getByRole("button", { name: "Hide saved version comparison" })
+    .click();
   await expect(compared).toHaveCount(0);
   await surface
     .getByRole("combobox", { name: "Document revision" })

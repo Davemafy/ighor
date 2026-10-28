@@ -465,13 +465,27 @@ export async function runTurn(
       ...researchEvidenceIds,
       ...qlooEvidence.map((item) => item.id),
     ];
+    const savedOutcome = autonomousAgent
+      ? task.artifacts.find((artifact) =>
+          task.agentRun?.outputArtifactIds?.includes(artifact.id),
+        )
+      : undefined;
+    const recoveryMessage = research.sources.length
+      ? "I found useful sources, but couldn't finish the requested work. Your saved work is preserved. Ask me to continue from these findings."
+      : "I couldn't finish this step. Your saved work is preserved. Ask me to retry the unfinished step.";
     const message = [
-      answer ||
+      (savedOutcome
+        ? `Saved: ${savedOutcome.title}\n\n${savedOutcome.content}${task.agentRun?.status !== "completed" ? "\n\nSome requirements still need verification. Ask me to continue from this saved draft." : ""}`
+        : answer) ||
         (research.sources.length
           ? "I retrieved these sources, but could not verify a complete answer. Here is the available evidence."
-          : (research.warning ??
-            "Live research is unavailable; no external facts were retrieved.")),
-      research.warning && research.sources.length ? research.warning : "",
+          : autonomousAgent
+            ? recoveryMessage
+            : (research.warning ??
+              "Live research is unavailable; no external facts were retrieved.")),
+      !autonomousAgent && research.warning && research.sources.length
+        ? research.warning
+        : "",
       references ? `Sources:\n${references}` : "",
       qlooReferences
         ? `Qloo place leads (geography/category matches, not personalized affinity):\n${qlooReferences}`

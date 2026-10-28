@@ -681,3 +681,41 @@ describe("unified tool orchestration", () => {
     expect(transport).toHaveBeenCalledTimes(1);
   });
 });
+
+it("checkpoints a safe request-budget diagnostic without claiming completion", async () => {
+  const { ModelRequestBudgetError } =
+    await import("../../src/tools/model-budget");
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("budget-stopped", "owner");
+  store.create(task);
+  const trace = vi.fn();
+
+  try {
+    const result = await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: "Create a grounded proposal",
+      model: {
+        calls: 6,
+        interpret: vi.fn(),
+        chooseAgentAction: async () => {
+          throw new ModelRequestBudgetError();
+        },
+      },
+      research: { research: vi.fn() },
+      trace,
+    });
+    expect(result.status).toBe("blocked");
+    expect(trace).toHaveBeenCalledWith(
+      "agent.decision.error",
+      "model request_budget exhausted",
+    );
+    const saved = store.load(task.id, "owner");
+    expect(saved.agentRun?.status).toBe("partially_completed");
+    expect(saved.agentRun?.usage?.modelCalls).toBe(0);
+    expect(saved.agentRun?.outputArtifactIds ?? []).toEqual([]);
+  } finally {
+    store.close();
+  }
+});

@@ -1,3 +1,4 @@
+import { ModelRequestBudgetError, modelCallLimit } from "./model-budget";
 import { AgentRequirementsSchema } from "../core/agent-acceptance";
 import { interfaceReply } from "./interface-replies";
 import { modelContext } from "./model-context";
@@ -155,7 +156,7 @@ export class ToolCallingModel implements ModelProvider {
     protected key: string,
     public readonly model: string,
     protected transport: typeof fetch = fetch,
-    protected maxCalls = 6,
+    protected maxCalls = modelCallLimit(),
   ) {}
 
   protected async call(
@@ -168,7 +169,7 @@ export class ToolCallingModel implements ModelProvider {
     }
 
     if (this.calls >= this.maxCalls) {
-      throw new Error("Model request budget reached.");
+      throw new ModelRequestBudgetError();
     }
 
     const body = JSON.stringify({
