@@ -1,10 +1,10 @@
 import { ToolCallingModel } from "./tool-model";
 import { sdkGrokTransport } from "./sdk-grok-transport";
 
-/** xAI Responses uses the same validated function-call protocol. */
+/** SDK Chat Completions handles Igor's client-side application tools. */
 export class GrokModel extends ToolCallingModel {
   override timeoutMs = 45000;
-  protected override endpoint = "https://api.x.ai/v1/responses";
+  protected override endpoint = "https://api.x.ai/v1/chat/completions";
   protected override providerName = "Grok" as const;
   protected override requestTimeoutMs = 40000;
 

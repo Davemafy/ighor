@@ -1,4 +1,5 @@
-import { createXai } from "@ai-sdk/xai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import {
   APICallError,
   generateText,
@@ -8,29 +9,59 @@ import {
 } from "ai";
 import { z } from "zod";
 import { readModelResponse } from "./response-body";
+import { ProviderHttpError } from "../core/interpretation-failure";
 
 /** Keep Igor's validated decision protocol while the SDK owns provider I/O. */
 export function sdkGrokTransport(
   key: string,
   transport: typeof fetch,
 ): typeof fetch {
-  const xai = createXai({
+  return sdkToolTransport(key, transport, "grok");
+}
+
+export function sdkToolTransport(
+  key: string,
+  transport: typeof fetch,
+  provider: "grok" | "anthropic",
+): typeof fetch {
+  const configuration = {
     apiKey: key,
-    fetch: async (url, options) => {
+    fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
       const response = await transport(url, { ...options, redirect: "error" });
+      const raw = await readModelResponse(response).catch((error) => {
+        if (!response.ok) {return "";}
 
-      if (!response.ok) {return new Response(null, { status: response.status });}
+        throw error;
+      });
 
-      const raw = await readModelResponse(response);
+      if (!response.ok) {
+        const diagnostic = new ProviderHttpError(
+          provider === "grok" ? "Grok" : "Claude",
+          response.status,
+          raw,
+        );
 
-      if (raw.includes(key)) {throw new Error("Unsafe model response.");}
+        // Preserve only fixed diagnostic keywords, never the provider body.
+        return Response.json(
+          { error: { message: diagnostic.schemaKeywords.join(" ") } },
+          { status: response.status },
+        );
+      }
+
+      if (raw.includes(key)) {
+        throw new Error("Unsafe model response.");
+      }
 
       return new Response(raw, {
         status: response.status,
         headers: response.headers,
       });
     },
+  };
+  const xai = createOpenAICompatible({ ...configuration, name: "xai", baseURL: "https://api.x.ai/v1",
+    transformRequestBody: body => ({ ...body, parallel_tool_calls: false }),
   });
+  const anthropic = createAnthropic(configuration);
 
   return async (_url, options) => {
     const request = z
@@ -42,6 +73,7 @@ export function sdkGrokTransport(
             name: z.string(),
             description: z.string(),
             parameters: z.record(z.string(), z.unknown()),
+            strict: z.boolean().optional(),
           }),
         ),
       })
@@ -108,7 +140,10 @@ export function sdkGrokTransport(
 
     try {
       const result = await generateText({
-        model: xai.responses(request.model),
+        model:
+          provider === "grok"
+            ? xai.chatModel(request.model)
+            : anthropic(request.model),
         instructions: instructions.join("\n"),
         messages,
         tools: Object.fromEntries(
@@ -117,6 +152,7 @@ export function sdkGrokTransport(
             tool({
               description: definition.description,
               inputSchema: jsonSchema(definition.parameters),
+              strict: definition.strict ?? false,
               // Execution remains exclusively in Igor after full decision validation.
             }),
           ]),
@@ -125,7 +161,10 @@ export function sdkGrokTransport(
         maxRetries: 0,
         maxOutputTokens: 6000,
         abortSignal: options?.signal ?? undefined,
-        providerOptions: { xai: { store: false } },
+        providerOptions:
+          provider === "grok"
+            ? { xai: { parallelToolCalls: false } }
+            : { anthropic: { disableParallelToolUse: true } },
       });
 
       if (result.finishReason !== "tool-calls") {
@@ -148,7 +187,9 @@ export function sdkGrokTransport(
         error.statusCode >= 400
       ) {
         // Never copy provider bodies (which may include sensitive input) into errors.
-        return new Response(null, { status: error.statusCode });
+        return new Response(error.responseBody ?? "", {
+          status: error.statusCode,
+        });
       }
 
       throw error;

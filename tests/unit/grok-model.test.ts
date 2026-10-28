@@ -4,95 +4,115 @@ import { runtimeModelProvider } from "../../src/tools/runtime";
 import { FallbackModel } from "../../src/tools/fallback-model";
 
 afterEach(() => vi.unstubAllEnvs());
-const completed = () =>
+const completed = (
+  decision: unknown = { intent: "conversation", reply: "Hello" },
+  id = "grok-call",
+) =>
   Response.json({
-    object: "response",
-    status: "completed",
-    output: [
+    id: "chat-test",
+    object: "chat.completion",
+    created: 1,
+    model: "grok-4.3",
+    choices: [
       {
-        id: "fc-test",
-        type: "function_call",
-        name: "update_brief",
-        call_id: "grok-call",
-        arguments: JSON.stringify({
-          decision: { intent: "conversation", reply: "Hello" },
-        }),
+        index: 0,
+        finish_reason: "tool_calls",
+        message: {
+          role: "assistant",
+          content: null,
+          tool_calls: [
+            {
+              id,
+              type: "function",
+              function: {
+                name: "update_brief",
+                arguments: JSON.stringify({ decision }),
+              },
+            },
+          ],
+        },
       },
     ],
+    usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
   });
-it("sends validated tools to xAI and disables response storage", async () => {
+it("uses client-side tool Chat Completions without Responses-only fields", async () => {
   const transport = vi.fn<typeof fetch>(async () => completed());
   const model = new GrokModel("test-grok-secret", "grok-4.3", transport);
   expect(await model.interpret("Hello")).toMatchObject({
     intent: "conversation",
     reply: "Hello",
   });
-  expect(transport.mock.calls[0][0]).toBe("https://api.x.ai/v1/responses");
-  const options = transport.mock.calls[0][1] as RequestInit;
-  expect(JSON.parse(String(options.body))).toMatchObject({
+  expect(transport.mock.calls[0][0]).toBe(
+    "https://api.x.ai/v1/chat/completions",
+  );
+  const body = JSON.parse(String(transport.mock.calls[0][1]?.body));
+  expect(body).toMatchObject({
     model: "grok-4.3",
-    store: false,
     tool_choice: "required",
+    parallel_tool_calls: false,
   });
+  expect(body).not.toHaveProperty("include");
+  expect(body).not.toHaveProperty("previous_response_id");
+  expect(body.tools[0].function.strict).toBe(false);
 });
-it("labels xAI provider failures accurately", async () => {
+it("preserves safe schema diagnostics without retaining provider content", async () => {
   const model = new GrokModel(
-    "test-key",
+    "test-grok-secret",
     "grok-4.3",
-    async () => new Response("unavailable", { status: 503 }),
+    async () =>
+      new Response("unsupported parameters schema. private-user-data", {
+        status: 400,
+      }),
   );
   await expect(model.interpret("Hello")).rejects.toMatchObject({
     provider: "Grok",
-    status: 503,
+    status: 400,
+    schemaKeywords: expect.arrayContaining(["unsupported", "parameters"]),
   });
+  await expect(
+    new GrokModel(
+      "test-secret",
+      "grok-4.3",
+      async () => new Response("upstream", { status: 503 }),
+    ).interpret("Hello"),
+  ).rejects.toMatchObject({ provider: "Grok", status: 503 });
 });
-it("uses Grok without OpenAI and behind Gemini when both exist", () => {
+it("uses Grok first and one configured backup when both keys exist", () => {
   vi.stubEnv("XAI_API_KEY", "test-grok");
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("IGOR_MODEL_PROVIDER", "");
   vi.stubEnv("LLM_API_KEY", "");
   vi.stubEnv("GEMINI_API_KEY", "");
   expect(runtimeModelProvider("qloo-live")).toBeInstanceOf(GrokModel);
   vi.stubEnv("GEMINI_API_KEY", "test-gemini");
   expect(runtimeModelProvider("qloo-live")).toBeInstanceOf(FallbackModel);
 });
-
 it("repairs an invalid decision once through SDK tool-result messages", async () => {
   const transport = vi
     .fn<typeof fetch>()
     .mockResolvedValueOnce(
-      Response.json({
-        object: "response",
-        status: "completed",
-        output: [
-          {
-            id: "fc-bad",
-            type: "function_call",
-            name: "update_brief",
-            call_id: "bad",
-            arguments: JSON.stringify({
-              decision: { intent: "wrong", reply: "Hello" },
-            }),
-          },
-        ],
-      }),
+      completed({ intent: "wrong", reply: "Hello" }, "bad"),
     )
     .mockImplementationOnce(async () => completed());
   expect(
-    await new GrokModel("secret", "grok-4.3", transport).interpret("Hello"),
+    await new GrokModel("test-secret", "grok-4.3", transport).interpret(
+      "Hello",
+    ),
   ).toMatchObject({ intent: "conversation", reply: "Hello" });
   expect(transport).toHaveBeenCalledTimes(2);
   const body = JSON.parse(String(transport.mock.calls[1][1]?.body));
-  expect(body.input).toEqual(
+  expect(body.messages).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ type: "function_call_output", call_id: "bad" }),
+      expect.objectContaining({ role: "tool", tool_call_id: "bad" }),
     ]),
   );
 });
-it("does not multiply retries on transient provider failures", async () => {
+it("does not multiply automatic retries on provider failures", async () => {
   const transport = vi.fn<typeof fetch>(
     async () => new Response("unavailable", { status: 503 }),
   );
   await expect(
-    new GrokModel("secret", "grok-4.3", transport).interpret("Hello"),
+    new GrokModel("test-secret", "grok-4.3", transport).interpret("Hello"),
   ).rejects.toMatchObject({ provider: "Grok", status: 503 });
   expect(transport).toHaveBeenCalledTimes(1);
 });

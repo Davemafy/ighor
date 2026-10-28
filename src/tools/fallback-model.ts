@@ -27,7 +27,7 @@ export class FallbackModel implements ModelProvider {
         error instanceof z.ZodError ||
         error instanceof SyntaxError ||
         (error instanceof ProviderHttpError &&
-          (error.status === 429 || error.status >= 500)) ||
+          (error.status === 429 || error.status >= 500 || ([400, 422].includes(error.status) && error.schemaKeywords.length > 0))) ||
         (error instanceof Error &&
           /request failed|timed out|timeout/i.test(error.message));
       if (!recoverable) throw error;

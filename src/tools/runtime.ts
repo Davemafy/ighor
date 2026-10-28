@@ -1,5 +1,7 @@
 import { LiveQlooProvider, SqliteResponseCache } from "./qloo-live";
 import { GrokModel } from "./grok-model";
+import { AnthropicModel } from "./anthropic-model";
+import type { ModelProvider } from "./interfaces";
 import { FallbackModel } from "./fallback-model";
 import { ToolCallingModel } from "./tool-model";
 import { ResponsiveGeminiModel } from "./responsive-gemini";
@@ -48,35 +50,73 @@ export function runtimeModelProvider(mode: Task["mode"]) {
     return new DevelopmentModel();
   }
 
+  const configured: { id: string; model: ModelProvider }[] = [];
   const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
-  const backup = grokKey
-    ? new GrokModel(
+
+  if (grokKey)
+    {configured.push({
+      id: "grok",
+      model: new GrokModel(
         grokKey,
         process.env.XAI_MODEL || process.env.GROK_MODEL || "grok-4.3",
-      )
-    : process.env.LLM_API_KEY && process.env.LLM_MODEL
-      ? new ToolCallingModel(process.env.LLM_API_KEY, process.env.LLM_MODEL)
-      : undefined;
-  if (process.env.GEMINI_API_KEY) {
-    const primary = new ResponsiveGeminiModel(
-      process.env.GEMINI_API_KEY,
-      process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite",
-    );
-    return backup ? new FallbackModel(primary, backup) : primary;
+      ),
+    });}
+
+  if (process.env.ANTHROPIC_API_KEY)
+    {configured.push({
+      id: "claude",
+      model: new AnthropicModel(
+        process.env.ANTHROPIC_API_KEY,
+        process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      ),
+    });}
+
+  if (process.env.GEMINI_API_KEY)
+    {configured.push({
+      id: "gemini",
+      model: new ResponsiveGeminiModel(
+        process.env.GEMINI_API_KEY,
+        process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+      ),
+    });}
+
+  if (process.env.LLM_API_KEY && process.env.LLM_MODEL)
+    {configured.push({
+      id: "openai",
+      model: new ToolCallingModel(
+        process.env.LLM_API_KEY,
+        process.env.LLM_MODEL,
+      ),
+    });}
+
+  const preference = process.env.IGOR_MODEL_PROVIDER?.toLowerCase()
+    .replace("anthropic", "claude")
+    .replace("xai", "grok");
+
+  if (preference) {
+    const index = configured.findIndex((item) => item.id === preference);
+
+    if (index < 0)
+      {throw new Error("The preferred model provider is not configured.");}
+
+    configured.unshift(...configured.splice(index, 1));
   }
-  return (
-    backup ??
-    (process.env.IGOR_TEST_FIXTURES === "1" ||
+
+  if (configured.length >= 2)
+    {return new FallbackModel(configured[0].model, configured[1].model);}
+
+  if (configured.length === 1) {return configured[0].model;}
+
+  return process.env.IGOR_TEST_FIXTURES === "1" ||
     process.env.IGOR_QLOO_RECORDING ||
     process.env.NODE_ENV === "test"
-      ? new DevelopmentModel()
-      : {
-          executionMode: "tool-calling" as const,
-          async interpret(): Promise<never> {
-            throw new Error(
-              "No production model configured. Configure GEMINI_API_KEY, XAI_API_KEY, or LLM_API_KEY and LLM_MODEL.",
-            );
-          },
-        })
-  );
+    ? new DevelopmentModel()
+    : {
+        executionMode: "tool-calling" as const,
+        async interpret(): Promise<never> {
+          throw new Error(
+            "No production model configured. Configure XAI_API_KEY, ANTHROPIC_API_KEY or GEMINI_API_KEY.",
+          );
+        },
+      };
 }

@@ -21,6 +21,8 @@
     "test:eval": "node --test scripts/igor-blind-eval.test.mjs"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.90",
+    "@ai-sdk/openai-compatible": "3.0.80",
     "@ai-sdk/xai": "5.0.32",
     "ai": "7.0.155",
     "lucide-react": "^1.61.0",

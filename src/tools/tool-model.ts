@@ -102,7 +102,7 @@ export class ToolCallingModel implements ModelProvider {
 
   timeoutMs = 20000;
   protected endpoint = "https://api.openai.com/v1/responses";
-  protected providerName: "OpenAI" | "Grok" = "OpenAI";
+  protected providerName: "OpenAI" | "Grok" | "Claude" = "OpenAI";
   protected requestTimeoutMs = 15000;
 
   calls = 0;

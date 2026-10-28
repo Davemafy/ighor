@@ -124,7 +124,7 @@ function flattenIssues(
 export class ProviderHttpError extends Error {
   readonly schemaKeywords: string[];
   constructor(
-    readonly provider: "OpenAI" | "Gemini" | "Grok",
+    readonly provider: "OpenAI" | "Gemini" | "Grok" | "Claude",
     readonly status: number,
     body: string,
   ) {
