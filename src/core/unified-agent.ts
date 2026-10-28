@@ -224,7 +224,11 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
   }
   persist();
   return {
-    status: sources.length ? "partial" : run.steps.length ? "partial" : "blocked",
+    // A completed execution must not be reported as a failed/partial provider
+    // operation. Evidence limitations remain in warning and source metadata.
+    status: run.status === "completed"
+      ? "ok"
+      : sources.length || run.steps.length ? "partial" : "blocked",
     sources,
     requests: run.requests,
     ...(run.warnings.length ? { warning: run.warnings.join(" ").slice(0,800) } :
