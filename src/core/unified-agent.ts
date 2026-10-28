@@ -48,12 +48,18 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
   task.agentRun = {
     id: runId, goal: input.goal.slice(0,3000), status: "created",
     startedAt: now(), updatedAt: now(), maxSteps, maxRequests,
-    requests: 0, modelSteps: 0, steps: [], sources: [], warnings: [],
+    requests: 0, modelSteps: 0,
+    usage: { modelCalls: 0, providerRequests: 0, modelTokens: null, estimatedCostUsd: null },
+    steps: [], sources: [], warnings: [],
   };
   const persist = () => {
     const expected = task.brief.version;
     task.brief.version++;
     task.agentRun!.updatedAt = now();
+    if (task.agentRun!.usage) {
+      task.agentRun!.usage.modelCalls = task.agentRun!.modelSteps;
+      task.agentRun!.usage.providerRequests = task.agentRun!.requests;
+    }
     TaskSchema.parse(task);
     // A newer user correction wins over any late external observation.
     store.save(task, expected, owner);
