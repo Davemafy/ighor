@@ -42,6 +42,7 @@ import { agentEmitter } from "./agent-events";
 import { agentResearchLoop } from "./agent-research";
 import { runUnifiedAgent } from "./unified-agent";
 import { runtimePlacesProvider } from "../tools/google-maps";
+import { runtimeBrowserbaseObserver } from "../tools/browserbase-observer";
 
 export { ExecutionBudget } from "./execution";
 
@@ -287,7 +288,9 @@ export async function runTurn(
           task, store, owner,
           goal: input.type === "message" ? input.text : update.researchQuery,
           model, research: liveResearch,
-          cultural: provider, places: runtimePlacesProvider(),
+          cultural: provider,
+          places: process.env.GOOGLE_MAPS_API_KEY ? runtimePlacesProvider() : undefined,
+          browser: process.env.BROWSERBASE_API_KEY ? runtimeBrowserbaseObserver() : undefined,
           trace, send: emit,
         });
       } else {
