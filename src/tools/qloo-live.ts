@@ -331,7 +331,7 @@ export class LiveQlooProvider implements CulturalProvider {
         query: text,
         types: type
           ? `urn:entity:${type}`
-          : "urn:entity:movie,urn:entity:tv_show,urn:entity:artist",
+          : "urn:entity:movie,urn:entity:tv_show,urn:entity:artist,urn:entity:person",
         take: "10",
       });
       const rows = qlooRows(response.body).flatMap((x) =>

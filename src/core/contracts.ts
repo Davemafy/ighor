@@ -26,6 +26,7 @@ export const EntityType = z.enum([
   "artist",
   "book",
   "place",
+  "person",
 ]);
 
 export const PreferenceSchema = z.object({

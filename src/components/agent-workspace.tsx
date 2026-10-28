@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { UserRound } from "lucide-react";
 import { AccountDialog } from "./account-panel";
 import { Connections } from "./connections-view";
 import { DecisionWork } from "./decision-work";
@@ -379,8 +380,10 @@ export function AgentWorkspace({
           type="button"
           onClick={() => setAccountOpen(true)}
           aria-label="Account"
+          title="Account"
+          className="iw-account"
         >
-          Account
+          <UserRound aria-hidden="true" size={22} strokeWidth={1.8} />
         </button>
         <button
           className="iw-new"

@@ -43,7 +43,7 @@ const quickRouteInstructions = [
   "Use earlier user answers: the last message may be just a city, interests, 'former', 'go', 'where', or 'show me'. Resolve these against the current conversation, do not reset intake. If the user supplied a locality and activities, execute research NOW; do not repeat a preference question or claim that you are about to search.",
   "Choose research whenever a recommendation needs live places, hours, pricing, availability, opening/booking links or other current sources. Return the useful full search query containing user supplied city, activity, dates and size where known. Never claim a venue search was done in a conversation reply.",
   "Current popularity, popular demand, market demand, trends, most-played games and commercial viability require research, even in a short follow-up to a creative draft. For example, after a game concept, 'stop asking questions use popular demand' means research current gaming demand to inform that concept, not ask for a genre and not invent market trends from general knowledge. Resolve the topic from history and include it in a standalone query. General brainstorming may use assumptions, but never present those as current market evidence.",
-  "Choose agent for multi-step goals needing two or more of public research, cultural intelligence, venue investigation and creation of saved work. Supply a standalone goal/query preserving user-supplied cultural references, city, dates and constraints. The server chooses actual tools next; never pretend they have run. Choose delegate for edits to existing approved work.",
+  "Choose agent for multi-step goals needing two or more of public research, cultural intelligence, venue investigation and creation of saved work. Supply a standalone goal/query preserving user-supplied cultural references, city, dates and constraints. The server chooses actual tools next; never pretend they have run. Choose agent for revisions to prior agent-created cultural work requiring new evidence. Choose delegate for direct wording edits or approvals that need no external discovery.",
   "Choose delegate for saved document changes, actions, and Qloo cultural discovery when the user supplied a resolvable supported film/artist/TV anchor. Use the Qloo capability instead of fabricating cultural associations. Do not demand multiple named tastes before a first useful discovery attempt.",
   "Choose conversation for explanations, ordinary discussion, greetings and questions that need no external action or fresh facts. Clarify only a genuinely blocking missing parameter, at most one question; otherwise act and offer verification steps with the results.",
   "Research creates saved, evidence-linked work; a request to see results ('show me', 'where', 'go ahead') after planning needs tool execution or display of actual saved findings, never a promise that a plan exists.",
@@ -52,7 +52,7 @@ const quickRouteInstructions = [
   "Give a useful, natural direct reply when possible. Do not claim a tool ran, a booking completed, work was saved, or current facts were verified.",
   "Never invent cultural evidence, source citations, prices, routes, images or availability. No external action can run in this lightweight step.",
   "When explaining prior cultural recommendations, distinguish Qloo evidence from interpretation and cite only evidence IDs visible in saved context using replyEvidenceIds.",
-  "Return one route_conversation call. For delegate omit reply; for research provide query but no reply; for conversation/clarification provide reply.",
+  "Return one route_conversation call. For delegate omit reply; for research or agent provide query but no reply; for conversation/clarification provide reply.",
 ].join(" ");
 
 const conversationInstructions = [
@@ -319,7 +319,7 @@ export class ToolCallingModel implements ModelProvider {
           query: {
             type: "string",
             description:
-              "Standalone public-web search query for intent research.",
+              "Standalone public-web query for research, or the full task goal with constraints for agent.",
           },
           replyEvidenceIds: {
             type: "array",
@@ -372,8 +372,8 @@ export class ToolCallingModel implements ModelProvider {
     }
 
     if (route.intent === "research" || route.intent === "agent") {
-      return !recovery && route.query
-        ? { intent: "research" as const, query: route.query }
+      return !recovery && (route.query || route.intent === "agent")
+        ? { intent: "research" as const, query: route.query || text }
         : null;
     }
 

@@ -61,6 +61,8 @@ try {
 
     task = done.task;
     await page.reload();
+    await page.locator(".iw-composer").waitFor();
+    await page.waitForTimeout(700);
 
     return structuredClone(task);
   }
@@ -77,6 +79,11 @@ try {
   await turn({
     type: "work",
     actions: [
+      {
+        kind: "goal",
+        id: "flagship-access",
+        title: "Independent access requirement",
+      },
       {
         kind: "document",
         id: "access-principle",
@@ -119,6 +126,17 @@ try {
   report = {
     ...report,
     firstStatus: first.agentRun?.status ?? first.status,
+    diagnostics: second.trace
+      .filter((t) => /error|recovered|rejected/.test(t.action))
+      .map((t) => ({
+        action: t.action,
+        category:
+          t.outcome
+            .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
+            ?.slice(1)
+            .filter(Boolean)
+            .join(";") || "unclassified",
+      })),
     revisionStatus: second.agentRun?.status ?? second.status,
     firstCulturalEvidence: cultural(first).length,
     newCulturalEvidence: newEvidence.length,

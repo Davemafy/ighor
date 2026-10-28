@@ -3220,3 +3220,30 @@ body {
     text-align: right;
   }
 }
+
+/* Keep checkbox geometry native inside the full clickable collection label. */
+.pp-choice-grid input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  flex: 0 0 18px;
+}
+
+.iw-account {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+}
+.iw-account:hover {
+  background: var(--iw-hover, #e7ebdf);
+}
+.iw-account:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

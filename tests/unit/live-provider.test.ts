@@ -447,3 +447,30 @@ describe("bounded tool-calling model and in-product baseline", () => {
     expect(t.evaluation?.baseline).toEqual([]);
   });
 });
+
+it("resolves a filmmaker as a Qloo person without substituting a film", async () => {
+  const request = vi.fn<typeof fetch>(async (input) => {
+    const url = new URL(String(input));
+    expect(url.searchParams.get("types")).toBe("urn:entity:person");
+
+    return Response.json({
+      results: [
+        { entity_id: seed, name: "Wong Kar-wai", subtype: "urn:entity:person" },
+      ],
+    });
+  });
+  const provider = new LiveQlooProvider(
+    "unit-private-credential",
+    new MemoryResponseCache(),
+    request,
+  );
+  const result = await provider.resolve("Wong Kar-wai", "person");
+  expect(result.status).toBe("ok");
+  expect(result.data).toMatchObject({
+    name: "Wong Kar-wai",
+    type: "person",
+    providerId: seed,
+    status: "resolved",
+  });
+  expect(request).toHaveBeenCalledOnce();
+});

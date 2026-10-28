@@ -54,6 +54,7 @@ export function typeLabel(type: DiscoveryCandidate["type"]) {
     artist: "Music",
     place: "Place",
     book: "Book",
+    person: "Person",
   };
 
   return labels[type];

@@ -165,3 +165,35 @@ it("Gemini accepts the agent requirements tool before transport", async () => {
   ).toEqual(requirements);
   expect(transport).toHaveBeenCalledOnce();
 });
+
+it("retains an interpreted agent goal when the router omits a redundant query", async () => {
+  const model = new GeminiModel(
+    "unit-private-credential",
+    "gemini-3.5-flash-lite",
+    async () =>
+      Response.json({
+        candidates: [
+          {
+            finishReason: "STOP",
+            content: {
+              role: "model",
+              parts: [
+                {
+                  functionCall: {
+                    name: "route_conversation",
+                    args: { intent: "agent" },
+                    id: "route",
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }),
+  );
+  const goal = "Create a culturally grounded proposal within $3,000";
+  expect(await model.routeConversation(goal)).toEqual({
+    intent: "research",
+    query: goal,
+  });
+});

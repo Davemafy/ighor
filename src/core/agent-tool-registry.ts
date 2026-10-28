@@ -82,7 +82,9 @@ const readArguments = z.strictObject({
 });
 const resolveArguments = z.strictObject({
   name: z.string().trim().min(2).max(100),
-  type: z.enum(["movie", "tv_show", "artist", "book", "place"]).optional(),
+  type: z
+    .enum(["movie", "tv_show", "artist", "book", "place", "person"])
+    .optional(),
 });
 const discoverArguments = z.strictObject({
   entityId: z.string().min(1).max(120),
@@ -285,7 +287,7 @@ export function createAgentToolRegistry(
     ),
     tool(
       "qloo.resolve_entity",
-      "Resolve a specific user-mentioned film, artist, TV, book or place with Qloo. Do not guess identifiers.",
+      "Resolve a specific user-mentioned cultural reference with Qloo: {name,type?}. type may be movie, tv_show, artist, book, place or person (filmmakers/authors). Do not substitute a work for a named person or guess identifiers.",
       resolveArguments,
       "read",
       Boolean(context.cultural),
