@@ -89,7 +89,7 @@ test("recorded cultural outcome → collection → export → independent review
     .getByLabel("Collection name", { exact: true })
     .fill("Screening references — revised");
   await page
-    .getByLabel("Your notes", { exact: true })
+    .getByRole("textbox", { name: "Your notes", exact: true })
     .fill("Keep the opening intimate. This is an owner-authored direction.");
   await page
     .getByRole("button", { name: "Move Children of Men down", exact: true })
@@ -102,7 +102,9 @@ test("recorded cultural outcome → collection → export → independent review
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByLabel("Your notes", { exact: true })).toHaveValue(
+  await expect(
+    page.getByRole("textbox", { name: "Your notes", exact: true }),
+  ).toHaveValue(
     "Keep the opening intimate. This is an owner-authored direction.",
   );
   const savedBoards = await (

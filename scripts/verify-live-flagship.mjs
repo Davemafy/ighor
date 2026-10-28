@@ -126,16 +126,45 @@ try {
   report = {
     ...report,
     firstStatus: first.agentRun?.status ?? first.status,
+    firstRun: first.agentRun
+      ? {
+          usage: first.agentRun.usage,
+          steps: first.agentRun.steps.map(
+            ({ tool, status, requests, summary }) => ({
+              tool,
+              status,
+              requests,
+              summary: summary.slice(0, 180),
+            }),
+          ),
+          acceptance: first.agentRun.acceptance?.status,
+        }
+      : null,
+    revisionRun: second.agentRun
+      ? {
+          usage: second.agentRun.usage,
+          steps: second.agentRun.steps.map(
+            ({ tool, status, requests, summary }) => ({
+              tool,
+              status,
+              requests,
+              summary: summary.slice(0, 180),
+            }),
+          ),
+          acceptance: second.agentRun.acceptance?.status,
+        }
+      : null,
     diagnostics: second.trace
       .filter((t) => /error|recovered|rejected/.test(t.action))
       .map((t) => ({
         action: t.action,
-        category:
-          t.outcome
-            .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
-            ?.slice(1)
-            .filter(Boolean)
-            .join(";") || "unclassified",
+        category: /^agent\.(decision|requirements)\.error$/.test(t.action)
+          ? t.outcome
+          : t.outcome
+              .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
+              ?.slice(1)
+              .filter(Boolean)
+              .join(";") || "unclassified",
       })),
     revisionStatus: second.agentRun?.status ?? second.status,
     firstCulturalEvidence: cultural(first).length,
