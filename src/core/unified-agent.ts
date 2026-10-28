@@ -66,6 +66,7 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
     input.send?.({ type: "state", task: structuredClone(task) });
   };
   const attempted = new Set<string>();
+  let modelFinished = false;
   task.agentRun.status = "reasoning";
   persist();
 
@@ -98,6 +99,7 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
       break;
     }
     if (selected.name === "agent.finish") {
+      modelFinished = true;
       trace("agent.finish", "Agent ended tool use after reviewing observed results.");
       break;
     }
@@ -180,8 +182,22 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
   }
 
   const run = task.agentRun!;
-  run.status = sources.length || task.catalogue.length ? "completed" : "partially_completed";
+  const savedDocument = run.steps.some(
+    (step) => step.tool === "document.create" && step.status === "ok",
+  );
+  const observedWork = sources.length > 0 ||
+    run.steps.some((step) => step.tool.startsWith("qloo.") && step.status === "ok") ||
+    savedDocument;
+  // Retrieving a source is progress, not necessarily completing the user's
+  // request. A successful saved deliverable or an explicit model decision
+  // after observing useful work is required before declaring completion.
+  run.status = savedDocument || (modelFinished && observedWork)
+    ? "completed"
+    : "partially_completed";
   if (run.requests >= maxRequests) run.warnings.push("Agent reached the configured external request budget.");
+  if (run.status === "partially_completed") {
+    run.warnings.push("Agent stopped before a verified completion decision or saved deliverable.");
+  }
   persist();
   return {
     status: sources.length ? "partial" : run.steps.length ? "partial" : "blocked",
