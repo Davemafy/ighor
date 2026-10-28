@@ -1,0 +1,159 @@
+/* Content leads; selective material is confined to task controls. */
+.iw-app .iw-liquid {
+  container-type: inline-size;
+}
+.iw-app .iw-liquid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  width: fit-content;
+  border-radius: 28px;
+  background: var(--iw-paper, #f6f5f1);
+}
+.iw-app .iw-liquid-toolbar button {
+  min-height: 44px;
+  padding: 10px 16px;
+  color: inherit;
+}
+.iw-app .iw-liquid-toolbar button[aria-pressed="true"] {
+  background: #e6edda;
+  color: #253225;
+}
+.iw-app .iw-liquid-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.iw-app .iw-liquid-card {
+  overflow: hidden;
+  min-width: 0;
+  border-radius: 22px;
+  background: #fff;
+}
+.iw-app .iw-liquid-card[data-featured="true"] {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+}
+.iw-app .iw-liquid-artwork {
+  position: relative;
+  min-width: 0;
+}
+.iw-app .iw-liquid-artwork img {
+  width: 100%;
+  height: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  aspect-ratio: 4 / 3;
+}
+.iw-app .iw-liquid-open {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  border-radius: 30px;
+  background: white;
+  padding: 12px 18px;
+  min-height: 44px;
+}
+.iw-app .iw-liquid-card-body {
+  padding: clamp(18px, 4cqi, 32px);
+}
+.iw-app .iw-liquid-card h4 {
+  font-size: clamp(23px, 4cqi, 36px);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+.iw-app .iw-liquid-category,
+.iw-app .iw-liquid-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.iw-app .iw-liquid-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0 12px;
+}
+.iw-app .iw-liquid-detail {
+  scroll-margin-top: 24px;
+  outline: none;
+}
+.iw-app .iw-liquid-detail .iw-app .iw-liquid-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.iw-app .iw-liquid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.iw-app .iw-liquid-actions button,
+.iw-app .iw-liquid-text-open,
+.iw-app .iw-liquid-back {
+  min-height: 44px;
+}
+.iw-app .iw-liquid button:focus-visible,
+.iw-app .iw-liquid summary:focus-visible {
+  outline: 3px solid #536b35;
+  outline-offset: 4px;
+}
+@container (max-width: 600px) {
+  .iw-app .iw-liquid-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .iw-app .iw-liquid-card[data-featured="true"],
+  .iw-app .iw-liquid-detail .iw-app .iw-liquid-card {
+    display: block;
+  }
+  .iw-app .iw-liquid-toolbar {
+    width: 100%;
+  }
+  .iw-app .iw-liquid-toolbar button {
+    padding: 10px 12px;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .iw-app .iw-liquid-toolbar {
+    background: #f6f5f1;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app .iw-liquid * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.iw-app .iw-liquid {
+  background: #fafaf6;
+  color: #242824;
+  border: 0;
+  padding: clamp(16px, 3cqi, 32px);
+  border-radius: 24px;
+}
+.iw-app .iw-liquid .iw-liquid-card {
+  background: white;
+  color: #242824;
+  border: 1px solid #e4e6df;
+}
+.iw-app .iw-liquid .iw-liquid-card h4 {
+  color: #242824;
+}
+.iw-app .iw-liquid .iw-liquid-card p,
+.iw-app .iw-liquid .iw-liquid-card small,
+.iw-app .iw-liquid-intro p {
+  color: #62685d;
+}
+.iw-app .iw-liquid .iw-liquid-actions button,
+.iw-app .iw-liquid-back,
+.iw-app .iw-liquid-text-open {
+  background: #edf0e8;
+  color: #293127;
+  border-radius: 24px;
+  padding: 12px 18px;
+}

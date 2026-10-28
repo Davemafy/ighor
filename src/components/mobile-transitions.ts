@@ -18,6 +18,7 @@ export function morphLayout(update: () => void) {
   };
 
   if (
+    document.querySelector?.("[data-igor-motion]") ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
     !browser.startViewTransition
   ) {
@@ -32,7 +33,9 @@ export function morphLayout(update: () => void) {
   try {
     const transition = browser.startViewTransition(() =>
       flushSync(() => {
-        if (currentGeneration !== generation) {return;}
+        if (currentGeneration !== generation) {
+          return;
+        }
 
         committed = true;
         update();
@@ -42,10 +45,15 @@ export function morphLayout(update: () => void) {
     void transition.finished
       .catch(() => {})
       .finally(() => {
-        if (active === transition) {active = undefined;}
+        if (active === transition) {
+          active = undefined;
+        }
       });
   } catch (error) {
-    if (!committed) {update();}
-    else {throw error;}
+    if (!committed) {
+      update();
+    } else {
+      throw error;
+    }
   }
 }
