@@ -108,7 +108,10 @@ for (const { mobile, reduced } of [
     });
     await page.evaluate(() => {
       const samples: { at: number; paths: string[] }[] = [];
-      Object.assign(window, { __igorFluidSamples: samples });
+      Object.assign(window, {
+        __igorFluidSamples: samples,
+        __igorFluidSampling: true,
+      });
       const start = performance.now();
 
       const frame = () => {
@@ -123,7 +126,10 @@ for (const { mobile, reduced } of [
           paths: [...new Set(paths)],
         });
 
-        if (performance.now() - start < 2400) {
+        if (
+          (window as unknown as { __igorFluidSampling: boolean })
+            .__igorFluidSampling
+        ) {
           requestAnimationFrame(frame);
         }
       };
@@ -138,6 +144,28 @@ for (const { mobile, reduced } of [
     await detail.getByText("Include in comparison", { exact: true }).click();
     await expect(fluid).not.toBeChecked();
     await page.waitForTimeout(1100);
+    // Screenshot latency must not end sampling before the rejoin starts.
+    // Require the actual geometry to settle within a bounded deadline.
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const samples = (
+              window as unknown as {
+                __igorFluidSamples: { at: number; paths: string[] }[];
+              }
+            ).__igorFluidSamples;
+
+            return new Set(
+              samples.slice(-8).map((s) => JSON.stringify(s.paths)),
+            ).size;
+          }),
+        { timeout: 5000 },
+      )
+      .toBeLessThanOrEqual(2);
+    await page.evaluate(() => {
+      Object.assign(window, { __igorFluidSampling: false });
+    });
     const samples = await page.evaluate(
       () =>
         (
