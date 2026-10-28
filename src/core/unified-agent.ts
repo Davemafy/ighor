@@ -45,6 +45,30 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
     places: input.places, browser: input.browser, sources, runId,
   };
   const tools = createAgentToolRegistry(ctx);
+  if (task.agentRun) {
+    const previous = task.agentRun;
+    const finalStatus = ["completed", "partially_completed", "failed", "interrupted", "cancelled"]
+      .includes(previous.status) ? previous.status : "interrupted";
+    const savedArtifactIds = task.artifacts
+      .filter((artifact) => artifact.id.startsWith(`agent-doc-${previous.id}`))
+      .slice(-12)
+      .map((artifact) => artifact.id);
+    task.agentRunHistory = [
+      ...(task.agentRunHistory ?? []),
+      {
+        id: previous.id,
+        goal: previous.goal,
+        status: finalStatus as typeof previous.status,
+        startedAt: previous.startedAt,
+        archivedAt: now(),
+        requests: previous.requests,
+        modelSteps: previous.modelSteps,
+        toolNames: previous.steps.map((step) => step.tool),
+        sourceCount: previous.sources.length,
+        savedArtifactIds,
+      },
+    ].slice(-12);
+  }
   task.agentRun = {
     id: runId, goal: input.goal.slice(0,3000), status: "created",
     startedAt: now(), updatedAt: now(), maxSteps, maxRequests,
