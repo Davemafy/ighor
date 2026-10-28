@@ -17,6 +17,7 @@ const QuickRouteSchema = z.object({
     "clarification",
     "delegate",
     "research",
+    "agent",
     "draft",
   ]),
   query: z.string().trim().min(3).max(300).optional(),
@@ -40,6 +41,7 @@ const quickRouteInstructions = [
   "Use earlier user answers: the last message may be just a city, interests, 'former', 'go', 'where', or 'show me'. Resolve these against the current conversation, do not reset intake. If the user supplied a locality and activities, execute research NOW; do not repeat a preference question or claim that you are about to search.",
   "Choose research whenever a recommendation needs live places, hours, pricing, availability, opening/booking links or other current sources. Return the useful full search query containing user supplied city, activity, dates and size where known. Never claim a venue search was done in a conversation reply.",
   "Current popularity, popular demand, market demand, trends, most-played games and commercial viability require research, even in a short follow-up to a creative draft. For example, after a game concept, 'stop asking questions use popular demand' means research current gaming demand to inform that concept, not ask for a genre and not invent market trends from general knowledge. Resolve the topic from history and include it in a standalone query. General brainstorming may use assumptions, but never present those as current market evidence.",
+  "Choose agent for multi-step goals needing two or more of public research, cultural intelligence, venue investigation and creation of saved work. Supply a standalone goal/query preserving user-supplied cultural references, city, dates and constraints. The server chooses actual tools next; never pretend they have run. Choose delegate for edits to existing approved work.",
   "Choose delegate for saved document changes, actions, and Qloo cultural discovery when the user supplied a resolvable supported film/artist/TV anchor. Use the Qloo capability instead of fabricating cultural associations. Do not demand multiple named tastes before a first useful discovery attempt.",
   "Choose conversation for explanations, ordinary discussion, greetings and questions that need no external action or fresh facts. Clarify only a genuinely blocking missing parameter, at most one question; otherwise act and offer verification steps with the results.",
   "Research creates saved, evidence-linked work; a request to see results ('show me', 'where', 'go ahead') after planning needs tool execution or display of actual saved findings, never a promise that a plan exists.",
@@ -301,6 +303,7 @@ export class ToolCallingModel implements ModelProvider {
               "clarification",
               "delegate",
               "research",
+              "agent",
               "draft",
             ],
           },
@@ -364,7 +367,7 @@ export class ToolCallingModel implements ModelProvider {
       return recovery ? null : { intent: "draft" as const };
     }
 
-    if (route.intent === "research") {
+    if (route.intent === "research" || route.intent === "agent") {
       return !recovery && route.query
         ? { intent: "research" as const, query: route.query }
         : null;
