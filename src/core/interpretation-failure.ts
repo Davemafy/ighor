@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Report only known categories and schema paths, never raw provider content or credentials. */
 export function interpretationFailure(error: unknown): string {
   if (error instanceof ProviderHttpError) {
-    return `provider HTTP ${error.status} (${error.provider})${error.schemaKeywords.length ? `; schema keywords: ${error.schemaKeywords.join(", ")}` : ""}`;
+    return `provider HTTP ${error.status} (${error.provider})${error.category ? `; category: ${error.category}` : ""}${error.schemaKeywords.length ? `; schema keywords: ${error.schemaKeywords.join(", ")}` : ""}`;
   }
 
   if (error instanceof z.ZodError) {
@@ -123,13 +123,35 @@ function flattenIssues(
 /** Preserve only fixed diagnostic keywords; never retain the upstream body. */
 export class ProviderHttpError extends Error {
   readonly schemaKeywords: string[];
+  readonly category:
+    "credentials" | "billing" | "model" | "request-schema" | null;
   constructor(
     readonly provider: "OpenAI" | "Gemini" | "Grok" | "Claude",
     readonly status: number,
     body: string,
   ) {
     super(`${provider} returned HTTP ${status}; no retry.`);
+    const normalized = body.toLowerCase();
+    this.category =
+      /igor_error:credentials|api[ _-]?key|authentication|authorization|credential/.test(
+        normalized,
+      )
+        ? "credentials"
+        : /igor_error:billing|credit|billing|payment|balance|funds/.test(
+              normalized,
+            )
+          ? "billing"
+          : /igor_error:model|model.*(?:not exist|not found|access|unsupported)|unknown model/.test(
+                normalized,
+              )
+            ? "model"
+            : /igor_error:request-schema|schema|tool|function|parameter|argument/.test(
+                  normalized,
+                )
+              ? "request-schema"
+              : null;
     this.schemaKeywords = [
+      "schema",
       "anyOf",
       "oneOf",
       "const",
@@ -146,6 +168,6 @@ export class ProviderHttpError extends Error {
       "enum",
       "format",
       "type",
-    ].filter((keyword) => body.includes(keyword));
+    ].filter((keyword) => normalized.includes(keyword.toLowerCase()));
   }
 }

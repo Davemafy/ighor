@@ -29,7 +29,9 @@ export function sdkToolTransport(
     fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
       const response = await transport(url, { ...options, redirect: "error" });
       const raw = await readModelResponse(response).catch((error) => {
-        if (!response.ok) {return "";}
+        if (!response.ok) {
+          return "";
+        }
 
         throw error;
       });
@@ -43,7 +45,14 @@ export function sdkToolTransport(
 
         // Preserve only fixed diagnostic keywords, never the provider body.
         return Response.json(
-          { error: { message: diagnostic.schemaKeywords.join(" ") } },
+          {
+            error: {
+              message: [
+                ...diagnostic.schemaKeywords,
+                diagnostic.category ? `igor_error:${diagnostic.category}` : "",
+              ].join(" "),
+            },
+          },
           { status: response.status },
         );
       }
@@ -58,8 +67,11 @@ export function sdkToolTransport(
       });
     },
   };
-  const xai = createOpenAICompatible({ ...configuration, name: "xai", baseURL: "https://api.x.ai/v1",
-    transformRequestBody: body => ({ ...body, parallel_tool_calls: false }),
+  const xai = createOpenAICompatible({
+    ...configuration,
+    name: "xai",
+    baseURL: "https://api.x.ai/v1",
+    transformRequestBody: (body) => ({ ...body, parallel_tool_calls: false }),
   });
   const anthropic = createAnthropic(configuration);
 

@@ -44,9 +44,28 @@ it("can run on only the existing Anthropic key", () => {
     "GEMINI_API_KEY",
     "LLM_API_KEY",
     "IGOR_MODEL_PROVIDER",
-  ])
-    {vi.stubEnv(key, "");}
+  ]) {
+    vi.stubEnv(key, "");
+  }
 
   vi.stubEnv("ANTHROPIC_API_KEY", "test-claude");
   expect(runtimeModelProvider("qloo-live")).toBeInstanceOf(AnthropicModel);
+});
+
+it("reports only a fixed credential category for upstream API-key rejection", async () => {
+  const provider = new AnthropicModel(
+    "test-claude-secret",
+    "claude-sonnet-4-6",
+    async () =>
+      new Response("Incorrect API key supplied: PRIVATE-UPSTREAM-TEXT", {
+        status: 400,
+      }),
+  );
+  try {
+    await provider.interpret("Hello");
+    throw new Error("Expected rejection");
+  } catch (error) {
+    expect(error).toMatchObject({ status: 400, category: "credentials" });
+    expect(String(error)).not.toContain("PRIVATE-UPSTREAM-TEXT");
+  }
 });
