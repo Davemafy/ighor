@@ -27,6 +27,13 @@ export function readRevisionImpact(task: Task, document: SavedDocument) {
     ? excerpt(previous!.content, document.content)
     : null;
   const confirmedBudget = work?.budget?.confirmed ? work.budget.amount : null;
+  const retainedReferences = previous
+    ? (task.agentRun?.requirements?.culturalReferences ?? []).filter(
+        (reference) =>
+          previous.content.toLocaleLowerCase().includes(reference.toLocaleLowerCase()) &&
+          document.content.toLocaleLowerCase().includes(reference.toLocaleLowerCase()),
+      )
+    : [];
   const approvedElsewhere = [
     ...(work?.documents
       .filter((item) => item.id !== document.id && item.status === "approved")
@@ -52,7 +59,10 @@ export function readRevisionImpact(task: Task, document: SavedDocument) {
     }
   }
   const provenance = task.evidence.filter(
-    (item) => item.kind === "cultural" && item.freshness === "current",
+    (item) =>
+      document.evidenceIds.includes(item.id) &&
+      item.kind === "cultural" &&
+      item.freshness === "current",
   );
   return {
     documentId: document.id,
@@ -62,9 +72,12 @@ export function readRevisionImpact(task: Task, document: SavedDocument) {
     difference,
     confirmedBudget,
     approvedElsewhere,
+    retainedReferences,
     unresolved: [...new Set(unresolved)].slice(0, 6),
     cultural: {
-      live: provenance.filter((item) => item.delivery === "LIVE").length,
+      live: provenance.filter(
+        (item) => item.delivery === "LIVE" && item.source === "provider-returned",
+      ).length,
       cached: provenance.filter((item) => item.delivery === "CACHED").length,
       unclassified: provenance.filter((item) => !item.delivery).length,
     },

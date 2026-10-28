@@ -61,6 +61,16 @@ export function RevisionImpact({
           ) : (
             <p>No confirmed budget is stored.</p>
           )}
+          {impact.retainedReferences.length > 0 && (
+            <>
+              <small>REFERENCES IN BOTH SAVED VERSIONS</small>
+              <ul>
+                {impact.retainedReferences.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </>
+          )}
           {impact.approvedElsewhere.length ? (
             <>
               <small>OTHER WORK STILL APPROVED</small>
@@ -93,7 +103,7 @@ export function RevisionImpact({
       <footer>
         {sourceCount ? (
           <span>
-            Cultural evidence in current task: {impact.cultural.live} LIVE ·{" "}
+            Cultural evidence linked to this document: {impact.cultural.live} LIVE ·{" "}
             {impact.cultural.cached} CACHED ·{" "}
             {impact.cultural.unclassified} unspecified delivery.
             Inspect individual sources before using their claims.

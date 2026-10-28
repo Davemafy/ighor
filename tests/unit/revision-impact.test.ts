@@ -7,7 +7,8 @@ function savedTask() {
     id: "proposal",
     title: "Brooklyn proposal",
     goalId: "gathering",
-    content: "Direction: Radiohead. Budget: $3,000.",
+    content: "Direction: Radiohead with Sade and Wong Kar-wai. Budget: $3,000.",
+    evidenceIds: ["qloo-1"],
     version: 1,
     history: [],
     status: "proposed",
@@ -16,7 +17,7 @@ function savedTask() {
   };
   const current = {
     ...oldDocument,
-    content: "Direction: Bad Bunny. Budget: $3,000.",
+    content: "Direction: Bad Bunny with Sade and Wong Kar-wai. Budget: $3,000.",
     version: 2,
     history: [
       { version: 1, content: oldDocument.content, at: "2026-10-28T00:00:00Z", reason: "saved" },
@@ -38,9 +39,17 @@ function savedTask() {
         kind: "cultural",
         freshness: "current",
         delivery: "LIVE",
+        source: "provider-returned",
       },
     ],
-    agentRun: { acceptance: { checks: [{ requirement: "Cultural revision grounded", status: "unknown" }] } },
+    agentRun: {
+      requirements: { culturalReferences: ["Bad Bunny", "Sade", "Wong Kar-wai"] },
+      acceptance: {
+        checks: [
+          { requirement: "Cultural revision grounded", status: "unknown" },
+        ],
+      },
+    },
   } as unknown as Task;
 }
 
@@ -53,6 +62,7 @@ describe("judge-facing persisted revision impact", () => {
     expect(impact.difference?.after).toContain("Bad Bunny");
     expect(impact.confirmedBudget).toBe(3000);
     expect(impact.approvedElsewhere).toEqual(["Access principle"]);
+    expect(impact.retainedReferences).toEqual(["Sade", "Wong Kar-wai"]);
     expect(impact.unresolved).toContain("Cultural revision grounded (unknown)");
     expect(impact.cultural.live).toBe(1);
   });
@@ -67,6 +77,7 @@ describe("judge-facing persisted revision impact", () => {
     expect(impact.changed).toBe(false);
     expect(impact.previousVersion).toBeNull();
     expect(impact.approvedElsewhere).toEqual([]);
+    expect(impact.retainedReferences).toEqual([]);
     expect(impact.cultural.live).toBe(0);
   });
 
