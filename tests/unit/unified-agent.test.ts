@@ -195,6 +195,41 @@ describe("unified tool orchestration", () => {
     } finally { store.close(); }
   });
 
+  it("keeps prior execution receipts when a follow-up starts a fresh run", async () => {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask("multiple-runs", "owner");
+    store.create(task);
+    const search = vi.fn(async () => ({
+      status: "ok" as const, sources: [source()], requests: 1,
+    }));
+    const chooser = vi.fn(async (
+      _goal: string, _tools: unknown, observed: {tool:string}[],
+    ) => observed.length
+      ? {name: "agent.finish", arguments: {}}
+      : {name: "web.search", arguments: {query: "Berlin venue"}},
+    );
+    try {
+      const options = {
+        task, store, owner: "owner",
+        research: {research: vi.fn(), searchOnce: search},
+        model: {chooseAgentAction: chooser, async interpret() {throw new Error("unused");}},
+        trace() {},
+      };
+      await runUnifiedAgent({...options, goal: "Find first venue"});
+      const firstId = task.agentRun?.id;
+      expect(task.agentRun?.status).toBe("completed");
+      await runUnifiedAgent({...options, goal: "Investigate another venue"});
+      expect(task.agentRun?.id).not.toBe(firstId);
+      expect(task.agentRunHistory).toHaveLength(1);
+      expect(task.agentRunHistory?.[0]).toMatchObject({
+        id: firstId, goal: "Find first venue", status: "completed",
+        toolNames: ["web.search"], sourceCount: 1, requests: 1,
+      });
+      expect(store.load(task.id, "owner").agentRunHistory).toEqual(task.agentRunHistory);
+      expect(search).toHaveBeenCalledTimes(2);
+    } finally { store.close(); }
+  });
+
   it("preserves partial status when a run found sources but exhausted its steps before producing a deliverable", async () => {
     const store = new SqliteTaskStore(":memory:");
     const task = freshTask("partial-discovery", "owner");
