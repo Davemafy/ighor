@@ -21,20 +21,20 @@ describe("interrupted research presentation", () => {
       durationMs: 0,
       at: new Date(Date.now() - ageMs).toISOString(),
     });
+
     return task;
   }
 
   it("shows stale in-flight research as recoverable without dropping the user turn", () => {
     const store = new SqliteTaskStore(":memory:");
+
     try {
       const task = example(180000);
       store.create(task);
       const loaded = store.load(task.id, "owner");
       expect(loaded.status).toBe("partial");
       expect(loaded.error).toContain("interrupted");
-      expect(loaded.messages.at(-1)?.text).toBe(
-        "Find a current public source",
-      );
+      expect(loaded.messages.at(-1)?.text).toBe("Find a current public source");
       expect(loaded.trace).toHaveLength(task.trace.length);
       expect(loaded.brief.version).toBe(task.brief.version);
       expect(loaded.evidence).toEqual(task.evidence);
@@ -50,6 +50,7 @@ describe("interrupted research presentation", () => {
 
   it("does not interrupt active requests or unrelated long-running work", () => {
     const store = new SqliteTaskStore(":memory:");
+
     try {
       const active = example(1000);
       const cultural = example(180000, "cultural.discover");

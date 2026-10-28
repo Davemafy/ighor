@@ -124,7 +124,7 @@ export interface ModelProvider {
   chooseAgentAction?(
     goal: string,
     tools: AgentToolBrief[],
-    observations: {tool: string; status: string; summary: string}[],
+    observations: { tool: string; status: string; summary: string }[],
     context: Task,
   ): Promise<AgentToolChoice>;
   synthesizeResearch?(

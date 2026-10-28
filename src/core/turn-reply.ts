@@ -53,11 +53,10 @@ export function turnReply(task: Task, localChangeOnly = false): string {
   );
 
   if (qlooEvidence.length) {
-    const live = qlooEvidence.some(
-      (evidence) => evidence.delivery === "LIVE",
+    const live = qlooEvidence.some((evidence) => evidence.delivery === "LIVE");
+    const cachedOnly = qlooEvidence.every(
+      (evidence) => evidence.delivery === "CACHED",
     );
-    const cachedOnly = qlooEvidence
-      .every((evidence) => evidence.delivery === "CACHED");
     parts.push(
       cachedOnly
         ? "The cultural evidence comes from cached Qloo responses."

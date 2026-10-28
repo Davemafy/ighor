@@ -10,22 +10,26 @@ export function loadingFormat(
       /\b(?:films?|movies?|cinema|watch|albums?|records?|music|playlist)\b/i.test(
         text,
       )
-    )
-      {return "sleeves" as const;}
+    ) {
+      return "sleeves" as const;
+    }
 
     if (
       /\b(?:trip|travel|places?|getaway|itinerary|outing|caf[eé]s?|restaurants?|get-together|dining|venues?)\b/i.test(
         text,
       )
-    )
-      {return "postcards" as const;}
+    ) {
+      return "postcards" as const;
+    }
 
     return undefined;
   };
 
   const current = explicit(input);
 
-  if (current) {return current;}
+  if (current) {
+    return current;
+  }
 
   // Resolve short follow-ups from user intent rather than provider/error prose.
   const recent = task?.messages
@@ -36,7 +40,9 @@ export function loadingFormat(
   for (const message of recent ?? []) {
     const format = explicit(message.text);
 
-    if (format) {return format;}
+    if (format) {
+      return format;
+    }
   }
 
   return task?.brief.targetType === "movie" ||

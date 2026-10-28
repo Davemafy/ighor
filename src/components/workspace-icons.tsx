@@ -18,6 +18,7 @@ const paths = {
   Share2: "M12 16V3m-5 5 5-5 5 5M5 12v9h14v-9",
   X: "m6 6 12 12M18 6 6 18",
 };
+
 function icon(name: keyof typeof paths) {
   return function Icon(props: SVGProps<SVGSVGElement>) {
     return (
@@ -39,20 +40,21 @@ function icon(name: keyof typeof paths) {
     );
   };
 }
-export const ArrowLeft = icon("ArrowLeft"),
-  ArrowRight = icon("ArrowRight"),
-  ArrowUpRight = icon("ArrowUpRight"),
-  Bookmark = icon("Bookmark"),
-  ChevronDown = icon("ChevronDown"),
-  FileText = icon("FileText"),
-  LoaderCircle = icon("LoaderCircle"),
-  Menu = icon("Menu"),
-  MessageCircle = icon("MessageCircle"),
-  Plus = icon("Plus"),
-  Save = icon("Save"),
-  Search = icon("Search"),
-  Share2 = icon("Share2"),
-  X = icon("X");
+
+export const ArrowLeft = icon("ArrowLeft");
+export const ArrowRight = icon("ArrowRight");
+export const ArrowUpRight = icon("ArrowUpRight");
+export const Bookmark = icon("Bookmark");
+export const ChevronDown = icon("ChevronDown");
+export const FileText = icon("FileText");
+export const LoaderCircle = icon("LoaderCircle");
+export const Menu = icon("Menu");
+export const MessageCircle = icon("MessageCircle");
+export const Plus = icon("Plus");
+export const Save = icon("Save");
+export const Search = icon("Search");
+export const Share2 = icon("Share2");
+export const X = icon("X");
 
 // Compose a new conversation: established square-and-pencil action glyph.
 export { SquarePen as Compose } from "lucide-react";

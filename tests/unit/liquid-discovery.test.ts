@@ -26,7 +26,11 @@ const discovery = PresentationSchema.parse({
   basis: "draft",
   root: "choices",
   nodes: [
-    { id: "choices", type: "discovery", candidateIds: ["moonrise", "arrival", "spirited"] },
+    {
+      id: "choices",
+      type: "discovery",
+      candidateIds: ["moonrise", "arrival", "spirited"],
+    },
   ],
 });
 
@@ -50,26 +54,61 @@ function mutate(
 
 it("morphs discovery into grounded comparison and a user-curated plan without inventing entities", () => {
   let canvas = installPresentation(undefined, discovery);
-  expect(() => mutate(canvas, { operation: "view", nodeId: "choices", mode: "compare" }))
-    .toThrow(/Select two current/);
-  expect(() => mutate(canvas, { operation: "view", nodeId: "choices", mode: "plan" }))
-    .toThrow(/Choose a current/);
+  expect(() =>
+    mutate(canvas, { operation: "view", nodeId: "choices", mode: "compare" }),
+  ).toThrow(/Select two current/);
+  expect(() =>
+    mutate(canvas, { operation: "view", nodeId: "choices", mode: "plan" }),
+  ).toThrow(/Choose a current/);
 
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" });
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
-  canvas = mutate(canvas, { operation: "view", nodeId: "choices", mode: "compare" });
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "moonrise",
+  });
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  canvas = mutate(canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "compare",
+  });
   expect(canvas.comparisonIds).toEqual(["moonrise", "arrival"]);
   expect(canvas.viewModes.choices).toBe("compare");
 
-  canvas = mutate(canvas, { operation: "select", nodeId: "choices", candidateId: "arrival" });
-  canvas = mutate(canvas, { operation: "view", nodeId: "choices", mode: "plan" });
+  canvas = mutate(canvas, {
+    operation: "select",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  canvas = mutate(canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "plan",
+  });
   expect(canvas.itineraryIds).toEqual(["arrival"]);
-  canvas = mutate(canvas, { operation: "itinerary-day", nodeId: "choices", candidateId: "arrival", day: 2 });
-  canvas = mutate(canvas, { operation: "itinerary", nodeId: "choices", candidateIds: ["arrival", "moonrise"] });
+  canvas = mutate(canvas, {
+    operation: "itinerary-day",
+    nodeId: "choices",
+    candidateId: "arrival",
+    day: 2,
+  });
+  canvas = mutate(canvas, {
+    operation: "itinerary",
+    nodeId: "choices",
+    candidateIds: ["arrival", "moonrise"],
+  });
   expect(canvas.itineraryIds).toEqual(["arrival", "moonrise"]);
   expect(canvas.itineraryDays.arrival).toBe(2);
 
-  canvas = mutate(canvas, { operation: "view", nodeId: "choices", mode: "explore" });
+  canvas = mutate(canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "explore",
+  });
   expect(canvas.comparisonIds).toEqual(["moonrise", "arrival"]);
   expect(canvas.itineraryIds).toEqual(["arrival", "moonrise"]);
   expect(canvas.viewModes.choices).toBe("explore");
@@ -77,74 +116,138 @@ it("morphs discovery into grounded comparison and a user-curated plan without in
 
 it("rejects forged, stale, unsupported and insufficient direct UI transitions", () => {
   let canvas = installPresentation(undefined, discovery);
+
   for (const candidateId of ["forged", "stale"]) {
-    expect(() => mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId }))
-      .toThrow(/Compare only current/);
+    expect(() =>
+      mutate(canvas, {
+        operation: "compare-selection",
+        nodeId: "choices",
+        candidateId,
+      }),
+    ).toThrow(/Compare only current/);
   }
-  expect(() => mutate(canvas, { operation: "view", nodeId: "missing", mode: "compare" }))
-    .toThrow(/Component not found/);
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" });
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
-  canvas = mutate(canvas, { operation: "view", nodeId: "choices", mode: "compare" });
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
+
+  expect(() =>
+    mutate(canvas, { operation: "view", nodeId: "missing", mode: "compare" }),
+  ).toThrow(/Component not found/);
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "moonrise",
+  });
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  canvas = mutate(canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "compare",
+  });
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
   expect(canvas.viewModes.choices).toBe("explore");
-  expect(() => mutateCanvas(canvas, "old-surface", {
-    operation: "view", nodeId: "choices", mode: "explore",
-  }, context)).toThrow(/replaced/);
+  expect(() =>
+    mutateCanvas(
+      canvas,
+      "old-surface",
+      {
+        operation: "view",
+        nodeId: "choices",
+        mode: "explore",
+      },
+      context,
+    ),
+  ).toThrow(/replaced/);
 });
 
 it("persists selection, comparison, plan and scheduled day through the actual turn route and reload", async () => {
   const task = freshTask("liquid-persisted", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
-  task.canvas = installPresentation(undefined, validatePresentation(discovery, task));
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
+  task.canvas = installPresentation(
+    undefined,
+    validatePresentation(discovery, task),
+  );
   const store = new SqliteTaskStore(":memory:");
   stores.push(store);
   store.create(task);
   let state = task;
   const actions = [
-    { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" },
-    { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" },
+    {
+      operation: "compare-selection",
+      nodeId: "choices",
+      candidateId: "moonrise",
+    },
+    {
+      operation: "compare-selection",
+      nodeId: "choices",
+      candidateId: "arrival",
+    },
     { operation: "view", nodeId: "choices", mode: "compare" },
     { operation: "select", nodeId: "choices", candidateId: "arrival" },
     { operation: "view", nodeId: "choices", mode: "plan" },
-    { operation: "itinerary-day", nodeId: "choices", candidateId: "arrival", day: 2 },
+    {
+      operation: "itinerary-day",
+      nodeId: "choices",
+      candidateId: "arrival",
+      day: 2,
+    },
   ] as const;
+
   for (const mutation of actions) {
     state = await runTurn(store, state.id, "owner", {
-      type: "canvas", surfaceId: "liquid-journey", mutation,
+      type: "canvas",
+      surfaceId: "liquid-journey",
+      mutation,
       version: state.brief.version,
     });
   }
+
   const restored = store.load(state.id, "owner");
   expect(restored.canvas?.viewModes.choices).toBe("plan");
   expect(restored.canvas?.comparisonIds).toEqual(["moonrise", "arrival"]);
   expect(restored.canvas?.selectedCandidateId).toBe("arrival");
   expect(restored.canvas?.itineraryDays.arrival).toBe(2);
-  expect(modelContext(restored, "Keep the selected option").canvas?.comparisonIds)
-    .toEqual(["moonrise", "arrival"]);
-  expect(modelContext(restored, "Keep the selected option").canvas?.viewModes.choices)
-    .toBe("plan");
+  expect(
+    modelContext(restored, "Keep the selected option").canvas?.comparisonIds,
+  ).toEqual(["moonrise", "arrival"]);
+  expect(
+    modelContext(restored, "Keep the selected option").canvas?.viewModes
+      .choices,
+  ).toBe("plan");
 
-  await expect(runTurn(store, state.id, "wrong-owner", {
-    type: "canvas", surfaceId: "liquid-journey",
-    mutation: { operation: "view", nodeId: "choices", mode: "explore" },
-    version: state.brief.version,
-  })).rejects.toThrow();
-  await expect(runTurn(store, state.id, "owner", {
-    type: "canvas", surfaceId: "liquid-journey",
-    mutation: { operation: "view", nodeId: "choices", mode: "explore" },
-    version: state.brief.version - 1,
-  })).rejects.toThrow();
+  await expect(
+    runTurn(store, state.id, "wrong-owner", {
+      type: "canvas",
+      surfaceId: "liquid-journey",
+      mutation: { operation: "view", nodeId: "choices", mode: "explore" },
+      version: state.brief.version,
+    }),
+  ).rejects.toThrow();
+  await expect(
+    runTurn(store, state.id, "owner", {
+      type: "canvas",
+      surfaceId: "liquid-journey",
+      mutation: { operation: "view", nodeId: "choices", mode: "explore" },
+      version: state.brief.version - 1,
+    }),
+  ).rejects.toThrow();
   expect(store.load(state.id, "owner").canvas?.viewModes.choices).toBe("plan");
 });
 
@@ -156,17 +259,21 @@ it("does not treat an arbitrary short follow-up as consent to a new taste prefer
   const update = await interpretMessage(
     task,
     { type: "message", text: "Go", version: 0 },
-    { interpret: async () => ({
-      intent: "revision",
-      kind: "discovery",
-      goal: "Continue the existing request",
-      supported: true,
-      actions: [{
-        kind: "profile",
-        participant: "you",
-        preferences: [{ value: "Go", polarity: "like" }],
-      }],
-    }) },
+    {
+      interpret: async () => ({
+        intent: "revision",
+        kind: "discovery",
+        goal: "Continue the existing request",
+        supported: true,
+        actions: [
+          {
+            kind: "profile",
+            participant: "you",
+            preferences: [{ value: "Go", polarity: "like" }],
+          },
+        ],
+      }),
+    },
     new ExecutionBudget(),
     () => {},
   );
@@ -176,20 +283,33 @@ it("does not treat an arbitrary short follow-up as consent to a new taste prefer
 
 it("allows a natural-language tool decision to morph only grounded, preselected work", () => {
   const task = freshTask("agent-morph", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
-  let canvas = installPresentation(undefined, validatePresentation(discovery, task));
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
-  canvas = mutate(canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" });
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
+  let canvas = installPresentation(
+    undefined,
+    validatePresentation(discovery, task),
+  );
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  canvas = mutate(canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "moonrise",
+  });
   task.canvas = canvas;
   const result = applyConversationActions(
     task,
@@ -197,7 +317,11 @@ it("allows a natural-language tool decision to morph only grounded, preselected 
     "Compare these two",
   );
   expect(result.ok).toBe(true);
-  if (!result.ok) return;
+
+  if (!result.ok) {
+    return;
+  }
+
   expect(result.task.canvas?.viewModes.choices).toBe("compare");
   expect(result.task.candidates).toEqual(task.candidates);
   expect(result.task.brief).toEqual(task.brief);
@@ -214,102 +338,182 @@ it("allows a natural-language tool decision to morph only grounded, preselected 
 
 it("renders distinctly composed comparison and plan views from persisted state", () => {
   const task = freshTask("render-views", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
-  const node = discovery.nodes.find((component) => component.type === "discovery");
-  if (!node || node.type !== "discovery") throw Error("Discovery fixture missing");
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
+  const node = discovery.nodes.find(
+    (component) => component.type === "discovery",
+  );
+
+  if (!node || node.type !== "discovery") {
+    throw Error("Discovery fixture missing");
+  }
+
   task.canvas = installPresentation(undefined, discovery);
-  const render = () => renderToStaticMarkup(createElement(LiquidDiscovery, {
-    task, node, busy: false, mutate: () => {}, onTurn: () => {},
-  }));
+  const render = () =>
+    renderToStaticMarkup(
+      createElement(LiquidDiscovery, {
+        task,
+        node,
+        busy: false,
+        mutate: () => {},
+        onTurn: () => {},
+      }),
+    );
   expect(render()).toContain('data-mode="explore"');
-  task.canvas = mutate(task.canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" });
-  task.canvas = mutate(task.canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
-  task.canvas = mutate(task.canvas, { operation: "view", nodeId: "choices", mode: "compare" });
+  task.canvas = mutate(task.canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "moonrise",
+  });
+  task.canvas = mutate(task.canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  task.canvas = mutate(task.canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "compare",
+  });
   expect(render()).toContain('data-mode="compare"');
   expect(render()).toContain("Look closer");
-  task.canvas = mutate(task.canvas, { operation: "select", nodeId: "choices", candidateId: "arrival" });
-  task.canvas = mutate(task.canvas, { operation: "view", nodeId: "choices", mode: "plan" });
+  task.canvas = mutate(task.canvas, {
+    operation: "select",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
+  task.canvas = mutate(task.canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "plan",
+  });
   expect(render()).toContain('data-mode="plan"');
   expect(render()).toContain("Draft a plan with Igor");
 });
 
 it("commits a spoken comparison view change without calling Qloo or rewriting artifacts", async () => {
   const task = freshTask("spoken-morph", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
   task.canvas = installPresentation(undefined, discovery);
-  task.canvas = mutate(task.canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "moonrise" });
-  task.canvas = mutate(task.canvas, { operation: "compare-selection", nodeId: "choices", candidateId: "arrival" });
+  task.canvas = mutate(task.canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "moonrise",
+  });
+  task.canvas = mutate(task.canvas, {
+    operation: "compare-selection",
+    nodeId: "choices",
+    candidateId: "arrival",
+  });
   const before = structuredClone(task.candidates);
   const store = new SqliteTaskStore(":memory:");
   stores.push(store);
   store.create(task);
   let culturalRequests = 0;
   const updated = await runTurn(
-    store, task.id, "owner",
+    store,
+    task.id,
+    "owner",
     { type: "message", text: "Compare the two options I chose", version: 0 },
     undefined,
     {
-      get calls() { return culturalRequests; },
-      async resolve() { culturalRequests++; throw Error("No Qloo needed"); },
-      async discover() { culturalRequests++; throw Error("No Qloo needed"); },
+      get calls() {
+        return culturalRequests;
+      },
+      async resolve() {
+        culturalRequests++;
+        throw Error("No Qloo needed");
+      },
+      async discover() {
+        culturalRequests++;
+        throw Error("No Qloo needed");
+      },
     },
-    { async interpret() {
-      return {
-        intent: "revision",
-        supported: true,
-        kind: "discovery",
-        goal: "Continue this comparison",
-        actions: [{ kind: "canvas-view", nodeId: "choices", mode: "compare" }],
-      };
-    } },
+    {
+      async interpret() {
+        return {
+          intent: "revision",
+          supported: true,
+          kind: "discovery",
+          goal: "Continue this comparison",
+          actions: [
+            { kind: "canvas-view", nodeId: "choices", mode: "compare" },
+          ],
+        };
+      },
+    },
   );
   expect(culturalRequests).toBe(0);
   expect(updated.canvas?.viewModes.choices).toBe("compare");
   expect(updated.candidates).toEqual(before);
   expect(updated.receipts?.at(-1)?.culturalRequests).toBe(0);
-  expect(store.load(task.id, "owner").canvas?.viewModes.choices).toBe("compare");
+  expect(store.load(task.id, "owner").canvas?.viewModes.choices).toBe(
+    "compare",
+  );
 });
 
 it("shows only stored Qloo query relationships, not invented cross-domain edges", () => {
   const task = freshTask("sourced-connections", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
   task.canvas = installPresentation(undefined, discovery);
-  task.canvas = mutate(task.canvas, { operation: "view", nodeId: "choices", mode: "connections" });
-  const node = discovery.nodes.find((component) => component.type === "discovery");
-  if (!node || node.type !== "discovery") throw Error("Missing discovery fixture");
-  const render = () => renderToStaticMarkup(createElement(LiquidDiscovery, {
-    task, node, busy: false, mutate: () => {}, onTurn: () => {},
-  }));
+  task.canvas = mutate(task.canvas, {
+    operation: "view",
+    nodeId: "choices",
+    mode: "connections",
+  });
+  const node = discovery.nodes.find(
+    (component) => component.type === "discovery",
+  );
+
+  if (!node || node.type !== "discovery") {
+    throw Error("Missing discovery fixture");
+  }
+
+  const render = () =>
+    renderToStaticMarkup(
+      createElement(LiquidDiscovery, {
+        task,
+        node,
+        busy: false,
+        mutate: () => {},
+        onTurn: () => {},
+      }),
+    );
 
   expect(render()).toContain("No traceable Qloo connection");
   expect(render()).not.toContain("Rank 2 within this query");
@@ -325,20 +529,22 @@ it("shows only stored Qloo query relationships, not invented cross-domain edges"
       retrievedAt: "2026-10-27T00:00:00.000Z",
     },
   };
-  task.evidence = [{
-    id: "qloo-1",
-    kind: "cultural",
-    source: "provider-returned",
-    delivery: "CACHED",
-    at: "2026-10-27T00:00:00.000Z",
-    reference: "Recorded provider fixture",
-    entityIds: ["seed-recorded"],
-    summary: "A recorded cultural recommendation",
-    limitations: ["Query seeds do not prove a per-result explanation"],
-    explanation: null,
-    dependencies: [],
-    freshness: "current",
-  }];
+  task.evidence = [
+    {
+      id: "qloo-1",
+      kind: "cultural",
+      source: "provider-returned",
+      delivery: "CACHED",
+      at: "2026-10-27T00:00:00.000Z",
+      reference: "Recorded provider fixture",
+      entityIds: ["seed-recorded"],
+      summary: "A recorded cultural recommendation",
+      limitations: ["Query seeds do not prove a per-result explanation"],
+      explanation: null,
+      dependencies: [],
+      freshness: "current",
+    },
+  ];
   expect(render()).toContain("Rank 2 within this query");
   expect(render()).toContain("query-42");
   expect(render()).toContain("Query seed: seed-recorded");
@@ -347,29 +553,83 @@ it("shows only stored Qloo query relationships, not invented cross-domain edges"
 
 it("preserves view and scheduling through legacy canvas rebinding without keeping invalid comparisons", () => {
   const task = freshTask("rebound-canvas", "owner");
-  task.candidates = sampleCatalogue().slice(0, 3).map((candidate) => ({
-    ...candidate,
-    eligibility: "eligible" as const,
-    dependencies: [],
-    freshness: "current" as const,
-    missing: [],
-    violations: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "Illustrative only",
-  }));
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate) => ({
+      ...candidate,
+      eligibility: "eligible" as const,
+      dependencies: [],
+      freshness: "current" as const,
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "Illustrative only",
+    }));
   ensureBoundPresentation(task);
-  if (!task.canvas) throw Error("Expected adapter canvas");
+
+  if (!task.canvas) {
+    throw Error("Expected adapter canvas");
+  }
+
   expect(task.canvas.source).toBe("adapter");
   let canvas = task.canvas;
   const sid = canvas.surface.id;
-  canvas = mutateCanvas(canvas, sid, { operation: "compare-selection", nodeId: "discoveries", candidateId: "moonrise" }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "compare-selection", nodeId: "discoveries", candidateId: "arrival" }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "view", nodeId: "discoveries", mode: "compare" }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "select", nodeId: "discoveries", candidateId: "arrival" }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "view", nodeId: "discoveries", mode: "plan" }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "itinerary-day", nodeId: "discoveries", candidateId: "arrival", day: 2 }, task);
-  canvas = mutateCanvas(canvas, sid, { operation: "view", nodeId: "discoveries", mode: "compare" }, task);
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    {
+      operation: "compare-selection",
+      nodeId: "discoveries",
+      candidateId: "moonrise",
+    },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    {
+      operation: "compare-selection",
+      nodeId: "discoveries",
+      candidateId: "arrival",
+    },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    { operation: "view", nodeId: "discoveries", mode: "compare" },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    { operation: "select", nodeId: "discoveries", candidateId: "arrival" },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    { operation: "view", nodeId: "discoveries", mode: "plan" },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    {
+      operation: "itinerary-day",
+      nodeId: "discoveries",
+      candidateId: "arrival",
+      day: 2,
+    },
+    task,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    sid,
+    { operation: "view", nodeId: "discoveries", mode: "compare" },
+    task,
+  );
   task.canvas = canvas;
   task.brief.version++;
   ensureBoundPresentation(task);

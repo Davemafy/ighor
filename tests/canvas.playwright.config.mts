@@ -40,7 +40,7 @@ export default defineConfig({
     {
       name: "mobile-small",
       use: {
-        viewport: {width: 320, height: 740},
+        viewport: { width: 320, height: 740 },
         isMobile: true,
         hasTouch: true,
         contextOptions: { reducedMotion: "reduce" },
@@ -49,7 +49,7 @@ export default defineConfig({
     {
       name: "mobile-wide",
       use: {
-        viewport: {width: 430, height: 932},
+        viewport: { width: 430, height: 932 },
         isMobile: true,
         hasTouch: true,
         contextOptions: { reducedMotion: "reduce" },

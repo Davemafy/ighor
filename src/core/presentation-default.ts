@@ -104,12 +104,14 @@ export function ensureBoundPresentation(task: Task) {
     // The adapter may have received a different candidate pool. Never leave a
     // comparison visually active with fewer than two currently offered items.
     const offered = new Set(
-      task.candidates.filter((candidate) => candidate.freshness === "current")
+      task.candidates
+        .filter((candidate) => candidate.freshness === "current")
         .map((candidate) => candidate.id),
     );
     task.canvas.comparisonIds = task.canvas.comparisonIds.filter((id) =>
       offered.has(id),
     );
+
     if (
       task.canvas.viewModes.discoveries === "compare" &&
       task.canvas.comparisonIds.length < 2

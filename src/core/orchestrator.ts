@@ -253,12 +253,14 @@ export async function runTurn(
     TaskSchema.parse(task);
     store.save(task, receiptFromVersion, owner);
     emit({ type: "state", task: structuredClone(task) });
+
     // Run Qloo locality/category exploration alongside web research when
     // the current conversation supplies a city. Unknown fees, opening times,
     // games and bookings remain unknown.
     if (update.practicalLocation && task.mode === "qloo-live") {
       provider ??= runtimeCulturalProvider(task.mode);
     }
+
     const autonomousAgent = Boolean(model.chooseAgentAction);
     const localityLookup =
       !autonomousAgent && update.practicalLocation && provider?.exploreLocality
@@ -267,6 +269,7 @@ export async function runTurn(
               "tool.invoke:qloo_locality",
               "Retrieving Qloo places matching the user-supplied locality and dining category.",
             );
+
             return withToolDeadline(
               provider.exploreLocality!(
                 update.practicalLocation!,
@@ -278,20 +281,31 @@ export async function runTurn(
         : Promise.resolve(null);
     const liveResearch = researchProvider ?? runtimeResearchProvider();
     let research: ResearchResult;
+
     try {
       if (autonomousAgent) {
         // The same persisted task and provider contracts now feed one
         // model-directed execution loop; no fixed tool order is imposed.
-        provider ??= task.mode === "qloo-live"
-          ? runtimeCulturalProvider(task.mode) : undefined;
+        provider ??=
+          task.mode === "qloo-live"
+            ? runtimeCulturalProvider(task.mode)
+            : undefined;
         research = await runUnifiedAgent({
-          task, store, owner,
+          task,
+          store,
+          owner,
           goal: input.type === "message" ? input.text : update.researchQuery,
-          model, research: liveResearch,
+          model,
+          research: liveResearch,
           cultural: provider,
-          places: process.env.GOOGLE_MAPS_API_KEY ? runtimePlacesProvider() : undefined,
-          browser: process.env.BROWSERBASE_API_KEY ? runtimeBrowserbaseObserver() : undefined,
-          trace, send: emit,
+          places: process.env.GOOGLE_MAPS_API_KEY
+            ? runtimePlacesProvider()
+            : undefined,
+          browser: process.env.BROWSERBASE_API_KEY
+            ? runtimeBrowserbaseObserver()
+            : undefined,
+          trace,
+          send: emit,
         });
       } else {
         research = await withToolDeadline(
@@ -302,9 +316,14 @@ export async function runTurn(
     } catch (error) {
       // Optimistic write conflicts must propagate. They mean the user made a
       // newer edit, which always wins over a late agent observation.
-      if (error instanceof ConflictError) throw error;
+      if (error instanceof ConflictError) {
+        throw error;
+      }
+
       research = {
-        status: "error", sources: [], requests: 0,
+        status: "error",
+        sources: [],
+        requests: 0,
         warning: "Live research failed before source verification.",
       };
     }
@@ -314,18 +333,26 @@ export async function runTurn(
       `Research returned ${research.status}: ${research.sources.length} sources, ${research.requests} external requests.`,
       research.requests,
     );
+
     // Real agentic continuation: inspect the actual web observations before
     // deciding whether a second search or a verified-source read is useful.
     // The runtime enforces exact observed source IDs and a finite tool budget.
     if (!autonomousAgent) {
       research = await agentResearchLoop(
         input.type === "message" ? input.text : update.researchQuery,
-        update.researchQuery, research, liveResearch, model, task, trace,
+        update.researchQuery,
+        research,
+        liveResearch,
+        model,
+        task,
+        trace,
       );
     }
+
     const locality = await localityLookup;
     const qlooPlaces = locality?.data.places ?? [];
     const qlooEvidence = locality?.data.evidence ?? [];
+
     if (update.practicalLocation) {
       trace(
         "tool.result:qloo_locality",
@@ -336,14 +363,17 @@ export async function runTurn(
         locality?.evidenceIds ?? [],
       );
     }
+
     task.evidence.push(...qlooEvidence);
-    const researchEvidenceIds = research.sources.map(
-      (source) => task.agentRun
+    const researchEvidenceIds = research.sources.map((source) =>
+      task.agentRun
         ? `${task.id}:agent:${task.agentRun.id}:${source.id}`
         : `${task.id}:web:${receiptFromVersion + 1}:${source.id}`,
     );
+
     for (const [index, source] of research.sources.entries()) {
-      const previewImageUrl = source.imageUrl ??
+      const previewImageUrl =
+        source.imageUrl ??
         researchPagePreview(source.excerpt ?? "", source.url);
 
       task.evidence.push({
@@ -357,7 +387,9 @@ export async function runTurn(
         entityIds: [],
         summary: `${source.title}: ${(source.excerpt ?? source.snippet).slice(0, 1100)}`,
         limitations: source.excerpt
-          ? ["Retrieved webpage text is third-party content, not independently verified."]
+          ? [
+              "Retrieved webpage text is third-party content, not independently verified.",
+            ]
           : ["Search snippet only; webpage was not opened."],
         explanation: null,
         dependencies: [],
@@ -366,6 +398,7 @@ export async function runTurn(
     }
 
     let answer = "";
+
     if (research.sources.length && model.synthesizeResearch) {
       try {
         const synthesized = await withToolDeadline(
@@ -378,20 +411,25 @@ export async function runTurn(
         );
         const ids = new Set(research.sources.map((source) => source.id));
         const used = new Set(synthesized.sourceIds);
-        const inline = [...synthesized.text.matchAll(/\[(web-\d+)\]/g)]
-          .map((match) => match[1]);
+        const inline = [...synthesized.text.matchAll(/\[(web-\d+)\]/g)].map(
+          (match) => match[1],
+        );
+
         if (
           !inline.length ||
           !used.size ||
           synthesized.sourceIds.some((sourceId) => !ids.has(sourceId)) ||
           inline.some((sourceId) => !used.has(sourceId)) ||
-          synthesized.sourceIds.some((sourceId) => !inline.includes(sourceId)) ||
+          synthesized.sourceIds.some(
+            (sourceId) => !inline.includes(sourceId),
+          ) ||
           /\bI(?:\s+have|['’]ve)?\s+(?:booked|ordered|purchased|sent|reserved)\b/i.test(
             synthesized.text,
           )
         ) {
           throw new Error("Research synthesis contains unsupported claims.");
         }
+
         answer = synthesized.text;
       } catch {
         // Never replace real provider observations with fabricated synthesis.
@@ -406,7 +444,14 @@ export async function runTurn(
     const references = research.sources
       .map(
         (source) =>
-          `[${source.id}] ${source.title.replace(/[\r\n]/g, " ").replaceAll("[", "(").replaceAll("]", ")").slice(0, 140)} — ${source.url}${source.excerpt ? " (page retrieved)" : " (search snippet only)"}`,
+          `[${source.id}] ${source.title
+            .replace(/[\r\n]/g, " ")
+            .replaceAll("[", "(")
+            .replaceAll("]", ")")
+            .slice(
+              0,
+              140,
+            )} — ${source.url}${source.excerpt ? " (page retrieved)" : " (search snippet only)"}`,
       )
       .join("\n");
 
@@ -424,8 +469,8 @@ export async function runTurn(
       answer ||
         (research.sources.length
           ? "I retrieved these sources, but could not verify a complete answer. Here is the available evidence."
-          : research.warning ??
-            "Live research is unavailable; no external facts were retrieved."),
+          : (research.warning ??
+            "Live research is unavailable; no external facts were retrieved.")),
       research.warning && research.sources.length ? research.warning : "",
       references ? `Sources:\n${references}` : "",
       qlooReferences
@@ -445,10 +490,12 @@ export async function runTurn(
       evidenceIds: allEvidenceIds,
       at: at(),
     });
+
     if (research.sources.length || qlooPlaces.length) {
       if (!task.brief.goal && update.practicalLocation) {
         task.brief.goal = `Explore practical options in ${update.practicalLocation}`;
       }
+
       // Public research must deliver actual, persistent work rather than a
       // chat promise. Each run creates a traceable, editable research document,
       // with evidence IDs resolving to provider-returned source URLs.
@@ -456,55 +503,59 @@ export async function runTurn(
       const alreadyComposed = task.agentRun?.steps.some(
         (step) => step.tool === "document.create" && step.status === "ok",
       );
+
       if (!alreadyComposed) {
-      const report = [
-        "# Explored options",
-        ...(update.practicalLocation
-          ? [
-              `Requested locality: ${update.practicalLocation} (user-supplied)`,
-              "",
-            ]
-          : []),
-        answer ||
-          "Research returned these references. A full synthesized comparison could not be verified.",
-        "",
-        "## Retrieved references",
-        ...research.sources.map(
-          (source) =>
-            `- [${source.id}] ${source.title.replace(/[\r\n]/g, " ").slice(0, 140)} — ${source.url} (${source.excerpt ? "page text opened" : "search snippet only"})`,
-        ),
-        "",
-        ...(qlooPlaces.length
-          ? [
-              "",
-              "## Qloo location and restaurant-category results",
-              ...qlooPlaces.map(
-                (place, index) =>
-                  `${index + 1}. ${place.name}${place.address ? ` — ${place.address}` : ""}${place.website ? ` — ${place.website}` : ""} (Qloo location/category lead; games and availability unverified)`,
-              ),
-            ]
-          : []),
-        "## Before you go",
-        "Sources are leads, not confirmation of prices, seating, operating hours, board games or a reservation. Confirm with the venue before committing money or travel.",
-        ...(research.warning ? ["", `Research limitation: ${research.warning}`] : []),
-      ].join("\n");
-      task.artifacts.push({
-        id: `web-research-${researchStageVersion}`,
-        kind: "research-report",
-        title: update.practicalLocation
-          ? `${update.practicalLocation} — options to check`
-          : "Research-backed options",
-        content: report,
-        version: researchStageVersion,
-        dependencies: ["evidence:research"],
-        evidenceIds: allEvidenceIds,
-        assumptions: [
-          "Public search and Qloo category results do not verify availability, games, seating or price.",
-        ],
-        freshness: "current",
-        edited: false,
-      });
+        const report = [
+          "# Explored options",
+          ...(update.practicalLocation
+            ? [
+                `Requested locality: ${update.practicalLocation} (user-supplied)`,
+                "",
+              ]
+            : []),
+          answer ||
+            "Research returned these references. A full synthesized comparison could not be verified.",
+          "",
+          "## Retrieved references",
+          ...research.sources.map(
+            (source) =>
+              `- [${source.id}] ${source.title.replace(/[\r\n]/g, " ").slice(0, 140)} — ${source.url} (${source.excerpt ? "page text opened" : "search snippet only"})`,
+          ),
+          "",
+          ...(qlooPlaces.length
+            ? [
+                "",
+                "## Qloo location and restaurant-category results",
+                ...qlooPlaces.map(
+                  (place, index) =>
+                    `${index + 1}. ${place.name}${place.address ? ` — ${place.address}` : ""}${place.website ? ` — ${place.website}` : ""} (Qloo location/category lead; games and availability unverified)`,
+                ),
+              ]
+            : []),
+          "## Before you go",
+          "Sources are leads, not confirmation of prices, seating, operating hours, board games or a reservation. Confirm with the venue before committing money or travel.",
+          ...(research.warning
+            ? ["", `Research limitation: ${research.warning}`]
+            : []),
+        ].join("\n");
+        task.artifacts.push({
+          id: `web-research-${researchStageVersion}`,
+          kind: "research-report",
+          title: update.practicalLocation
+            ? `${update.practicalLocation} — options to check`
+            : "Research-backed options",
+          content: report,
+          version: researchStageVersion,
+          dependencies: ["evidence:research"],
+          evidenceIds: allEvidenceIds,
+          assumptions: [
+            "Public search and Qloo category results do not verify availability, games, seating or price.",
+          ],
+          freshness: "current",
+          edited: false,
+        });
       }
+
       trace(
         "compose.research",
         alreadyComposed
@@ -514,6 +565,7 @@ export async function runTurn(
         allEvidenceIds,
       );
     }
+
     if (research.status === "ok" && answer) {
       // A read-only answer does not invalidate previously ready cultural work.
       // Recover an earlier interpretation error only after this turn succeeds.
@@ -531,10 +583,15 @@ export async function runTurn(
           ? precedingError
           : (research.warning ?? "Research was not fully verified.");
     }
+
     if (research.sources.length || qlooPlaces.length) {
       ensureBoundPresentation(task);
-      if (task.status === "draft") task.status = "ready";
+
+      if (task.status === "draft") {
+        task.status = "ready";
+      }
     }
+
     task.brief.version++;
     task.trace = task.trace.slice(-100);
     appendReceipt(
@@ -550,6 +607,7 @@ export async function runTurn(
     TaskSchema.parse(task);
     store.save(task, task.brief.version - 1, owner);
     emit({ type: "done", task: structuredClone(task) });
+
     return task;
   }
 
@@ -889,4 +947,3 @@ export async function runTurn(
 
   return task;
 }
-

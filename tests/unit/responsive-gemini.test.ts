@@ -28,6 +28,7 @@ describe("read-only conversation routing across the entire thread", () => {
         "route_conversation",
       );
       expect(JSON.stringify(payload)).not.toContain("workActions exact schema");
+
       return result("route_conversation", {
         intent: "clarification",
         reply: "Where will you and your friends be meeting?",
@@ -56,6 +57,7 @@ describe("read-only conversation routing across the entire thread", () => {
       const payload = JSON.parse(String(init?.body));
       const name = payload.tools[0].functionDeclarations[0].name as string;
       tools.push(name);
+
       return name === "route_conversation"
         ? result(name, { intent: "delegate" })
         : result(name, {
@@ -90,6 +92,7 @@ describe("read-only conversation routing across the entire thread", () => {
       const name = payload.tools[0].functionDeclarations[0].name as string;
       tools.push(name);
       expect(JSON.stringify(payload)).toContain("Help me plan a weekend.");
+
       return result(name, {
         intent: "conversation",
         reply: "The original plan is still saved. We can discuss it.",
@@ -108,7 +111,10 @@ describe("read-only conversation routing across the entire thread", () => {
       "gemini-test",
       transport as typeof fetch,
     );
-    const decision = await model.routeConversation("Can we discuss that?", task);
+    const decision = await model.routeConversation(
+      "Can we discuss that?",
+      task,
+    );
     expect(decision).toMatchObject({
       intent: "conversation",
       reply: "The original plan is still saved. We can discuss it.",
@@ -117,18 +123,18 @@ describe("read-only conversation routing across the entire thread", () => {
   });
 
   it("delegates explanations with invented evidence IDs instead of citing them", async () => {
-    const model = new ResponsiveGeminiModel(
-      "key",
-      "gemini-test",
-      async () =>
-        result("route_conversation", {
-          intent: "conversation",
-          reply: "I recommend it because of a verified cultural signal.",
-          replyEvidenceIds: ["invented-qloo-source"],
-        }),
+    const model = new ResponsiveGeminiModel("key", "gemini-test", async () =>
+      result("route_conversation", {
+        intent: "conversation",
+        reply: "I recommend it because of a verified cultural signal.",
+        replyEvidenceIds: ["invented-qloo-source"],
+      }),
     );
     expect(
-      await model.routeConversation("Why this option?", freshTask("t", "owner")),
+      await model.routeConversation(
+        "Why this option?",
+        freshTask("t", "owner"),
+      ),
     ).toBeNull();
   });
 
@@ -138,6 +144,7 @@ describe("read-only conversation routing across the entire thread", () => {
       expect(payload.tools[0].functionDeclarations[0].name).toBe(
         "route_conversation",
       );
+
       return result("route_conversation", {
         intent: "research",
         query: "2026 publicly released cultural report",
@@ -161,29 +168,26 @@ describe("read-only conversation routing across the entire thread", () => {
   });
 
   it("rejects an invented completed action even with a contracted reply", async () => {
-    const model = new ResponsiveGeminiModel(
-      "key",
-      "gemini-test",
-      async () =>
-        result("route_conversation", {
-          intent: "conversation",
-          reply: "I've booked the table for your group.",
-        }),
+    const model = new ResponsiveGeminiModel("key", "gemini-test", async () =>
+      result("route_conversation", {
+        intent: "conversation",
+        reply: "I've booked the table for your group.",
+      }),
     );
     expect(
-      await model.routeConversation("Can you book the table?", freshTask("t", "owner")),
+      await model.routeConversation(
+        "Can you book the table?",
+        freshTask("t", "owner"),
+      ),
     ).toBeNull();
   });
 
   it("rejects a quick reply claiming a completed external action", async () => {
-    const model = new ResponsiveGeminiModel(
-      "key",
-      "gemini-test",
-      async () =>
-        result("route_conversation", {
-          intent: "conversation",
-          reply: "I booked your flight.",
-        }),
+    const model = new ResponsiveGeminiModel("key", "gemini-test", async () =>
+      result("route_conversation", {
+        intent: "conversation",
+        reply: "I booked your flight.",
+      }),
     );
     expect(
       await model.routeConversation("Book my flight", freshTask("t", "owner")),

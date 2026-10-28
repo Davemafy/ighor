@@ -61,6 +61,7 @@ it("reports only a fixed credential category for upstream API-key rejection", as
         status: 400,
       }),
   );
+
   try {
     await provider.interpret("Hello");
     throw new Error("Expected rejection");

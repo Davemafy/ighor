@@ -55,14 +55,24 @@ export function ProductDialog({
   title: string;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null),
-    id = useId();
+  const ref = useRef<HTMLDialogElement>(null);
+  const id = useId();
   useLayoutEffect(() => {
     const d = ref.current;
-    if (!d) return;
-    if (open && !d.open) d.showModal();
-    if (!open && d.open) d.close();
+
+    if (!d) {
+      return;
+    }
+
+    if (open && !d.open) {
+      d.showModal();
+    }
+
+    if (!open && d.open) {
+      d.close();
+    }
   }, [open]);
+
   return (
     <dialog
       ref={ref}
@@ -81,6 +91,7 @@ export function ProductDialog({
     </dialog>
   );
 }
+
 export function ProductComposer({
   value,
   onChange,
@@ -103,11 +114,13 @@ export function ProductComposer({
   const id = useId();
   useEffect(() => {
     const el = inputRef.current;
+
     if (el) {
       el.style.height = "auto";
       el.style.height = Math.min(el.scrollHeight, 180) + "px";
     }
   }, [value, inputRef]);
+
   return (
     <form
       className={`pp-compose ${compact ? "pp-compose-compact" : ""}`}
@@ -115,7 +128,10 @@ export function ProductComposer({
       data-busy={busy}
       onSubmit={(e) => {
         e.preventDefault();
-        if (value.trim() && !disabled) onSubmit();
+
+        if (value.trim() && !disabled) {
+          onSubmit();
+        }
       }}
     >
       <label className="pp-visually-hidden" htmlFor={id}>
@@ -139,7 +155,10 @@ export function ProductComposer({
             !window.matchMedia("(pointer: coarse)").matches
           ) {
             e.preventDefault();
-            if (value.trim() && !disabled) onSubmit();
+
+            if (value.trim() && !disabled) {
+              onSubmit();
+            }
           }
         }}
       />
@@ -157,16 +176,27 @@ export function ProductComposer({
     </form>
   );
 }
+
 function activityLabel(message: string) {
-  if (message.includes("Diagnostic:")) return "The reply could not finish";
-  if (message.startsWith("Validated a conversational"))
+  if (message.includes("Diagnostic:")) {
+    return "The reply could not finish";
+  }
+
+  if (message.startsWith("Validated a conversational")) {
     return "Understood your message";
-  if (message.startsWith("Validated supported goal"))
+  }
+
+  if (message.startsWith("Validated supported goal")) {
     return "Understood your goal and changes";
-  if (message.startsWith("Marked ") && message.includes("stale"))
+  }
+
+  if (message.startsWith("Marked ") && message.includes("stale")) {
     return "Updating the work affected by your changes";
+  }
+
   return message;
 }
+
 function ExecutionFeedback({
   feedback,
   busy,
@@ -178,20 +208,38 @@ function ExecutionFeedback({
 }) {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
-    if (!feedback) return;
+    if (!feedback) {
+      return;
+    }
+
+    // Synchronize elapsed time when a new server-owned run arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSeconds(Math.floor((Date.now() - feedback.startedAt) / 1000));
-    if (!busy) return;
+
+    if (!busy) {
+      return;
+    }
+
     const id = setInterval(
       () => setSeconds(Math.floor((Date.now() - feedback.startedAt) / 1000)),
       1000,
     );
+
     return () => clearInterval(id);
   }, [busy, feedback?.startedAt]);
-  if (!feedback) return null;
+
+  if (!feedback) {
+    return null;
+  }
+
   const last = feedback.steps.at(-1);
   const showHistory =
     feedback.steps.length > 1 || feedback.action.type === "canvas";
-  if (!busy && feedback.state !== "error" && !showHistory) return null;
+
+  if (!busy && feedback.state !== "error" && !showHistory) {
+    return null;
+  }
+
   return (
     <div className={`pp-execution pp-execution-${feedback.state}`}>
       <div className="pp-execution-line" role="status" aria-live="polite">
@@ -252,6 +300,7 @@ function ExecutionFeedback({
     </div>
   );
 }
+
 export function ProductText({ text }: { text: string }) {
   const blocks: ReactNode[] = [];
   const lines = text.replace(/\r\n/g, "\n").split("\n");
@@ -269,23 +318,30 @@ export function ProductText({ text }: { text: string }) {
           part
         ),
       );
+
   for (let index = 0; index < lines.length;) {
     const line = lines[index].trim();
+
     if (!line) {
       index++;
       continue;
     }
+
     const heading = /^#{1,6}\s+(.+)$/.exec(line);
+
     if (heading) {
       blocks.push(<h3 key={index}>{inline(heading[1])}</h3>);
       index++;
       continue;
     }
+
     const ordered = /^\d+[.)]\s+/.test(line);
+
     if (ordered || /^[-*+]\s+/.test(line)) {
       const start = index;
       const items: ReactNode[] = [];
       const pattern = ordered ? /^\d+[.)]\s+/ : /^[-*+]\s+/;
+
       while (index < lines.length && pattern.test(lines[index].trim())) {
         items.push(
           <li key={index}>
@@ -294,26 +350,33 @@ export function ProductText({ text }: { text: string }) {
         );
         index++;
       }
+
       blocks.push(
         ordered ? <ol key={start}>{items}</ol> : <ul key={start}>{items}</ul>,
       );
       continue;
     }
+
     const start = index;
     const paragraph: string[] = [];
+
     while (
       index < lines.length &&
       lines[index].trim() &&
       !/^(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)/.test(lines[index].trim())
-    )
+    ) {
       paragraph.push(lines[index++].trim());
+    }
+
     blocks.push(<p key={start}>{inline(paragraph.join(" "))}</p>);
   }
+
   return <div className="pp-message-text">{blocks}</div>;
 }
 
 function Artwork({ candidate }: { candidate: Candidate }) {
   const [failed, setFailed] = useState(false);
+
   return (
     <div className={`pp-artwork pp-artwork-${candidate.type}`}>
       {candidate.imageUrl && !failed ? (
@@ -339,6 +402,7 @@ function Artwork({ candidate }: { candidate: Candidate }) {
     </div>
   );
 }
+
 const categoryName = (t: string) =>
   ({
     artist: "Music",
@@ -347,6 +411,7 @@ const categoryName = (t: string) =>
     place: "Places",
     book: "Books",
   })[t] || t;
+
 export function ProductResults({
   task,
   busy,
@@ -360,11 +425,11 @@ export function ProductResults({
   onTurn: (a: TaskAction) => void;
   onWork: () => void;
 }) {
-  const [filter, setFilter] = useState("all"),
-    [selected, setSelected] = useState<string | null>(null),
-    [message, setMessage] = useState(""),
-    [saving, setSaving] = useState(false),
-    [kept, setKept] = useState<string[]>([]);
+  const [filter, setFilter] = useState("all");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [kept, setKept] = useState<string[]>([]);
   const [paneChoice, setPaneChoice] = useState<{
     surfaceId: string;
     pane: "thread" | "canvas";
@@ -382,14 +447,18 @@ export function ProductResults({
       : hasVisual
         ? "canvas"
         : "thread";
-  const candidates = task.candidates.filter((c) => c.freshness === "current"),
-    types = [...new Set(candidates.map((c) => c.type))],
-    shown = candidates.filter((c) => filter === "all" || c.type === filter),
-    detail = candidates.find((c) => c.id === selected),
-    records = task.evidence.filter((e) => detail?.evidenceIds.includes(e.id));
+  const candidates = task.candidates.filter((c) => c.freshness === "current");
+  const types = [...new Set(candidates.map((c) => c.type))];
+  const shown = candidates.filter((c) => filter === "all" || c.type === filter);
+  const detail = candidates.find((c) => c.id === selected);
+  const records = task.evidence.filter((e) =>
+    detail?.evidenceIds.includes(e.id),
+  );
+
   async function keep(c: Candidate) {
     setSaving(true);
     setMessage("");
+
     try {
       const r = await fetch(`/api/tasks/${task.id}/outputs`, {
         method: "POST",
@@ -401,8 +470,11 @@ export function ProductResults({
           candidateIds: [c.id],
         }),
       });
-      if (!r.ok)
+
+      if (!r.ok) {
         throw Error("This reference could not be saved. Please try again.");
+      }
+
       setKept((v) => [...v, c.id]);
       setMessage("Saved to your collections.");
     } catch (e) {
@@ -411,9 +483,10 @@ export function ProductResults({
       setSaving(false);
     }
   }
-  const end = useRef<HTMLDivElement>(null),
-    scrollRegion = useRef<HTMLDivElement>(null),
-    follow = useRef(true);
+
+  const end = useRef<HTMLDivElement>(null);
+  const scrollRegion = useRef<HTMLDivElement>(null);
+  const follow = useRef(true);
   const artifacts = task.artifacts.filter(
     (a) => a.freshness === "current" || busy,
   );
@@ -424,26 +497,34 @@ export function ProductResults({
         window.innerHeight + window.scrollY >=
         document.documentElement.scrollHeight - 240;
     };
+
     const region = scrollRegion.current;
+
     const observeRegion = () => {
       if (region && window.matchMedia("(max-width: 760px)").matches) {
         follow.current =
           region.scrollHeight - region.scrollTop - region.clientHeight < 240;
       }
     };
+
     window.addEventListener("scroll", read, { passive: true });
     region?.addEventListener("scroll", observeRegion, { passive: true });
+
     return () => {
       window.removeEventListener("scroll", read);
       region?.removeEventListener("scroll", observeRegion);
     };
   }, []);
   useEffect(() => {
-    if (!busy && !follow.current) return;
+    if (!busy && !follow.current) {
+      return;
+    }
+
     const behavior = window.matchMedia("(prefers-reduced-motion: reduce)")
       .matches
       ? "instant"
       : "smooth";
+
     if (window.matchMedia("(max-width: 760px)").matches) {
       if (pane === "thread") {
         const region = scrollRegion.current;
@@ -453,6 +534,7 @@ export function ProductResults({
       end.current?.scrollIntoView({ behavior, block: "end" });
     }
   }, [task.messages.length, feedback?.startedAt, busy, pane]);
+
   return (
     <div
       className={`pp-conversation ${hasVisual ? "pp-has-canvas" : artifacts.length ? "pp-has-work" : ""}`}
@@ -532,7 +614,9 @@ export function ProductResults({
             feedback={feedback}
             busy={busy}
             onRetry={() => {
-              if (feedback) onTurn(feedback.action);
+              if (feedback) {
+                onTurn(feedback.action);
+              }
             }}
           />
           <div ref={end} />
@@ -817,6 +901,7 @@ export function ProductResults({
     </div>
   );
 }
+
 export function ProductCollections({
   task,
   collections,
@@ -838,17 +923,18 @@ export function ProductCollections({
   const [locality, setLocality] = useState("");
   const [discoveryError, setDiscoveryError] = useState("");
   const [startingDiscovery, setStartingDiscovery] = useState(false);
-  const [create, setCreate] = useState(false),
-    [selected, setSelected] = useState<string | null>(null),
-    [title, setTitle] = useState(""),
-    [notes, setNotes] = useState(""),
-    [chosen, setChosen] = useState<string[]>([]),
-    [order, setOrder] = useState<string[]>([]),
-    [notice, setNotice] = useState("");
+  const [create, setCreate] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [order, setOrder] = useState<string[]>([]);
+  const [notice, setNotice] = useState("");
   const hasReferences = task.candidates.some(
     (candidate) => candidate.freshness === "current",
   );
   const board = collections.find((c) => c.id === selected);
+
   function open(c: SavedCollection) {
     setSelected(c.id);
     setTitle(c.title);
@@ -856,13 +942,16 @@ export function ProductCollections({
     setOrder(c.items.map((i) => i.id));
     setNotice("");
   }
+
   function move(i: number, delta: number) {
     setOrder((v) => {
       const a = [...v];
       [a[i], a[i + delta]] = [a[i + delta], a[i]];
+
       return a;
     });
   }
+
   return (
     <div className="pp-collections">
       <div className="pp-collection-toolbar">
@@ -877,8 +966,10 @@ export function ProductCollections({
             if (!hasReferences) {
               setDiscoveryError("");
               setDiscover(true);
+
               return;
             }
+
             setCreate(true);
             setTitle("");
             setChosen([]);
@@ -926,7 +1017,11 @@ export function ProductCollections({
           className="pp-reference-discovery"
           onSubmit={async (event) => {
             event.preventDefault();
-            if (isBusy || startingDiscovery) return;
+
+            if (isBusy || startingDiscovery) {
+              return;
+            }
+
             try {
               const request = referenceRequest(referenceKind, taste, locality);
               setDiscoveryError("");
@@ -1023,11 +1118,14 @@ export function ProductCollections({
               title,
               candidateIds: chosen,
             });
-            if (result) setCreate(false);
-            else
+
+            if (result) {
+              setCreate(false);
+            } else {
               setNotice(
                 "The collection could not save. Your choices are still here.",
               );
+            }
           }}
         >
           <label>
@@ -1127,7 +1225,9 @@ export function ProductCollections({
               <button
                 type="button"
                 onClick={async () => {
-                  if (await onLoad(board.taskId)) setSelected(null);
+                  if (await onLoad(board.taskId)) {
+                    setSelected(null);
+                  }
                 }}
               >
                 <MessageCircle />
@@ -1143,7 +1243,10 @@ export function ProductCollections({
                       type: "delete-collection",
                       id: board.id,
                     });
-                    if (result) setSelected(null);
+
+                    if (result) {
+                      setSelected(null);
+                    }
                   }
                 }}
               >
@@ -1155,6 +1258,7 @@ export function ProductCollections({
             <div className="pp-board-order">
               {order.map((id, i) => {
                 const c = board.items.find((x) => x.id === id)!;
+
                 return (
                   <article key={id}>
                     <Artwork candidate={c} />
@@ -1187,6 +1291,7 @@ export function ProductCollections({
     </div>
   );
 }
+
 export function ProductSharing({
   task,
   shares,
@@ -1202,10 +1307,11 @@ export function ProductSharing({
   saveOutput: SaveOutput;
   onRefresh: () => Promise<void>;
 }) {
-  const [participant, setParticipant] = useState(""),
-    [consent, setConsent] = useState(false),
-    [link, setLink] = useState("");
+  const [participant, setParticipant] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [link, setLink] = useState("");
   const main = task.artifacts.find((a) => a.id === "main");
+
   return (
     <section className="pp-share">
       <h3>A second pair of eyes.</h3>
@@ -1256,6 +1362,7 @@ export function ProductSharing({
             participantId: participant || null,
             expiresInDays: 7,
           });
+
           if (r) {
             setLink(location.origin + r.path);
             setConsent(false);

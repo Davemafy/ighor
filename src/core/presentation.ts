@@ -239,7 +239,9 @@ export const CanvasStateSchema = z.object({
   // These direct, owner-scoped canvas choices survive reload and model replies.
   // They never grant permissions or manufacture cultural evidence.
   comparisonIds: refs.max(3).default([]),
-  viewModes: z.record(z.string(), z.enum(["explore", "connections", "compare", "plan"])).default({}),
+  viewModes: z
+    .record(z.string(), z.enum(["explore", "connections", "compare", "plan"]))
+    .default({}),
   itineraryIds: refs.default([]),
   filters: z.record(z.string(), z.string().max(200)).default({}),
   chartAxes: z.record(z.string(), z.number().int().min(0).max(11)).default({}),
@@ -555,13 +557,17 @@ export function mutateCanvas(
       ) {
         canvas.viewModes[node.id] = "explore";
       }
+
       break;
     }
 
     case "view": {
       if (node.type !== "discovery" && node.type !== "spatial") {
-        throw new Error("Only discovery surfaces can morph into connected work.");
+        throw new Error(
+          "Only discovery surfaces can morph into connected work.",
+        );
       }
+
       const current = (candidateId: string) =>
         node.candidateIds.includes(candidateId) &&
         context.candidates.some(
@@ -575,10 +581,15 @@ export function mutateCanvas(
       ) {
         throw new Error("Select two current options before comparing.");
       }
+
       if (mutation.mode === "plan") {
-        if (!canvas.selectedCandidateId || !current(canvas.selectedCandidateId)) {
+        if (
+          !canvas.selectedCandidateId ||
+          !current(canvas.selectedCandidateId)
+        ) {
           throw new Error("Choose a current option before making a plan.");
         }
+
         // Preserve the existing itinerary when returning to the plan. Adding
         // a newly selected object is an explicit user edit, not model inference.
         if (!canvas.itineraryIds.includes(canvas.selectedCandidateId)) {
@@ -593,6 +604,7 @@ export function mutateCanvas(
           ].slice(0, 30);
         }
       }
+
       canvas.viewModes[node.id] = mutation.mode;
       break;
     }

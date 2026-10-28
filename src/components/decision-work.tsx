@@ -12,6 +12,7 @@ export function DecisionWork({ task }: { task: Task }) {
     work?.decisions.filter(
       (decision) => decision.goalId === work.activeGoalId,
     ) ?? [];
+
   return (
     <section className="iw-decision-work" aria-label="Saved options">
       <h2>

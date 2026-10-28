@@ -8,7 +8,11 @@ import type {
   Participant,
   ToolResult,
 } from "../core/contracts";
-import type { CulturalProvider, DiscoveryInput, LocalPlaceResult } from "./interfaces";
+import type {
+  CulturalProvider,
+  DiscoveryInput,
+  LocalPlaceResult,
+} from "./interfaces";
 import { MemoryResponseCache, type ResponseCache } from "./qloo-cache";
 import {
   QLOO_API_ORIGIN,
@@ -183,6 +187,7 @@ export class LiveQlooProvider implements CulturalProvider {
   ): Promise<ToolResult<LocalPlaceResult>> {
     const start = this.calls;
     const empty: LocalPlaceResult = { places: [], evidence: [] };
+
     if (
       !location.trim() ||
       location.length > 100 ||
@@ -221,18 +226,25 @@ export class LiveQlooProvider implements CulturalProvider {
           }),
         })
         .safeParse(response.body.query);
+
       // Locality filtering must be confirmed from the returned query, not
       // merely assumed from request parameters.
-      if (!localities.success || localities.data.localities.filter.length !== 1) {
+      if (
+        !localities.success ||
+        localities.data.localities.filter.length !== 1
+      ) {
         return {
           status: "partial",
           data: empty,
-          warnings: ["Qloo did not confirm one unambiguous requested locality."],
+          warnings: [
+            "Qloo did not confirm one unambiguous requested locality.",
+          ],
           evidenceIds: [],
           retry: "manual",
           requestCount: this.calls - start,
         };
       }
+
       const matched = localities.data.localities.filter[0];
       const rows = qlooRows(response.body)
         .filter((row) => rowTypes(row).includes("place"))
@@ -243,6 +255,7 @@ export class LiveQlooProvider implements CulturalProvider {
           typeof row.properties?.address === "string"
             ? row.properties.address.slice(0, 300)
             : "";
+
         return {
           providerId: row.entity_id,
           name: row.name.slice(0, 120),
@@ -268,7 +281,11 @@ export class LiveQlooProvider implements CulturalProvider {
         at: response.at,
         reference: `${QLOO_API_ORIGIN}/v2/insights · query ${response.id}`,
         entityIds: [place.providerId],
-        summary: `Qloo locality/category result ${index + 1}: ${place.name}; matched ${matched.name}. ${place.address}`.slice(0, 450),
+        summary:
+          `Qloo locality/category result ${index + 1}: ${place.name}; matched ${matched.name}. ${place.address}`.slice(
+            0,
+            450,
+          ),
         limitations: [
           "Location and restaurant-category match only; not personalized taste affinity.",
           "Board games, Saturday hours, group seating, prices and reservations have not been verified.",
@@ -277,6 +294,7 @@ export class LiveQlooProvider implements CulturalProvider {
         dependencies: ["location", "category:restaurant"],
         freshness: "current" as const,
       }));
+
       return {
         status: places.length ? "ok" : "empty",
         data: { places, evidence },

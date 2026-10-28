@@ -47,11 +47,13 @@ describe("live clarification continuation recovery", () => {
       if (name === "route_conversation" && tools.length === 1) {
         return response(name, { intent: "delegate" });
       }
+
       if (name === "update_brief") {
         // Model failed the large planning contract, before any application
         // actions. This reproduces the user-visible generic-error boundary.
         return response("unauthorized_tool", {});
       }
+
       if (name === "route_conversation" && tools.length === 3) {
         return response(name, {
           intent: "conversation",
@@ -59,9 +61,15 @@ describe("live clarification continuation recovery", () => {
             "Dining and Monopoly make a great dinner-and-games direction for New York. I haven't searched for real venues or verified availability yet. Would you prefer one venue with games or dinner followed by a game night?",
         });
       }
+
       throw new Error("Unexpected model call");
     });
-    const model = new GeminiModel("offline-test", "gemini-3.5-flash-lite", transport);
+    const model = new GeminiModel(
+      "offline-test",
+      "gemini-3.5-flash-lite",
+      transport,
+    );
+
     try {
       const result = await runTurn(
         store,
@@ -86,7 +94,11 @@ describe("live clarification continuation recovery", () => {
       expect(result.messages.at(-1)?.text).toContain("haven't searched");
       expect(result.candidates).toEqual([]);
       expect(result.evidence).toEqual([]);
-      expect(result.trace.some((entry) => entry.action === "model.interpret.recovered")).toBe(true);
+      expect(
+        result.trace.some(
+          (entry) => entry.action === "model.interpret.recovered",
+        ),
+      ).toBe(true);
       const reload = store.load(task.id, "owner");
       expect(reload.messages.at(-1)?.text).toBe(result.messages.at(-1)?.text);
       expect(reload.brief.version).toBe(1);
@@ -110,16 +122,25 @@ describe("live clarification continuation recovery", () => {
         reply: "Dining and Monopoly noted; no live places checked.",
       })),
     };
+
     try {
       const result = await runTurn(
-        store, task.id, "owner",
+        store,
+        task.id,
+        "owner",
         { type: "message", text: "dining, monopoly", version: 0 },
-        () => {}, undefined, model,
+        () => {},
+        undefined,
+        model,
       );
       expect(model.routeConversation).toHaveBeenCalledOnce();
       expect(model.interpret).toHaveBeenCalledOnce();
-      expect(result.messages.at(-1)?.text).toContain("Dining and Monopoly noted");
-      expect(result.trace.some((entry) => entry.action === "model.route.recovered")).toBe(true);
+      expect(result.messages.at(-1)?.text).toContain(
+        "Dining and Monopoly noted",
+      );
+      expect(
+        result.trace.some((entry) => entry.action === "model.route.recovered"),
+      ).toBe(true);
       expect(result.status).not.toBe("error");
     } finally {
       store.close();
@@ -139,17 +160,24 @@ describe("live clarification continuation recovery", () => {
         throw new Error("No planner attempt on provider outage");
       }),
     };
+
     try {
       const result = await runTurn(
-        store, task.id, "owner",
+        store,
+        task.id,
+        "owner",
         { type: "message", text: "dining, monopoly", version: 0 },
-        () => {}, undefined, model,
+        () => {},
+        undefined,
+        model,
       );
       expect(result.status).toBe("error");
       expect(result.error).toContain("temporarily unavailable");
       expect(result.messages.at(-1)?.text).toBe("dining, monopoly");
       expect(model.interpret).not.toHaveBeenCalled();
-      expect(JSON.stringify(result.trace)).not.toContain("private upstream response");
+      expect(JSON.stringify(result.trace)).not.toContain(
+        "private upstream response",
+      );
     } finally {
       store.close();
     }
@@ -168,11 +196,16 @@ describe("live clarification continuation recovery", () => {
         throw new Error("Should not run on outage");
       },
     };
+
     try {
       const first = await runTurn(
-        store, task.id, "owner",
+        store,
+        task.id,
+        "owner",
         { type: "message", text: "dining, monopoly", version: 0 },
-        () => {}, undefined, fail,
+        () => {},
+        undefined,
+        fail,
       );
       expect(first.status).toBe("error");
       expect(first.messages.map((message) => message.text)).toEqual([
@@ -191,9 +224,17 @@ describe("live clarification continuation recovery", () => {
         },
       };
       const second = await runTurn(
-        store, task.id, "owner",
-        { type: "message", text: "dining, monopoly", version: first.brief.version },
-        () => {}, undefined, reply,
+        store,
+        task.id,
+        "owner",
+        {
+          type: "message",
+          text: "dining, monopoly",
+          version: first.brief.version,
+        },
+        () => {},
+        undefined,
+        reply,
       );
       expect(second.messages.map((message) => message.role)).toEqual([
         "user",
@@ -208,5 +249,4 @@ describe("live clarification continuation recovery", () => {
       store.close();
     }
   });
-
 });

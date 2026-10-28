@@ -27,7 +27,9 @@ export function groundQuestionAnswer(
             ? "duration-hours"
             : undefined);
 
-    if (binding === "budget-per-person") {continue;}
+    if (binding === "budget-per-person") {
+      continue;
+    }
 
     if (binding === "location" && value.length <= 100) {
       if (constraints.location && constraints.location !== value) {

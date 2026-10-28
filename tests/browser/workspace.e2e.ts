@@ -17,9 +17,7 @@ test("the current workspace saves genuine corrections, reloads and preserves ear
   // clearly marked as illustrative rather than masquerading as live Qloo.
   const id = await page.evaluate(() => localStorage.getItem("igor-task"));
   expect(id).toBeTruthy();
-  const initial = await (
-    await page.request.get(`/api/tasks/${id}`)
-  ).json();
+  const initial = await (await page.request.get(`/api/tasks/${id}`)).json();
   expect(initial.brief.constraints.budget).toBe(60);
   expect(initial.messages[0].text).toContain("Plan a gathering");
   expect(initial.mode).toBe("illustrative-fixtures");
@@ -30,21 +28,20 @@ test("the current workspace saves genuine corrections, reloads and preserves ear
   await expect
     .poll(async () => {
       const response = await page.request.get(`/api/tasks/${id}`);
+
       return (await response.json()).brief.constraints.budget;
     })
     .toBe(15);
 
   await page.reload();
   await expect(page.locator(".iw-message.iw-user")).toHaveCount(2);
-  await expect(
-    page.locator(".iw-message.iw-user").first(),
-  ).toContainText("Plan a gathering");
-  await expect(
-    page.locator(".iw-message.iw-user").last(),
-  ).toContainText("Lower budget to $15");
-  const restored = await (
-    await page.request.get(`/api/tasks/${id}`)
-  ).json();
+  await expect(page.locator(".iw-message.iw-user").first()).toContainText(
+    "Plan a gathering",
+  );
+  await expect(page.locator(".iw-message.iw-user").last()).toContainText(
+    "Lower budget to $15",
+  );
+  const restored = await (await page.request.get(`/api/tasks/${id}`)).json();
   expect(restored.brief.constraints.budget).toBe(15);
   expect(restored.messages.length).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);

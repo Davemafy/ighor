@@ -30,7 +30,7 @@ async function message(page: Page, text: string) {
   );
   const previous = (await saved(page)).brief.version;
   await input.fill(text);
-  await page.getByRole("button", {name: "Send message"}).click();
+  await page.getByRole("button", { name: "Send message" }).click();
   await expect
     .poll(async () => (await saved(page)).brief.version)
     .toBeGreaterThan(previous);
@@ -58,39 +58,52 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
     "I want to launch a small listening bar for people into alternative music and independent art. Help me make it distinctive without overspending.",
   );
   expect(task.work?.documents).toHaveLength(8);
-  const surface = page.getByRole("complementary", {name: "Connected work"});
+  const surface = page.getByRole("complementary", { name: "Connected work" });
   await expect(surface).toBeVisible();
-  await surface.getByRole("button", {name: "Launch brief", exact: true}).click();
-  await surface.getByRole("button", {name: "Expand connected work"}).click();
+  await surface
+    .getByRole("button", { name: "Launch brief", exact: true })
+    .click();
+  await surface.getByRole("button", { name: "Expand connected work" }).click();
   await expect(surface).toHaveClass(/ic-fullscreen/);
-  await surface.getByRole("button", {name: "Edit document"}).click();
-  const editor = surface.getByRole("textbox", {name: "Edit Launch brief"});
-  await editor.fill("Invite a small pilot community. This sentence is my exact wording.");
+  await surface.getByRole("button", { name: "Edit document" }).click();
+  const editor = surface.getByRole("textbox", { name: "Edit Launch brief" });
+  await editor.fill(
+    "Invite a small pilot community. This sentence is my exact wording.",
+  );
   const oldVersion = (await saved(page)).work!.documents.find(
     (d) => d.id === "listening-bar-launch",
   )!.version;
-  await surface.getByRole("button", {name: "Save changes"}).click();
-  await expect.poll(async () => (await saved(page)).work!.documents.find(
-    (d) => d.id === "listening-bar-launch",
-  )!.version).toBeGreaterThan(oldVersion);
+  await surface.getByRole("button", { name: "Save changes" }).click();
+  await expect
+    .poll(
+      async () =>
+        (await saved(page)).work!.documents.find(
+          (d) => d.id === "listening-bar-launch",
+        )!.version,
+    )
+    .toBeGreaterThan(oldVersion);
   await expect(editor).toHaveValue(
     "Invite a small pilot community. This sentence is my exact wording.",
   );
-  await surface.getByRole("button", {name: "Preview"}).click();
-  await surface.getByRole("combobox", {name: "Document revision"}).selectOption(
-    String(oldVersion),
-  );
+  await surface.getByRole("button", { name: "Preview" }).click();
+  await surface
+    .getByRole("combobox", { name: "Document revision" })
+    .selectOption(String(oldVersion));
   await expect(surface.getByLabel("Document preview")).not.toContainText(
     "my exact wording",
   );
-  await surface.getByRole("combobox", {name: "Document revision"}).selectOption("current");
+  await surface
+    .getByRole("combobox", { name: "Document revision" })
+    .selectOption("current");
+
   if (info.project.name.includes("mobile")) {
-    mkdirSync("test-results/morphing", {recursive: true});
+    mkdirSync("test-results/morphing", { recursive: true });
     await page.screenshot({
       path: `test-results/morphing/${info.project.name}-connected-artifact.png`,
     });
   }
-  await surface.getByRole("button", {name: "Close expanded work"}).click();
+
+  await surface.getByRole("button", { name: "Close expanded work" }).click();
   await expect(surface).not.toHaveClass(/ic-fullscreen/);
   await expect(page.locator(".pp-message-assistant").last()).toContainText(
     "Launch brief: saved your wording.",

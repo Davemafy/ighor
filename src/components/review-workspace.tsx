@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import {
   ArrowUpRight,
   Check,
@@ -13,35 +14,45 @@ import "../app/product.css";
 
 export function ReviewWorkspace({ token }: { token: string }) {
   const [data, setData] = useState<{
-      snapshot: Snapshot;
-      canProposePreference: boolean;
-      expiresAt: string;
-    } | null>(null),
-    [error, setError] = useState(""),
-    [status, setStatus] = useState(""),
-    [text, setText] = useState(""),
-    [value, setValue] = useState(""),
-    [polarity, setPolarity] = useState("like"),
-    [busy, setBusy] = useState(false);
+    snapshot: Snapshot;
+    canProposePreference: boolean;
+    expiresAt: string;
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const [text, setText] = useState("");
+  const [value, setValue] = useState("");
+  const [polarity, setPolarity] = useState("like");
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     let active = true;
     fetch(`/api/review/${token}`)
       .then(async (r) => {
-        if (!r.ok)
+        if (!r.ok) {
           throw Error("This review link is unavailable or has expired.");
+        }
+
         const d = await r.json();
-        if (active) setData(d);
+
+        if (active) {
+          setData(d);
+        }
       })
       .catch((e) => {
-        if (active) setError(e.message);
+        if (active) {
+          setError(e.message);
+        }
       });
+
     return () => {
       active = false;
     };
   }, [token]);
+
   async function submit(type: "comment" | "preference") {
     setBusy(true);
     setError("");
+
     try {
       const r = await fetch(`/api/review/${token}`, {
         method: "POST",
@@ -50,8 +61,11 @@ export function ReviewWorkspace({ token }: { token: string }) {
           type === "comment" ? { type, text } : { type, value, polarity },
         ),
       });
-      if (!r.ok)
+
+      if (!r.ok) {
         throw Error("Your feedback could not be saved. Please try again.");
+      }
+
       setStatus(
         "Your feedback is with the owner. They choose whether to apply it.",
       );
@@ -63,10 +77,11 @@ export function ReviewWorkspace({ token }: { token: string }) {
       setBusy(false);
     }
   }
+
   return (
     <div className="ip-app pp-review">
       <header className="pp-review-top">
-        <a href="/">igor</a>
+        <Link href="/">igor</Link>
         <span>A shared draft</span>
         <a href="/app">
           Open Igor <ArrowUpRight />

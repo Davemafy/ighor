@@ -63,6 +63,7 @@ export function useSavedOutcomes(
 
     async function loadSavedOutputs() {
       setIsLoading(true);
+
       try {
         const response = await fetch(endpoint);
 
@@ -84,7 +85,9 @@ export function useSavedOutcomes(
           );
         }
       } finally {
-        if (active) setIsLoading(false);
+        if (active) {
+          setIsLoading(false);
+        }
       }
     }
 

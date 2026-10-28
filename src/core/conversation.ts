@@ -113,6 +113,7 @@ export function applyConversationActions(
           if (!edit.task.canvas) {
             throw new Error("There is no live work surface to transform.");
           }
+
           edit.task.canvas = mutateCanvas(
             edit.task.canvas,
             edit.task.canvas.surface.id,

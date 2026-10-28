@@ -3,7 +3,11 @@ import { ProviderHttpError } from "../core/interpretation-failure";
 import type { Task } from "../core/contracts";
 import type { ModelProvider } from "./interfaces";
 import type { ResearchSource } from "./live-research";
-import type { ResearchStep, AgentToolBrief, AgentToolChoice } from "./interfaces";
+import type {
+  ResearchStep,
+  AgentToolBrief,
+  AgentToolChoice,
+} from "./interfaces";
 
 function recoverableModelError(error: unknown) {
   return (
@@ -62,12 +66,14 @@ export class FallbackModel implements ModelProvider {
 
       // A new instance belongs to one turn. Once a provider fails, keep the
       // rest of that turn on the healthy backup instead of calling it again.
-      if (error instanceof ProviderHttpError)
+      if (error instanceof ProviderHttpError) {
         this.failures.push({
           provider: error.provider,
           status: error.status,
           category: error.category,
         });
+      }
+
       this.usingBackup = true;
 
       return backup();
@@ -121,29 +127,48 @@ export class FallbackModel implements ModelProvider {
   ): Promise<ResearchStep> {
     const choice = await this.readOnly(
       this.primary.chooseResearchStep
-        ? () => this.primary.chooseResearchStep!(question, sources, context, remainingActions)
+        ? () =>
+            this.primary.chooseResearchStep!(
+              question,
+              sources,
+              context,
+              remainingActions,
+            )
         : undefined,
       this.backup.chooseResearchStep
-        ? () => this.backup.chooseResearchStep!(question, sources, context, remainingActions)
+        ? () =>
+            this.backup.chooseResearchStep!(
+              question,
+              sources,
+              context,
+              remainingActions,
+            )
         : undefined,
     );
+
     return choice ?? { action: "finish" };
   }
   async chooseAgentAction(
     goal: string,
     tools: AgentToolBrief[],
-    observations: {tool: string; status: string; summary: string}[],
+    observations: { tool: string; status: string; summary: string }[],
     context: Task,
   ): Promise<AgentToolChoice> {
     const choice = await this.readOnly(
       this.primary.chooseAgentAction
-        ? () => this.primary.chooseAgentAction!(goal, tools, observations, context)
+        ? () =>
+            this.primary.chooseAgentAction!(goal, tools, observations, context)
         : undefined,
       this.backup.chooseAgentAction
-        ? () => this.backup.chooseAgentAction!(goal, tools, observations, context)
+        ? () =>
+            this.backup.chooseAgentAction!(goal, tools, observations, context)
         : undefined,
     );
-    if (!choice) throw new Error("No model provider supports agent actions.");
+
+    if (!choice) {
+      throw new Error("No model provider supports agent actions.");
+    }
+
     return choice;
   }
   async synthesizeResearch(

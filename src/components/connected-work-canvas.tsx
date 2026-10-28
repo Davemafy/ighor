@@ -49,8 +49,13 @@ export function ConnectedWorkCanvas({
   // Server snapshots may arrive after any turn, reload or direct mutation.
   // Never overwrite text the user is actively editing.
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      return;
+    }
+
     if (boundId !== selected.id) {
+      // Reconcile the authoritative artifact only when its identity changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBoundId(selected.id);
       setDraft(selected.content);
       setBase(selected.content);
@@ -71,22 +76,36 @@ export function ConnectedWorkCanvas({
   }, [selected, boundId, dirty, draft, version]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty) {
+      return;
+    }
+
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
+
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
   useEffect(() => {
-    if (!full) return;
+    if (!full) {
+      return;
+    }
+
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setFull(false);
+      if (event.key === "Escape") {
+        setFull(false);
+      }
     };
+
     window.addEventListener("keydown", close);
+
     return () => window.removeEventListener("keydown", close);
   }, [full]);
 
-  if (!work || !selected) return null;
+  if (!work || !selected) {
+    return null;
+  }
+
   const historical =
     revision === "current"
       ? null
@@ -95,8 +114,12 @@ export function ConnectedWorkCanvas({
   const decisions = work.decisions.filter((d) => d.goalId === selected.goalId);
   const send = (actions: Extract<TaskAction, { type: "work" }>["actions"]) =>
     onTurn({ type: "work", actions });
+
   const choose = (doc: Document) => {
-    if (dirty || busy || doc.id === selected.id) return;
+    if (dirty || busy || doc.id === selected.id) {
+      return;
+    }
+
     morphLayout(() => setActiveId(doc.id));
   };
 

@@ -13,16 +13,26 @@ export default defineConfig({
     viewport: { width: 1440, height: 1000 },
   },
   projects: [
-    { name: "desktop", use: {viewport: {width: 1440, height: 1000}} },
-    { name: "mobile", use: {
-      viewport: {width: 390, height: 844},
-      isMobile: true, hasTouch: true, contextOptions: { reducedMotion: "reduce" },
-    }},
-    { name: "mobile-motion", use: {
-      viewport: {width: 390, height: 844},
-      isMobile: true, hasTouch: true, contextOptions: { reducedMotion: "no-preference" },
-      video: "on",
-    }},
+    { name: "desktop", use: { viewport: { width: 1440, height: 1000 } } },
+    {
+      name: "mobile",
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        contextOptions: { reducedMotion: "reduce" },
+      },
+    },
+    {
+      name: "mobile-motion",
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+        contextOptions: { reducedMotion: "no-preference" },
+        video: "on",
+      },
+    },
   ],
   webServer: {
     cwd: fileURLToPath(new URL("../", import.meta.url)),

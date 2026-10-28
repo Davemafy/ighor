@@ -8,25 +8,33 @@ import { FallbackModel } from "../../src/tools/fallback-model";
 import { ProviderHttpError } from "../../src/core/interpretation-failure";
 import { GrokModel } from "../../src/tools/grok-model";
 
-function grokToolResponse(name: string, callId: string, args: object): Response {
+function grokToolResponse(
+  name: string,
+  callId: string,
+  args: object,
+): Response {
   return Response.json({
     id: "chatcmpl-test",
     object: "chat.completion",
     created: 0,
     model: "grok-4.3",
-    choices: [{
-      index: 0,
-      finish_reason: "tool_calls",
-      message: {
-        role: "assistant",
-        content: null,
-        tool_calls: [{
-          id: callId,
-          type: "function",
-          function: { name, arguments: JSON.stringify(args) },
-        }],
+    choices: [
+      {
+        index: 0,
+        finish_reason: "tool_calls",
+        message: {
+          role: "assistant",
+          content: null,
+          tool_calls: [
+            {
+              id: callId,
+              type: "function",
+              function: { name, arguments: JSON.stringify(args) },
+            },
+          ],
+        },
       },
-    }],
+    ],
     usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
   });
 }
@@ -50,6 +58,7 @@ describe("agent conversation reliability", () => {
       calls: 0,
       async routeConversation(message: string) {
         this.calls++;
+
         return {
           intent: "conversation" as const,
           reply: `Responding to: ${message}`,
@@ -68,6 +77,7 @@ describe("agent conversation reliability", () => {
         "Why did we prefer the first option?",
         "Go back to our earlier idea",
       ];
+
       for (let index = 0; index < 50; index++) {
         const current = store.load(task.id, "owner");
         const message = `${subjects[index % subjects.length]} (turn ${index + 1})`;
@@ -111,6 +121,7 @@ describe("agent conversation reliability", () => {
         reply: "Let's first establish the scope of this change.",
       })),
     };
+
     try {
       const result = await runTurn(
         store,
@@ -135,6 +146,7 @@ describe("agent conversation reliability", () => {
     const task = freshTask("route-error", "owner");
     task.mode = "qloo-live";
     store.create(task);
+
     try {
       const result = await runTurn(
         store,
@@ -221,6 +233,7 @@ describe("agent conversation reliability", () => {
       // xAI Chat Completions is stateless; the SDK omits the Responses-API store flag.
       expect(body.store).not.toBe(true);
       expect(body.tools[0].function.name).toBe("submit_research_answer");
+
       return grokToolResponse("submit_research_answer", "research-answer", {
         text: "The source reports the announcement [web-1].",
         sourceIds: ["web-1"],
@@ -253,13 +266,17 @@ describe("agent conversation reliability", () => {
       // A stateless Chat Completions request does not require store: false.
       expect(request.store).not.toBe(true);
       expect(request.tools[0].function.name).toBe("route_conversation");
+
       return grokToolResponse("route_conversation", "route-call", {
         intent: "conversation",
         reply: "Hello. What are you exploring?",
       });
     });
     const model = new GrokModel("test-key", "grok-4.3", transport);
-    const result = await model.routeConversation("Hey", freshTask("t", "owner"));
+    const result = await model.routeConversation(
+      "Hey",
+      freshTask("t", "owner"),
+    );
     expect(result).toMatchObject({
       intent: "conversation",
       reply: "Hello. What are you exploring?",

@@ -164,28 +164,57 @@ export class BrightDataResearchProvider implements ResearchProvider {
 
   async readSource(rawUrl: string): Promise<ResearchPageResult> {
     const url = publicResearchUrl(rawUrl);
-    if (!url || /^www\.google\.com\/goto\b/.test(new URL(url).host + new URL(url).pathname)) {
-      return { status: "blocked", requests: 0, warning: "Unsafe or indirect source URL." };
+
+    if (
+      !url ||
+      /^www\.google\.com\/goto\b/.test(
+        new URL(url).host + new URL(url).pathname,
+      )
+    ) {
+      return {
+        status: "blocked",
+        requests: 0,
+        warning: "Unsafe or indirect source URL.",
+      };
     }
+
     if (!this.key || !this.unlockerZone) {
-      return { status: "blocked", requests: 0, warning: "Page reader not configured." };
+      return {
+        status: "blocked",
+        requests: 0,
+        warning: "Page reader not configured.",
+      };
     }
+
     if (activeResearch >= MAX_ACTIVE_RESEARCH) {
-      return { status: "blocked", requests: 0, warning: "Research concurrency limit reached." };
+      return {
+        status: "blocked",
+        requests: 0,
+        warning: "Research concurrency limit reached.",
+      };
     }
 
     activeResearch++;
+
     try {
       const excerpt = await this.request(this.unlockerZone, url, true);
+
       return { status: "ok", requests: 1, excerpt: excerpt.slice(0, 6000) };
     } catch {
-      return { status: "error", requests: 1, warning: "Could not retrieve the selected public page." };
+      return {
+        status: "error",
+        requests: 1,
+        warning: "Could not retrieve the selected public page.",
+      };
     } finally {
       activeResearch--;
     }
   }
 
-  private async runSearch(rawQuery: string, shallow: boolean): Promise<ResearchResult> {
+  private async runSearch(
+    rawQuery: string,
+    shallow: boolean,
+  ): Promise<ResearchResult> {
     const query = ResearchQuerySchema.parse(rawQuery);
 
     if (!this.key || !this.serpZone) {
@@ -216,7 +245,10 @@ export class BrightDataResearchProvider implements ResearchProvider {
     }
   }
 
-  private async executeResearch(query: string, shallow = false): Promise<ResearchResult> {
+  private async executeResearch(
+    query: string,
+    shallow = false,
+  ): Promise<ResearchResult> {
     let requests = 0;
     const now = new Date().toISOString();
     const search = new URL("https://www.google.com/search");
@@ -302,7 +334,9 @@ export class BrightDataResearchProvider implements ResearchProvider {
     for (const item of organic) {
       const url = publicResearchUrl(item.link);
 
-      if (!url || seen.has(url)) {continue;}
+      if (!url || seen.has(url)) {
+        continue;
+      }
 
       seen.add(url);
       sources.push({
@@ -316,7 +350,9 @@ export class BrightDataResearchProvider implements ResearchProvider {
         retrievedAt: now,
       });
 
-      if (sources.length === 5) {break;}
+      if (sources.length === 5) {
+        break;
+      }
     }
 
     if (!sources.length) {
@@ -345,7 +381,9 @@ export class BrightDataResearchProvider implements ResearchProvider {
       .filter((source) => {
         const hostname = new URL(source.url).hostname;
 
-        if (domains.has(hostname)) {return false;}
+        if (domains.has(hostname)) {
+          return false;
+        }
 
         domains.add(hostname);
 
@@ -426,4 +464,3 @@ export function runtimeResearchProvider(): ResearchProvider {
     process.env.BRIGHTDATA_UNLOCKER_ZONE ?? "",
   );
 }
-

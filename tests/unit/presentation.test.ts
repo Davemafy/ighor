@@ -81,6 +81,7 @@ const model = (presentation = surface()): ModelProvider => ({
 it("agent composes mixed interfaces via the existing provider transport without framework migration", async () => {
   const transport: typeof fetch = async (_url, init) => {
     const body = JSON.parse(String(init?.body));
+
     if (body.tools[0].name === "route_conversation") {
       return Response.json({
         status: "completed",
@@ -94,6 +95,7 @@ it("agent composes mixed interfaces via the existing provider transport without 
         ],
       });
     }
+
     expect(body.tools[0].parameters.properties.decision.description).toContain(
       '"presentation"',
     );
@@ -144,67 +146,114 @@ it("agent composes mixed interfaces via the existing provider transport without 
 it("only accepts numeric chart criteria and persists them into later model context", async () => {
   const expanded = surface();
   const data = expanded.nodes.find((n) => n.id === "data");
-  if (data?.type !== "table") throw Error("Missing fixture table");
+
+  if (data?.type !== "table") {
+    throw Error("Missing fixture table");
+  }
+
   data.columns.push("Cost");
   data.rows[0].cells.push("3");
   data.rows[1].cells.push("7");
-  const {task, store} = setup();
+  const { task, store } = setup();
   let current = await runTurn(
     store,
     task.id,
     "owner",
-    {type: "message", text: "Compare supplied launch figures", version: 0},
+    { type: "message", text: "Compare supplied launch figures", version: 0 },
     undefined,
     undefined,
     model(PresentationSchema.parse(expanded)),
   );
   current = await runTurn(store, task.id, "owner", {
-    type: "canvas", surfaceId: "launch",
-    mutation: {operation: "chart-axis", nodeId: "chart", valueColumn: 2},
+    type: "canvas",
+    surfaceId: "launch",
+    mutation: { operation: "chart-axis", nodeId: "chart", valueColumn: 2 },
     version: current.brief.version,
   });
   expect(current.canvas?.chartAxes.chart).toBe(2);
-  expect(modelContext(current, "Now use the other measure").canvas?.chartAxes)
-    .toMatchObject({chart: 2});
-  await expect(runTurn(store, task.id, "owner", {
-    type: "canvas", surfaceId: "launch",
-    mutation: {operation: "chart-axis", nodeId: "chart", valueColumn: 0},
-    version: current.brief.version,
-  })).rejects.toThrow(/numeric comparison column/);
+  expect(
+    modelContext(current, "Now use the other measure").canvas?.chartAxes,
+  ).toMatchObject({ chart: 2 });
+  await expect(
+    runTurn(store, task.id, "owner", {
+      type: "canvas",
+      surfaceId: "launch",
+      mutation: { operation: "chart-axis", nodeId: "chart", valueColumn: 0 },
+      version: current.brief.version,
+    }),
+  ).rejects.toThrow(/numeric comparison column/);
   expect(store.load(task.id, "owner").canvas?.chartAxes.chart).toBe(2);
 });
 
 it("assigns itinerary days only to saved current stops and clears removed stops", () => {
   const geo = PresentationSchema.parse({
-    id: "trip", title: "Weekend locations", basis: "user-supplied",
-    root: "places", nodes: [{
-      id: "places", type: "spatial", candidateIds: ["museum", "park"],
-    }],
+    id: "trip",
+    title: "Weekend locations",
+    basis: "user-supplied",
+    root: "places",
+    nodes: [
+      {
+        id: "places",
+        type: "spatial",
+        candidateIds: ["museum", "park"],
+      },
+    ],
   });
   const context = {
     candidates: [
-      {id: "museum", freshness: "current"},
-      {id: "park", freshness: "current"},
+      { id: "museum", freshness: "current" },
+      { id: "park", freshness: "current" },
     ],
     evidence: [],
     artifacts: [],
   };
   let canvas = installPresentation(undefined, geo);
-  canvas = mutateCanvas(canvas, "trip", {
-    operation: "itinerary", nodeId: "places",
-    candidateIds: ["museum", "park"],
-  }, context);
-  canvas = mutateCanvas(canvas, "trip", {
-    operation: "itinerary-day", nodeId: "places", candidateId: "museum", day: 2,
-  }, context);
+  canvas = mutateCanvas(
+    canvas,
+    "trip",
+    {
+      operation: "itinerary",
+      nodeId: "places",
+      candidateIds: ["museum", "park"],
+    },
+    context,
+  );
+  canvas = mutateCanvas(
+    canvas,
+    "trip",
+    {
+      operation: "itinerary-day",
+      nodeId: "places",
+      candidateId: "museum",
+      day: 2,
+    },
+    context,
+  );
   expect(canvas.itineraryDays.museum).toBe(2);
-  canvas = mutateCanvas(canvas, "trip", {
-    operation: "itinerary", nodeId: "places", candidateIds: ["park"],
-  }, context);
+  canvas = mutateCanvas(
+    canvas,
+    "trip",
+    {
+      operation: "itinerary",
+      nodeId: "places",
+      candidateIds: ["park"],
+    },
+    context,
+  );
   expect(canvas.itineraryDays.museum).toBeUndefined();
-  expect(() => mutateCanvas(canvas, "trip", {
-    operation: "itinerary-day", nodeId: "places", candidateId: "museum", day: 1,
-  }, context)).toThrow(/current itinerary stops/);
+  expect(() =>
+    mutateCanvas(
+      canvas,
+      "trip",
+      {
+        operation: "itinerary-day",
+        nodeId: "places",
+        candidateId: "museum",
+        day: 1,
+      },
+      context,
+    ),
+  ).toThrow(/current itinerary stops/);
 });
 
 it("persists direct edits and sends the same document, filters and reordered plan into the next agent turn", async () => {

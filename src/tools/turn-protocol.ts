@@ -93,6 +93,7 @@ export function turnTool() {
   const guidance = providerShape(schema);
   const fields = guidance.properties as Record<string, Record<string, unknown>>;
   const presentation = fields.presentation;
+
   if (presentation?.properties) {
     presentation.required = ["id", "title", "basis", "root", "nodes"];
     const nodes = (
@@ -174,17 +175,28 @@ export function readTurnDecision(
 
   if (payload.presentation && typeof payload.presentation === "object") {
     const surface = payload.presentation as Record<string, unknown>;
+
     // Presentation-only metadata normalization. Never normalize action payloads
     // or invent missing content, coordinates, prices, references or constraints.
-    if (surface.title == null) surface.title = "Your work";
+    if (surface.title == null) {
+      surface.title = "Your work";
+    }
+
     if (Array.isArray(surface.nodes)) {
       surface.nodes = surface.nodes.map((raw: unknown) => {
-        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+          return raw;
+        }
+
         const node = raw as Record<string, unknown>;
         const variant = PresentationNodeSchema.options.find(
           (option) => option.shape.type.safeParse(node.type).success,
         );
-        if (!variant) return node;
+
+        if (!variant) {
+          return node;
+        }
+
         return Object.fromEntries(
           Object.entries(node).filter(([key]) =>
             Object.hasOwn(variant.shape, key),
@@ -205,6 +217,7 @@ export function readTurnDecision(
       /\b(?:created|prepared|displayed|shown|built|generated)\b|\bhere (?:is|are)\b/i.test(
         reply,
       );
+
     if (!structural.success) {
       if (
         (payload.intent === "conversation" ||
@@ -242,6 +255,7 @@ export function readTurnDecision(
           ),
       )),
   );
+
   if (
     (decision.intent === "conversation" ||
       decision.intent === "clarification") &&

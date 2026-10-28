@@ -137,6 +137,7 @@ describe("Actual provider response replay (no live requests)", () => {
         const transport = (async (_url: unknown, init?: RequestInit) => {
           const body = JSON.parse(String(init?.body));
           const toolName = body.tools[0].functionDeclarations[0].name;
+
           return toolName === "route_conversation"
             ? Response.json({
                 candidates: [

@@ -42,12 +42,14 @@ export function currentCulturalTraces(task: Task): CulturalTrace[] {
       .filter((entity) => entity.status === "resolved" && entity.providerId)
       .map((entity) => [entity.providerId!, entity.name]),
   );
+
   if (task.brief.contextAnchor) {
     nameById.set(
       task.brief.contextAnchor.providerId,
       task.brief.contextAnchor.name,
     );
   }
+
   const participantNames = new Map(
     task.brief.participants.map((person) => [person.id, person.name]),
   );
@@ -59,11 +61,8 @@ export function currentCulturalTraces(task: Task): CulturalTrace[] {
 
   return task.catalogue.flatMap((candidate) => {
     const identity = candidate.providerId ?? candidate.id;
-    if (
-      candidate.sample ||
-      stale.has(candidate.id) ||
-      !candidate.cultural
-    ) {
+
+    if (candidate.sample || stale.has(candidate.id) || !candidate.cultural) {
       return [];
     }
 
@@ -72,6 +71,7 @@ export function currentCulturalTraces(task: Task): CulturalTrace[] {
         const evidence = currentEvidence.get(
           "qloo:" + association.queryId + ":" + owner + ":" + identity,
         );
+
         return (
           evidence?.entityIds.includes(identity) &&
           evidence.delivery === association.delivery
@@ -96,7 +96,7 @@ export function currentCulturalTraces(task: Task): CulturalTrace[] {
           audience:
             scope === "context"
               ? "Cultural context"
-              : participantNames.get(owner) ?? "Participant",
+              : (participantNames.get(owner) ?? "Participant"),
           scope,
           rank: association.rank,
           seeds,

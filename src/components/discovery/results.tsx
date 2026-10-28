@@ -147,7 +147,8 @@ export function DiscoveryResults({
           <div>
             <strong>Igor is working.</strong>
             <span>
-              {executionMessage || "Connecting your request with the available evidence…"}
+              {executionMessage ||
+                "Connecting your request with the available evidence…"}
             </span>
           </div>
           <span className="ig-progress-dots" aria-hidden="true">

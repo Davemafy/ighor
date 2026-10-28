@@ -125,7 +125,9 @@ it("does not use a duration value as a spending limit", () => {
   const surface = form();
   const node = surface.nodes[0];
 
-  if (node.type !== "question") {throw Error("fixture");}
+  if (node.type !== "question") {
+    throw Error("fixture");
+  }
 
   const grounded = groundQuestionAnswer(node, {
     budget: "50",
@@ -174,7 +176,9 @@ it("supports explicit hour units without treating a per-person label as a total 
   });
   const node = surface.nodes[0];
 
-  if (node.type !== "question") {throw Error("fixture");}
+  if (node.type !== "question") {
+    throw Error("fixture");
+  }
 
   const grounded = groundQuestionAnswer(node, { hours: "2", budget: "50" });
   expect(grounded.constraints).toEqual({ duration: 120 });
@@ -206,7 +210,9 @@ it("uses the asked recipient context without inventing a cultural identity or pe
   );
   expect(result.ok).toBe(true);
 
-  if (!result.ok) {return;}
+  if (!result.ok) {
+    return;
+  }
 
   expect(result.task.brief.participants[0].name).toBe("Mum");
   expect(result.task.brief.participants[0].preferences[0].value).toBe("Amala");
@@ -258,13 +264,41 @@ it("does not treat a copied movie request as replacement document wording", asyn
   stores.push(store);
   const task = freshTask("movie-copy", "owner");
   store.create(task);
-  const text = "Find movies based on my interest in nujabes. Show the returned references so I can explore them and save the ones I like to a collection.";
-  const result = await runTurn(store, task.id, "owner", {type: "message", text, version: task.brief.version}, undefined, undefined, {
-    interpret: async () => ({intent: "goal", supported: true, kind: "discovery", goal: text, targetType: "movie", actions: [
-      {kind: "artifact", artifactId: "main", content: text},
-      {kind: "profile", participant: "you", preferences: [{value: "nujabes", polarity: "like", entityType: "artist"}]},
-    ]}),
-  });
-  expect(result.messages.some((message) => message.text.includes("Save the document wording separately"))).toBe(false);
-  expect(result.trace.some((entry) => entry.action === "proposal.ignored")).toBe(true);
+  const text =
+    "Find movies based on my interest in nujabes. Show the returned references so I can explore them and save the ones I like to a collection.";
+  const result = await runTurn(
+    store,
+    task.id,
+    "owner",
+    { type: "message", text, version: task.brief.version },
+    undefined,
+    undefined,
+    {
+      interpret: async () => ({
+        intent: "goal",
+        supported: true,
+        kind: "discovery",
+        goal: text,
+        targetType: "movie",
+        actions: [
+          { kind: "artifact", artifactId: "main", content: text },
+          {
+            kind: "profile",
+            participant: "you",
+            preferences: [
+              { value: "nujabes", polarity: "like", entityType: "artist" },
+            ],
+          },
+        ],
+      }),
+    },
+  );
+  expect(
+    result.messages.some((message) =>
+      message.text.includes("Save the document wording separately"),
+    ),
+  ).toBe(false);
+  expect(
+    result.trace.some((entry) => entry.action === "proposal.ignored"),
+  ).toBe(true);
 });

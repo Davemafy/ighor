@@ -1,6 +1,8 @@
 /* Spatial mode belongs to the same declarative task canvas as text,
    documents, charts and timelines. These are application-owned styles. */
-.ic-spatial { min-width: 0; }
+.ic-spatial {
+  min-width: 0;
+}
 .ic-spatial-heading {
   display: flex;
   justify-content: space-between;
@@ -15,8 +17,13 @@
   gap: 3px;
   min-width: 0;
 }
-.ic-spatial-heading .ic-eyebrow { margin: 0; }
-.ic-spatial-heading strong { font-size: 16px; font-weight: 600; }
+.ic-spatial-heading .ic-eyebrow {
+  margin: 0;
+}
+.ic-spatial-heading strong {
+  font-size: 16px;
+  font-weight: 600;
+}
 .ic-spatial-view-switch {
   display: flex;
   padding: 3px;
@@ -35,21 +42,31 @@
   font-size: 12px;
   color: #b8b6bf;
 }
-.ic-spatial-view-switch svg { width: 15px; height: 15px; }
+.ic-spatial-view-switch svg {
+  width: 15px;
+  height: 15px;
+}
 .ic-canvas .ic-spatial-view-switch button[aria-pressed="true"] {
   background: #f3eee4;
   color: #17161b;
 }
-.ic-map-stage[hidden] { display: none !important; }
-.ic-map-stage, .ic-map-host { min-width: 0; }
-.ic-map-start-actions, .ic-map-error-actions {
+.ic-map-stage[hidden] {
+  display: none !important;
+}
+.ic-map-stage,
+.ic-map-host {
+  min-width: 0;
+}
+.ic-map-start-actions,
+.ic-map-error-actions {
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 9px;
 }
-.ic-map-start-actions button, .ic-map-error-actions button {
+.ic-map-start-actions button,
+.ic-map-error-actions button {
   min-height: 44px;
 }
 .ic-map-start-actions button + button {
@@ -63,9 +80,16 @@
   overflow-y: auto;
   line-height: 1.5;
 }
-.ic-map-error-actions { justify-content: flex-start; }
-.ic-map-error-actions button { margin-top: 5px; }
-.ic-map-error-actions svg { width: 15px; height: 15px; }
+.ic-map-error-actions {
+  justify-content: flex-start;
+}
+.ic-map-error-actions button {
+  margin-top: 5px;
+}
+.ic-map-error-actions svg {
+  width: 15px;
+  height: 15px;
+}
 .ic-place-selector {
   display: flex;
   gap: 10px;
@@ -92,7 +116,8 @@
   scroll-snap-align: start;
   white-space: normal;
 }
-.ic-place-card > img, .ic-place-card-fallback {
+.ic-place-card > img,
+.ic-place-card-fallback {
   width: 60px;
   height: 60px;
   flex: none;
@@ -124,7 +149,11 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.ic-place-card > svg { width: 15px; height: 15px; flex: none; }
+.ic-place-card > svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
 .ic-canvas .ic-place-card[aria-pressed="true"] {
   border-color: #dbcae0;
   background: #ffffff1e;
@@ -159,38 +188,84 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-.ic-spatial .ic-place-preview .ic-note { font-size: 11px; }
-.ic-spatial .ic-place-actions button, .ic-spatial .ic-place-actions a {
+.ic-spatial .ic-place-preview .ic-note {
+  font-size: 11px;
+}
+.ic-spatial .ic-place-actions button,
+.ic-spatial .ic-place-actions a {
   min-height: 42px;
 }
-.ic-spatial .ic-map-plan li { min-width: 0; }
-.ic-spatial .ic-map-plan li strong { min-width: 0; overflow-wrap: anywhere; }
-.ic-spatial .ic-map-plan li button { min-width: 35px; min-height: 40px; }
+.ic-spatial .ic-map-plan li {
+  min-width: 0;
+}
+.ic-spatial .ic-map-plan li strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ic-spatial .ic-map-plan li button {
+  min-width: 35px;
+  min-height: 40px;
+}
 @media (max-width: 760px) {
   .ic-spatial .ic-map-host {
     height: clamp(310px, 53dvh, 600px);
   }
-  .ic-spatial .ic-map-stage { min-height: 310px; }
-  .ic-spatial .ic-map-start { padding: 22px 16px; }
-  .ic-spatial .ic-map-start h4 { font-size: 21px; }
-  .ic-spatial-heading { gap: 8px; }
-  .ic-spatial-view-switch { margin-left: auto; }
-  .ic-canvas .ic-place-selector .ic-place-card { flex-basis: 200px; width: 200px; }
-  .ic-spatial[data-map-mode="list"] .ic-place-card { width: 100%; }
-  .ic-spatial .ic-place-preview { padding: 14px; gap: 12px; }
-  .ic-spatial .ic-place-preview > img { width: 72px; height: 96px; }
+  .ic-spatial .ic-map-stage {
+    min-height: 310px;
+  }
+  .ic-spatial .ic-map-start {
+    padding: 22px 16px;
+  }
+  .ic-spatial .ic-map-start h4 {
+    font-size: 21px;
+  }
+  .ic-spatial-heading {
+    gap: 8px;
+  }
+  .ic-spatial-view-switch {
+    margin-left: auto;
+  }
+  .ic-canvas .ic-place-selector .ic-place-card {
+    flex-basis: 200px;
+    width: 200px;
+  }
+  .ic-spatial[data-map-mode="list"] .ic-place-card {
+    width: 100%;
+  }
+  .ic-spatial .ic-place-preview {
+    padding: 14px;
+    gap: 12px;
+  }
+  .ic-spatial .ic-place-preview > img {
+    width: 72px;
+    height: 96px;
+  }
 }
 @media (max-width: 340px) {
-  .ic-spatial-heading strong { font-size: 14px; }
-  .ic-canvas .ic-spatial-view-switch button { padding: 9px 10px; }
-  .ic-spatial .ic-place-preview { flex-direction: column; }
-  .ic-spatial .ic-place-preview > img { width: 100%; height: 150px; }
+  .ic-spatial-heading strong {
+    font-size: 14px;
+  }
+  .ic-canvas .ic-spatial-view-switch button {
+    padding: 9px 10px;
+  }
+  .ic-spatial .ic-place-preview {
+    flex-direction: column;
+  }
+  .ic-spatial .ic-place-preview > img {
+    width: 100%;
+    height: 150px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ic-place-selector { scroll-behavior: auto; }
+  .ic-place-selector {
+    scroll-behavior: auto;
+  }
 }
 
-.ic-itinerary-day { flex: none; min-width: 0; }
+.ic-itinerary-day {
+  flex: none;
+  min-width: 0;
+}
 .ic-itinerary-day select {
   max-width: 108px;
   min-height: 40px;

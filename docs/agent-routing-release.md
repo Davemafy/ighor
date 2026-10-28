@@ -137,8 +137,6 @@ mobile interaction must target `/app`. The marketing root is a separate
 surface and needs its own distinct smoke test. A passing marketing-heading
 assertion does not establish that the agent composer rendered.
 
-
-
 ## Live short-followup failure and read-only recovery
 
 The deployed branch surfaced a real `model.interpret.error` after the
@@ -173,7 +171,6 @@ that an actual Railway/Gemini/Qloo call passed. Updating the PR branch
 does not change a deployed Railway service; deploy only after explicit
 owner approval and release gate review.
 
-
 ## Action-first local discovery: no more intake loops after sufficient context
 
 A real deployed user journey supplied a New York locality, $50 budget,
@@ -191,6 +188,7 @@ greetings or discussions stay conversational. The research turn checkpoints
 the user's message before execution and retains optimistic version checks.
 
 Provider execution, where configured, includes:
+
 - **Bright Data** SERP and page source inspection (existing bounded search).
   URLs and fetched excerpts are untrusted data and do not prove opening
   hours, pricing, group capacity or reservation availability.

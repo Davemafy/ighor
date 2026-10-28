@@ -251,6 +251,7 @@ function readStoredState(text: string): Task {
   // workspace indefinitely "running". Do not mutate the stored version:
   // an in-flight worker can still commit if its optimistic CAS succeeds.
   const lastTrace = task.trace.at(-1);
+
   if (
     task.status === "running" &&
     lastTrace?.action === "tool.invoke:search_web" &&
@@ -267,13 +268,20 @@ function readStoredState(text: string): Task {
   // let a new user turn continue from the saved observations.
   if (
     task.agentRun &&
-    ["created", "reasoning", "executing_tool", "observing", "verifying"].includes(task.agentRun.status) &&
+    [
+      "created",
+      "reasoning",
+      "executing_tool",
+      "observing",
+      "verifying",
+    ].includes(task.agentRun.status) &&
     Number.isFinite(Date.parse(task.agentRun.updatedAt)) &&
     Date.now() - Date.parse(task.agentRun.updatedAt) > 120000
   ) {
     task.agentRun.status = "interrupted";
     task.status = "partial";
-    task.error = "Agent execution was interrupted. Completed observations are saved; no external action was automatically repeated.";
+    task.error =
+      "Agent execution was interrupted. Completed observations are saved; no external action was automatically repeated.";
   }
 
   messageIds(task);

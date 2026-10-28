@@ -11,7 +11,9 @@ export function AdaptiveStage({ children }: { children: ReactNode }) {
     const frame = outer.current;
     const content = inner.current;
 
-    if (!frame || !content) {return;}
+    if (!frame || !content) {
+      return;
+    }
 
     let previous = content.getBoundingClientRect().height;
     let animation: Animation | undefined;
@@ -21,7 +23,9 @@ export function AdaptiveStage({ children }: { children: ReactNode }) {
       const before = previous;
       previous = next;
 
-      if (Math.abs(next - before) < 2) {return;}
+      if (Math.abs(next - before) < 2) {
+        return;
+      }
 
       animation?.cancel();
 
@@ -29,8 +33,9 @@ export function AdaptiveStage({ children }: { children: ReactNode }) {
         isMorphing() ||
         matchMedia("(prefers-reduced-motion: reduce)").matches ||
         !frame.animate
-      )
-        {return;}
+      ) {
+        return;
+      }
 
       animation = frame.animate(
         [{ height: `${before}px` }, { height: `${next}px` }],

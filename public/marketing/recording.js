@@ -1,26 +1,259 @@
-'use strict';
+"use strict";
 // Navigation follows the expanding capsule shown in the supplied recording.
-const navShell=document.querySelector('.nav');
-const menus={
- goals:{groups:[['Start with an idea',['Find a thoughtful gift','#possibilities','spark'],['Plan something together','#possibilities','chat'],['Explore a direction','#explore','globe']],['Keep going',['Make your next move','#capabilities','arrowRight'],['Bring everyone along','#capabilities','list']]],image:'/marketing/assets/generated/gift-lamp-320.webp',title:'Make it thoughtful.',copy:'A little context. A world of possibilities.',link:'#possibilities'},
- explore:{groups:[['Follow your curiosity',['Gift shortlists','#explore','spark'],['Creative directions','#explore','layout'],['Weekend ideas','#explore','globe']],['See what’s possible',['Connected outcomes','#how','file'],['Explore the example','#app','chat']]],image:'/marketing/assets/posters/p03.svg',title:'Where could this go?',copy:'Research, plans and drafts, shaped around you.',link:'#explore'},
- product:{groups:[['One workspace',['Bring a goal','#how','chat'],['Connect the dots','#in-motion','globe'],['Refine the work','#refine','edit']],['Take a closer look',['Interactive example','#app','layout'],['Cultural connections','#capabilities','spark']]],image:'/marketing/assets/generated/gift-record-320.webp',title:'One goal. Connected work.',copy:'A conversation with somewhere to go.',link:'#app'},
- teams:{groups:[['Ideas, together',['Shared plans','#capabilities','chat'],['Creative briefs','#explore','file'],['Compare options','#capabilities','list']],['Work with Igor',['See the workflow','#in-motion','layout'],['Open the app','https://igor-production-243e.up.railway.app/app','arrowUpRight']]],image:'/marketing/assets/photos/hero-dinner-a-480.webp',title:'Room for everyone.',copy:'Bring different preferences into the same conversation.',link:'#capabilities'},
- about:{groups:[['Igor',['Your agent. With taste.','#main','spark'],['How it works','#how','layout'],['Powered by Qloo','https://qloo.com/','globe']],['Details',['Interactive example','#app','chat'],['What needs checking','#refine','list']]],image:'/marketing/assets/generated/gift-book-320.webp',title:'A thought. Then something real.',copy:'Discover, decide and create, with your taste in mind.',link:'#how'}
+const navShell = document.querySelector(".nav");
+const menus = {
+  goals: {
+    groups: [
+      [
+        "Start with an idea",
+        ["Find a thoughtful gift", "#possibilities", "spark"],
+        ["Plan something together", "#possibilities", "chat"],
+        ["Explore a direction", "#explore", "globe"],
+      ],
+      [
+        "Keep going",
+        ["Make your next move", "#capabilities", "arrowRight"],
+        ["Bring everyone along", "#capabilities", "list"],
+      ],
+    ],
+    image: "/marketing/assets/generated/gift-lamp-320.webp",
+    title: "Make it thoughtful.",
+    copy: "A little context. A world of possibilities.",
+    link: "#possibilities",
+  },
+  explore: {
+    groups: [
+      [
+        "Follow your curiosity",
+        ["Gift shortlists", "#explore", "spark"],
+        ["Creative directions", "#explore", "layout"],
+        ["Weekend ideas", "#explore", "globe"],
+      ],
+      [
+        "See what’s possible",
+        ["Connected outcomes", "#how", "file"],
+        ["Explore the example", "#app", "chat"],
+      ],
+    ],
+    image: "/marketing/assets/posters/p03.svg",
+    title: "Where could this go?",
+    copy: "Research, plans and drafts, shaped around you.",
+    link: "#explore",
+  },
+  product: {
+    groups: [
+      [
+        "One workspace",
+        ["Bring a goal", "#how", "chat"],
+        ["Connect the dots", "#in-motion", "globe"],
+        ["Refine the work", "#refine", "edit"],
+      ],
+      [
+        "Take a closer look",
+        ["Interactive example", "#app", "layout"],
+        ["Cultural connections", "#capabilities", "spark"],
+      ],
+    ],
+    image: "/marketing/assets/generated/gift-record-320.webp",
+    title: "One goal. Connected work.",
+    copy: "A conversation with somewhere to go.",
+    link: "#app",
+  },
+  teams: {
+    groups: [
+      [
+        "Ideas, together",
+        ["Shared plans", "#capabilities", "chat"],
+        ["Creative briefs", "#explore", "file"],
+        ["Compare options", "#capabilities", "list"],
+      ],
+      [
+        "Work with Igor",
+        ["See the workflow", "#in-motion", "layout"],
+        [
+          "Open the app",
+          "https://igor-production-243e.up.railway.app/app",
+          "arrowUpRight",
+        ],
+      ],
+    ],
+    image: "/marketing/assets/photos/hero-dinner-a-480.webp",
+    title: "Room for everyone.",
+    copy: "Bring different preferences into the same conversation.",
+    link: "#capabilities",
+  },
+  about: {
+    groups: [
+      [
+        "Igor",
+        ["Your agent. With taste.", "#main", "spark"],
+        ["How it works", "#how", "layout"],
+        ["Powered by Qloo", "https://qloo.com/", "globe"],
+      ],
+      [
+        "Details",
+        ["Interactive example", "#app", "chat"],
+        ["What needs checking", "#refine", "list"],
+      ],
+    ],
+    image: "/marketing/assets/generated/gift-book-320.webp",
+    title: "A thought. Then something real.",
+    copy: "Discover, decide and create, with your taste in mind.",
+    link: "#how",
+  },
 };
-function closeMega(){navShell.classList.remove('menu-open');document.querySelector('#mega-panel').hidden=true;document.querySelectorAll('[data-menu]').forEach(b=>b.setAttribute('aria-expanded','false'));}
-function openMega(name){const m=menus[name],panel=document.querySelector('#mega-panel');panel.innerHTML=`<div class="mega-links">${m.groups.map(([heading,...links])=>`<div><h3>${heading}</h3>${links.map(([label,href,ic])=>`<a href="${href}">${icon(ic)}${label}</a>`).join('')}</div>`).join('')}</div><a class="mega-feature" href="${m.link}"><img src="${m.image}" alt=""><small>EXPLORE IGOR</small><h3>${m.title}</h3><p>${m.copy}</p>${icon('arrowUpRight')}</a>`;panel.hidden=false;navShell.classList.add('menu-open');document.querySelectorAll('[data-menu]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.menu===name)));}
-document.querySelectorAll('[data-menu]').forEach(b=>{b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&innerWidth>=768)openMega(b.dataset.menu);});b.addEventListener('click',()=>{if(b.classList.contains('mobile-menu')&&b.getAttribute('aria-expanded')==='true')closeMega();else openMega(b.dataset.menu);});});
-navShell.addEventListener('mouseleave',closeMega);document.addEventListener('click',e=>{if(!navShell.contains(e.target)||e.target.closest('.mega-panel a'))closeMega();});document.addEventListener('keydown',e=>{if(e.key==='Escape'){const active=document.querySelector('[data-menu][aria-expanded=true]');closeMega();if(active)active.focus();}});
+function closeMega() {
+  navShell.classList.remove("menu-open");
+  document.querySelector("#mega-panel").hidden = true;
+  document
+    .querySelectorAll("[data-menu]")
+    .forEach((b) => b.setAttribute("aria-expanded", "false"));
+}
+function openMega(name) {
+  const m = menus[name],
+    panel = document.querySelector("#mega-panel");
+  panel.innerHTML = `<div class="mega-links">${m.groups.map(([heading, ...links]) => `<div><h3>${heading}</h3>${links.map(([label, href, ic]) => `<a href="${href}">${icon(ic)}${label}</a>`).join("")}</div>`).join("")}</div><a class="mega-feature" href="${m.link}"><img src="${m.image}" alt=""><small>EXPLORE IGOR</small><h3>${m.title}</h3><p>${m.copy}</p>${icon("arrowUpRight")}</a>`;
+  panel.hidden = false;
+  navShell.classList.add("menu-open");
+  document
+    .querySelectorAll("[data-menu]")
+    .forEach((b) =>
+      b.setAttribute("aria-expanded", String(b.dataset.menu === name)),
+    );
+}
+document.querySelectorAll("[data-menu]").forEach((b) => {
+  b.addEventListener("pointerenter", (e) => {
+    if (e.pointerType === "mouse" && innerWidth >= 768)
+      openMega(b.dataset.menu);
+  });
+  b.addEventListener("click", () => {
+    if (
+      b.classList.contains("mobile-menu") &&
+      b.getAttribute("aria-expanded") === "true"
+    )
+      closeMega();
+    else openMega(b.dataset.menu);
+  });
+});
+navShell.addEventListener("mouseleave", closeMega);
+document.addEventListener("click", (e) => {
+  if (!navShell.contains(e.target) || e.target.closest(".mega-panel a"))
+    closeMega();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const active = document.querySelector("[data-menu][aria-expanded=true]");
+    closeMega();
+    if (active) active.focus();
+  }
+});
 // Hover previews keep their motion inside their own row.
-document.querySelectorAll('.goal-row').forEach((row,i)=>{row.querySelectorAll('.goal-reel').forEach((reel,side)=>{for(let j=0;j<8;j++){const im=document.createElement('img');im.src=`/marketing/assets/posters/p${String((i*3+j+side*5)%20+1).padStart(2,'0')}.svg`;im.alt='';im.width=560;im.height=560;im.loading='lazy';reel.append(im);}});});
-const story=document.querySelector('.pinned-story');
-const storyCopy=[['01 / Bring a goal','Start with<br>a thought.','Big plans, little details, half-formed ideas. Give Igor a starting point, with your taste in mind.'],['02 / Connect the dots','Follow the<br>connections.','Igor brings cultural connections and practical research into the same conversation. See where a direction comes from.'],['03 / Make it yours','One change.<br>Connected work.','Refine the evening. Rewrite the invitation. Keep the gift shortlist. Change direction with the context still there.']];
-let currentStory=-1;
-function showStory(n){if(n===currentStory)return;currentStory=n;const c=storyCopy[n];document.querySelector('.story-copy .eyebrow').textContent=c[0];document.querySelector('.story-copy h2').innerHTML=c[1];document.querySelector('.story-aside>p').textContent=c[2];document.querySelectorAll('[data-screen]').forEach(el=>el.hidden=Number(el.dataset.screen)!==n);document.querySelectorAll('[data-story]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.story)===n)));}
+document.querySelectorAll(".goal-row").forEach((row, i) => {
+  row.querySelectorAll(".goal-reel").forEach((reel, side) => {
+    for (let j = 0; j < 8; j++) {
+      const im = document.createElement("img");
+      im.src = `/marketing/assets/posters/p${String(((i * 3 + j + side * 5) % 20) + 1).padStart(2, "0")}.svg`;
+      im.alt = "";
+      im.width = 560;
+      im.height = 560;
+      im.loading = "lazy";
+      reel.append(im);
+    }
+  });
+});
+const story = document.querySelector(".pinned-story");
+const storyCopy = [
+  [
+    "01 / Bring a goal",
+    "Start with<br>a thought.",
+    "Big plans, little details, half-formed ideas. Give Igor a starting point, with your taste in mind.",
+  ],
+  [
+    "02 / Connect the dots",
+    "Follow the<br>connections.",
+    "Igor brings cultural connections and practical research into the same conversation. See where a direction comes from.",
+  ],
+  [
+    "03 / Make it yours",
+    "One change.<br>Connected work.",
+    "Refine the evening. Rewrite the invitation. Keep the gift shortlist. Change direction with the context still there.",
+  ],
+];
+let currentStory = -1;
+function showStory(n) {
+  if (n === currentStory) return;
+  currentStory = n;
+  const c = storyCopy[n];
+  document.querySelector(".story-copy .eyebrow").textContent = c[0];
+  document.querySelector(".story-copy h2").innerHTML = c[1];
+  document.querySelector(".story-aside>p").textContent = c[2];
+  document
+    .querySelectorAll("[data-screen]")
+    .forEach((el) => (el.hidden = Number(el.dataset.screen) !== n));
+  document
+    .querySelectorAll("[data-story]")
+    .forEach((b) =>
+      b.setAttribute("aria-pressed", String(Number(b.dataset.story) === n)),
+    );
+}
 showStory(0);
-document.querySelectorAll('[data-story]').forEach(b=>b.addEventListener('click',()=>{const n=Number(b.dataset.story);showStory(n);if(!matchMedia('(prefers-reduced-motion: reduce)').matches){const travel=story.offsetHeight-innerHeight;window.scrollTo({top:story.getBoundingClientRect().top+scrollY+travel*(n+.15)/3,behavior:'smooth'});}}));
-let lastScroll=scrollY,scrollFrame=false;
-function updateScroll(){const y=scrollY;if(y>140&&y>lastScroll+2&&!navShell.classList.contains('menu-open')&&!navShell.contains(document.activeElement))navShell.classList.add('nav-hidden');else if(y<lastScroll-2||y<140)navShell.classList.remove('nav-hidden');lastScroll=y;const box=story.getBoundingClientRect(),travel=story.offsetHeight-innerHeight;if(box.top<=0&&box.bottom>=innerHeight&&!matchMedia('(prefers-reduced-motion: reduce)').matches)showStory(Math.max(0,Math.min(2,Math.floor(-box.top/travel*3))));scrollFrame=false;}
-window.addEventListener('scroll',()=>{if(!scrollFrame){scrollFrame=true;requestAnimationFrame(updateScroll);}},{passive:true});
-document.querySelectorAll('[data-rail]').forEach(b=>b.addEventListener('click',()=>{document.querySelector('#outcome-rail').scrollBy({left:Number(b.dataset.rail)*344,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}));
+document.querySelectorAll("[data-story]").forEach((b) =>
+  b.addEventListener("click", () => {
+    const n = Number(b.dataset.story);
+    showStory(n);
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const travel = story.offsetHeight - innerHeight;
+      window.scrollTo({
+        top:
+          story.getBoundingClientRect().top +
+          scrollY +
+          (travel * (n + 0.15)) / 3,
+        behavior: "smooth",
+      });
+    }
+  }),
+);
+let lastScroll = scrollY,
+  scrollFrame = false;
+function updateScroll() {
+  const y = scrollY;
+  if (
+    y > 140 &&
+    y > lastScroll + 2 &&
+    !navShell.classList.contains("menu-open") &&
+    !navShell.contains(document.activeElement)
+  )
+    navShell.classList.add("nav-hidden");
+  else if (y < lastScroll - 2 || y < 140)
+    navShell.classList.remove("nav-hidden");
+  lastScroll = y;
+  const box = story.getBoundingClientRect(),
+    travel = story.offsetHeight - innerHeight;
+  if (
+    box.top <= 0 &&
+    box.bottom >= innerHeight &&
+    !matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+    showStory(Math.max(0, Math.min(2, Math.floor((-box.top / travel) * 3))));
+  scrollFrame = false;
+}
+window.addEventListener(
+  "scroll",
+  () => {
+    if (!scrollFrame) {
+      scrollFrame = true;
+      requestAnimationFrame(updateScroll);
+    }
+  },
+  { passive: true },
+);
+document.querySelectorAll("[data-rail]").forEach((b) =>
+  b.addEventListener("click", () => {
+    document.querySelector("#outcome-rail").scrollBy({
+      left: Number(b.dataset.rail) * 344,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  }),
+);

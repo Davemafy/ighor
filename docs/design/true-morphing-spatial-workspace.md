@@ -48,7 +48,7 @@ The Maps SDK is a browser test double. Google Maps billing, photorealistic image
 
 The connected-work run uses the explicitly scripted development provider, not external LLM/Qloo calls, and tests real document mutations, old revision review, budget follow-up, manual wording preservation and reload. It records mobile screenshots for the connected artifact and motion-enabled browser videos.
 
-Both browser runs write to `test-results/`; GitHub's mobile workflow uploads `igor-mobile-interaction-evidence` if a runner executes. Browser checks include horizontal overflow, composer-viewport visibility, and measured layout-shift/long-task counters saved as JSON. A simulated `--igor-visible-height` tests viewport *geometry* but is **not** a real on-screen phone keyboard.
+Both browser runs write to `test-results/`; GitHub's mobile workflow uploads `igor-mobile-interaction-evidence` if a runner executes. Browser checks include horizontal overflow, composer-viewport visibility, and measured layout-shift/long-task counters saved as JSON. A simulated `--igor-visible-height` tests viewport _geometry_ but is **not** a real on-screen phone keyboard.
 
 ## Current verification boundary
 

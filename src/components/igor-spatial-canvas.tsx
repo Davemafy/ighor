@@ -126,10 +126,18 @@ export default function IgorSpatialCanvas({
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<MapElement | null>(null);
   const flatMap = useRef<{ panTo: (p: Position) => void } | null>(null);
-  const markers = useRef(new Map<string, {
-    element?: HTMLElement;
-    flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
-  }>());
+  const markers = useRef(
+    new Map<
+      string,
+      {
+        element?: HTMLElement;
+        flat?: {
+          setOpacity?: (value: number) => void;
+          setZIndex?: (value: number) => void;
+        };
+      }
+    >(),
+  );
   const mutationRef = useRef(mutate);
   const busyRef = useRef(busy);
   useEffect(() => {
@@ -137,22 +145,51 @@ export default function IgorSpatialCanvas({
     busyRef.current = busy;
   }, [mutate, busy]);
   const candidates = useMemo(
-    () => node.candidateIds
-      .map((id) => task.candidates.find((c) => c.id === id))
-      .filter((c): c is Candidate =>
-        !!c && c.type === "place" && c.freshness === "current"),
+    () =>
+      node.candidateIds
+        .map((id) => task.candidates.find((c) => c.id === id))
+        .filter(
+          (c): c is Candidate =>
+            !!c && c.type === "place" && c.freshness === "current",
+        ),
     [node.candidateIds, task.candidates],
   );
   const places = useMemo(
-    () => candidates.filter((c) => {
-      const lat = c.place?.latitude;
-      const lng = c.place?.longitude;
-      return lat != null && lng != null &&
-        Number.isFinite(lat) && Number.isFinite(lng) &&
-        Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-    }),
+    () =>
+      candidates.filter((c) => {
+        const lat = c.place?.latitude;
+        const lng = c.place?.longitude;
+
+        return (
+          lat != null &&
+          lng != null &&
+          Number.isFinite(lat) &&
+          Number.isFinite(lng) &&
+          Math.abs(lat) <= 90 &&
+          Math.abs(lng) <= 180
+        );
+      }),
     [candidates],
   );
+
+  function markersRefSet(
+    id: string,
+    marker: {
+      element?: HTMLElement;
+      flat?: {
+        setOpacity?: (value: number) => void;
+        setZIndex?: (value: number) => void;
+      };
+    },
+  ) {
+    markers.current.set(id, marker);
+    const active = id === selectedId || (!selectedId && id === places[0]?.id);
+    marker.element?.toggleAttribute("data-selected", active);
+    marker.element?.setAttribute("aria-pressed", String(active));
+    marker.flat?.setOpacity?.(active ? 1 : 0.72);
+    marker.flat?.setZIndex?.(active ? 1000 : 1);
+  }
+
   const signature = places
     .map((c) => `${c.id}:${c.place!.latitude}:${c.place!.longitude}`)
     .join("|");
@@ -180,16 +217,21 @@ export default function IgorSpatialCanvas({
       marker.element?.toggleAttribute("data-selected", active);
       marker.element?.setAttribute("aria-pressed", String(active));
       const label = candidates.find((item) => item.id === id)?.name ?? id;
-      marker.element?.setAttribute("aria-label", active
-        ? `${label} selected`
-        : label);
+      marker.element?.setAttribute(
+        "aria-label",
+        active ? `${label} selected` : label,
+      );
       marker.flat?.setOpacity?.(active ? 1 : 0.72);
       marker.flat?.setZIndex?.(active ? 1000 : 1);
     }
   }, [selected?.id, state, candidates]);
   useEffect(() => {
     const el = host.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+
+    if (!el || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
     const observer = new ResizeObserver(() => {
       // The element itself is responsive. On 2D, Google Maps requires an
       // explicit event-less pan after orientation or container size changes.
@@ -198,6 +240,7 @@ export default function IgorSpatialCanvas({
       }
     });
     observer.observe(el);
+
     return () => observer.disconnect();
   }, [viewMode, selected?.id]);
   const camera = useRef<{
@@ -394,6 +437,7 @@ export default function IgorSpatialCanvas({
         };
 
         marker.addEventListener("gmp-click", select);
+
         // Browser and test-double markers also support keyboard selection.
         const keySelect = (event: KeyboardEvent) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -401,6 +445,7 @@ export default function IgorSpatialCanvas({
             select();
           }
         };
+
         marker.addEventListener("keydown", keySelect);
         marker.setAttribute("aria-label", c.name);
         marker.setAttribute("tabindex", "0");
@@ -491,21 +536,6 @@ export default function IgorSpatialCanvas({
     }
   }, [selectedLat, selectedLng, state]);
 
-  function markersRefSet(
-    id: string,
-    marker: {
-      element?: HTMLElement;
-      flat?: { setOpacity?: (value: number) => void; setZIndex?: (value: number) => void };
-    },
-  ) {
-    markers.current.set(id, marker);
-    const active = id === selectedId || (!selectedId && id === places[0]?.id);
-    marker.element?.toggleAttribute("data-selected", active);
-    marker.element?.setAttribute("aria-pressed", String(active));
-    marker.flat?.setOpacity?.(active ? 1 : 0.72);
-    marker.flat?.setZIndex?.(active ? 1000 : 1);
-  }
-
   function updateItinerary(ids: string[]) {
     mutate({ operation: "itinerary", nodeId: node.id, candidateIds: ids });
   }
@@ -524,15 +554,26 @@ export default function IgorSpatialCanvas({
       <div className="ic-spatial-heading">
         <div>
           <span className="ic-eyebrow">Places in this task</span>
-          <strong>{candidates.length} {candidates.length === 1 ? "place" : "places"} · {places.length} mappable</strong>
+          <strong>
+            {candidates.length} {candidates.length === 1 ? "place" : "places"} ·{" "}
+            {places.length} mappable
+          </strong>
         </div>
-        <div className="ic-spatial-view-switch" role="group" aria-label="Geographic result view">
+        <div
+          className="ic-spatial-view-switch"
+          role="group"
+          aria-label="Geographic result view"
+        >
           <button
             type="button"
             aria-pressed={viewMode === "map"}
             onClick={() => setRequestedView("map")}
             disabled={!places.length}
-            title={!places.length ? "No current places have valid coordinates" : undefined}
+            title={
+              !places.length
+                ? "No current places have valid coordinates"
+                : undefined
+            }
           >
             <MapIcon /> Map
           </button>
@@ -551,7 +592,10 @@ export default function IgorSpatialCanvas({
           remain editable; mapping must wait for real location data.
         </p>
       )}
-      <div className="ic-map-stage" hidden={viewMode === "list" || !places.length}>
+      <div
+        className="ic-map-stage"
+        hidden={viewMode === "list" || !places.length}
+      >
         <div
           className="ic-map-host"
           ref={host}
@@ -614,7 +658,11 @@ export default function IgorSpatialCanvas({
           </div>
         )}
       </div>
-      <div className="ic-place-selector" role="group" aria-label="Choose a place">
+      <div
+        className="ic-place-selector"
+        role="group"
+        aria-label="Choose a place"
+      >
         {candidates.map((c) => (
           <button
             key={c.id}
@@ -647,7 +695,10 @@ export default function IgorSpatialCanvas({
         ))}
       </div>
       {selected && (
-        <article className="ic-place-preview" aria-label="Selected place detail">
+        <article
+          className="ic-place-preview"
+          aria-label="Selected place detail"
+        >
           {selected.imageUrl && <img src={selected.imageUrl} alt="" />}
           <div>
             <small>{selected.place?.address}</small>
@@ -660,8 +711,8 @@ export default function IgorSpatialCanvas({
             )}
             <p>{selected.description}</p>
             <p className="ic-note">
-              Qloo taste associations do not verify hours, routes, prices
-              or availability.
+              Qloo taste associations do not verify hours, routes, prices or
+              availability.
             </p>
             <div className="ic-place-actions">
               <button
@@ -701,7 +752,9 @@ export default function IgorSpatialCanvas({
                     {c?.freshness !== "current" && <small> Needs review</small>}
                   </strong>
                   <label className="ic-itinerary-day">
-                    <span className="pp-visually-hidden">Day for {c?.name || "place"}</span>
+                    <span className="pp-visually-hidden">
+                      Day for {c?.name || "place"}
+                    </span>
                     <select
                       aria-label={`Day for ${c?.name || "place"}`}
                       value={task.canvas?.itineraryDays?.[id] ?? 0}
@@ -716,7 +769,7 @@ export default function IgorSpatialCanvas({
                       }
                     >
                       <option value={0}>Day unset</option>
-                      {Array.from({length: 14}, (_, day) => (
+                      {Array.from({ length: 14 }, (_, day) => (
                         <option key={day + 1} value={day + 1}>
                           Day {day + 1}
                         </option>

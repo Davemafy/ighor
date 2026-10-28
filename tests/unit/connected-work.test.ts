@@ -374,6 +374,7 @@ describe("Connected work through the real orchestrator (scripted model, no live 
     const transport = vi.fn(async (_url, init) => {
       const body = JSON.parse(String(init?.body));
       const toolName = body.tools[0].functionDeclarations[0].name;
+
       return Response.json({
         candidates: [
           {
@@ -384,24 +385,31 @@ describe("Connected work through the real orchestrator (scripted model, no live 
                 {
                   functionCall: {
                     name: toolName,
-                    args: toolName === "route_conversation" ? { intent: "delegate" } : {
-                      decision: JSON.stringify({
-                        intent: "goal",
-                        kind: "creative",
-                        goal: "Draft a note",
-                        workActions: [
-                          { kind: "goal", id: "note", title: "Draft a note" },
-                          {
-                            kind: "document",
-                            id: "note-draft",
-                            title: "A note",
-                            content: "A proposed note for review.",
-                            dependencies: ["goal:note"],
-                            evidenceIds: [],
+                    args:
+                      toolName === "route_conversation"
+                        ? { intent: "delegate" }
+                        : {
+                            decision: JSON.stringify({
+                              intent: "goal",
+                              kind: "creative",
+                              goal: "Draft a note",
+                              workActions: [
+                                {
+                                  kind: "goal",
+                                  id: "note",
+                                  title: "Draft a note",
+                                },
+                                {
+                                  kind: "document",
+                                  id: "note-draft",
+                                  title: "A note",
+                                  content: "A proposed note for review.",
+                                  dependencies: ["goal:note"],
+                                  evidenceIds: [],
+                                },
+                              ],
+                            }),
                           },
-                        ],
-                      }),
-                    },
                   },
                 },
               ],

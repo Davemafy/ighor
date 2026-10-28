@@ -31,7 +31,9 @@ describe("web research source UI", () => {
       at: "2026-10-28T00:00:00.000Z",
     });
 
-    const thread = renderToStaticMarkup(createElement(ConversationThread, { task }));
+    const thread = renderToStaticMarkup(
+      createElement(ConversationThread, { task }),
+    );
     expect(thread).toContain("Open retrieved source");
     expect(thread).toContain('href="https://example.org/public-report"');
     expect(thread).toContain("Search snippet only; webpage was not opened.");

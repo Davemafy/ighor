@@ -327,6 +327,7 @@ export function useWorkspace() {
 
           if (latest) {
             setTask(latest);
+
             if (
               completedTurnAfter(
                 latest,

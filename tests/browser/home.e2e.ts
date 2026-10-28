@@ -99,7 +99,9 @@ test("a conversation survives refresh, a new thread, and history reopening", asy
   const newId = await page.evaluate(() => localStorage.getItem("igor-task"));
   expect(newId).not.toBe(savedId);
 
-  await page.getByRole("button", { name: "Conversations", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Conversations", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Conversations", exact: true }),
   ).toBeVisible();
@@ -216,13 +218,14 @@ test("ordinary greetings and topic changes produce saved replies without fake di
     page.locator(".iw-message.iw-assistant"),
     "After reload, both assistant replies must be restored",
   ).toHaveCount(2);
-  const alertSnapshot = await page.locator('[role="alert"]').evaluateAll(
-    (nodes) =>
+  const alertSnapshot = await page
+    .locator('[role="alert"]')
+    .evaluateAll((nodes) =>
       nodes.map((node) => ({
         className: node.className,
         visible: !!(node as HTMLElement).offsetParent,
       })),
-  );
+    );
   await expect(
     page.locator(".iw-error"),
     `After reload, no actionable workspace error. Alerts: ${JSON.stringify(alertSnapshot)}`,

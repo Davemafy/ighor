@@ -18,7 +18,7 @@ Each mutation goes through owner authorization, the existing task optimistic-ver
 ## QA script for product owner (on preview, not production)
 
 - Open a new test thread; ask Igor for culturally informed options using an explicit taste reference (e.g., Sade and an independent film). Ensure the Qloo provider is configured. If no grounded candidates are returned, note the missing upstream capability rather than treating a UI button as a substitute.
-- With **at least two live/current discovery candidates**, open **Connections** when available; inspect the provider provenance and confirm no relationship is invented when evidence is absent. Then select two **Compare** actions and press **Compare (2)**. Confirm they are the *same* options, with the same descriptions and clickable evidence.
+- With **at least two live/current discovery candidates**, open **Connections** when available; inspect the provider provenance and confirm no relationship is invented when evidence is absent. Then select two **Compare** actions and press **Compare (2)**. Confirm they are the _same_ options, with the same descriptions and clickable evidence.
 - Choose the second option; press **Shape a plan**. Confirm the chosen option appears. Add another suggestion, assign it Day 2, remove it, re-add it. Confirm no paid action or booking is claimed.
 - Go back to Explore, then Compare; refresh or reopen the thread. All explicit selections and the current work view should persist.
 - Try a normal follow-up: “Actually, compare those two.” Inspect whether the interface changes without unrelated cultural discovery or lost saved work. This still requires live model verification.

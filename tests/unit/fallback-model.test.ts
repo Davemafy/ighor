@@ -74,9 +74,19 @@ it.each(["draft", "clarification"] as const)(
     const task = freshTask("reconnect-intake", "owner");
     task.status = status;
     task.brief.version = 2;
-    task.messages = [{ role: "assistant", text: "Earlier reply", at: new Date().toISOString() }];
+    task.messages = [
+      {
+        role: "assistant",
+        text: "Earlier reply",
+        at: new Date().toISOString(),
+      },
+    ];
     expect(completedTurnAfter(task, 1, 1)).toBe(false);
-    task.messages.push({ role: "assistant", text: "New reply", at: new Date().toISOString() });
+    task.messages.push({
+      role: "assistant",
+      text: "New reply",
+      at: new Date().toISOString(),
+    });
     expect(completedTurnAfter(task, 1, 1)).toBe(true);
     expect(completedTurnAfter(task, 2, 1)).toBe(false);
     task.status = "running";

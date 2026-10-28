@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { LiveQlooProvider, MemoryResponseCache } from "../../src/tools/qloo-live";
+import {
+  LiveQlooProvider,
+  MemoryResponseCache,
+} from "../../src/tools/qloo-live";
 import { runTurn } from "../../src/core/orchestrator";
 import { freshTask } from "../../src/data/fixtures";
 import { SqliteTaskStore } from "../../src/data/store";
@@ -38,10 +41,15 @@ describe("Qloo place exploration without a fabricated media taste seed", () => {
       const request = new URL(String(url));
       expect(request.pathname).toBe("/v2/insights");
       expect(request.searchParams.get("filter.type")).toBe("urn:entity:place");
-      expect(request.searchParams.get("filter.location.query")).toBe("New York");
-      expect(request.searchParams.get("filter.tags")).toBe("urn:tag:genre:place:restaurant");
+      expect(request.searchParams.get("filter.location.query")).toBe(
+        "New York",
+      );
+      expect(request.searchParams.get("filter.tags")).toBe(
+        "urn:tag:genre:place:restaurant",
+      );
       expect(request.searchParams.has("signal.interests.entities")).toBe(false);
       expect(new Headers(init?.headers).get("X-Api-Key")).toBe("fake-key");
+
       return Response.json(rows);
     });
     const provider = new LiveQlooProvider(
@@ -49,7 +57,10 @@ describe("Qloo place exploration without a fabricated media taste seed", () => {
       new MemoryResponseCache(),
       transport,
     );
-    const output = await provider.exploreLocality("New York", "dinning, monopoly");
+    const output = await provider.exploreLocality(
+      "New York",
+      "dinning, monopoly",
+    );
     expect(output.status).toBe("ok");
     expect(output.data.places).toEqual([
       expect.objectContaining({
@@ -88,7 +99,11 @@ describe("Qloo place exploration without a fabricated media taste seed", () => {
       { role: "user", text: "Plan a fun Saturday outing with my friends", at },
       { role: "assistant", text: "Which city are you in?", at },
       { role: "user", text: "New York", at },
-      { role: "assistant", text: "What activities or interests are you in the mood for?", at },
+      {
+        role: "assistant",
+        text: "What activities or interests are you in the mood for?",
+        at,
+      },
     ];
     store.create(task);
     const provider = new LiveQlooProvider(
@@ -96,6 +111,7 @@ describe("Qloo place exploration without a fabricated media taste seed", () => {
       new MemoryResponseCache(),
       async () => Response.json(rows),
     );
+
     try {
       const result = await runTurn(
         store,
@@ -137,15 +153,31 @@ describe("Qloo place exploration without a fabricated media taste seed", () => {
           },
         },
       );
-      expect(result.trace.map(t => t.action)).toContain("tool.invoke:qloo_locality");
-      expect(result.trace.map(t => t.action)).toContain("tool.invoke:search_web");
-      expect(result.trace.map(t => t.action)).toContain("compose.research");
+      expect(result.trace.map((t) => t.action)).toContain(
+        "tool.invoke:qloo_locality",
+      );
+      expect(result.trace.map((t) => t.action)).toContain(
+        "tool.invoke:search_web",
+      );
+      expect(result.trace.map((t) => t.action)).toContain("compose.research");
       expect(result.messages.at(-1)?.text).toContain("The Game Table");
       expect(result.messages.at(-1)?.text).toContain("bookings unverified");
-      expect(result.artifacts.at(-1)?.content).toContain("## Qloo location and restaurant-category results");
-      expect(result.artifacts.at(-1)?.content).toContain("https://example.org/cafes");
-      expect(result.evidence.some(e => e.kind === "cultural" && e.summary.includes("The Game Table"))).toBe(true);
-      expect(result.evidence.some(e => e.kind === "practical" && e.reference.includes("cafes"))).toBe(true);
+      expect(result.artifacts.at(-1)?.content).toContain(
+        "## Qloo location and restaurant-category results",
+      );
+      expect(result.artifacts.at(-1)?.content).toContain(
+        "https://example.org/cafes",
+      );
+      expect(
+        result.evidence.some(
+          (e) => e.kind === "cultural" && e.summary.includes("The Game Table"),
+        ),
+      ).toBe(true);
+      expect(
+        result.evidence.some(
+          (e) => e.kind === "practical" && e.reference.includes("cafes"),
+        ),
+      ).toBe(true);
       expect(result.receipts?.at(-1)?.culturalRequests).toBe(1);
     } finally {
       store.close();

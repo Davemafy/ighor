@@ -19,6 +19,7 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await page.addInitScript(() => {
     const sample = { layoutShift: 0, longTasks: 0, longestTaskMs: 0 };
     Object.assign(window, { __igorInteractionMetrics: sample });
+
     if ("PerformanceObserver" in window) {
       try {
         const shift = new PerformanceObserver((items) => {
@@ -27,21 +28,28 @@ test("composed work persists through edits, filtering, planning, maps and refres
               hadRecentInput?: boolean;
               value?: number;
             };
-            if (!entry.hadRecentInput) sample.layoutShift += entry.value ?? 0;
+
+            if (!entry.hadRecentInput) {
+              sample.layoutShift += entry.value ?? 0;
+            }
           }
         });
-        shift.observe({type: "layout-shift", buffered: true});
+        shift.observe({ type: "layout-shift", buffered: true });
         const tasks = new PerformanceObserver((items) => {
           for (const item of items.getEntries()) {
             sample.longTasks += 1;
-            sample.longestTaskMs = Math.max(sample.longestTaskMs, item.duration);
+            sample.longestTaskMs = Math.max(
+              sample.longestTaskMs,
+              item.duration,
+            );
           }
         });
-        tasks.observe({type: "longtask", buffered: true});
+        tasks.observe({ type: "longtask", buffered: true });
       } catch {
         // Browser support differs. Record zero only when no entries are delivered.
       }
     }
+
     class MapMock extends HTMLElement {
       center = { lat: 40.73, lng: -73.99, altitude: 0 };
       range = 1800;
@@ -80,26 +88,39 @@ test("composed work persists through edits, filtering, planning, maps and refres
       constructor(private host: HTMLElement) {
         host.setAttribute("data-google-2d-test-double", "true");
       }
-      panTo(center: {lat: number; lng: number}) {
+      panTo(center: { lat: number; lng: number }) {
         this.host.setAttribute("data-pan-lat", String(center.lat));
       }
     }
     class Marker2DMock {
       private button = document.createElement("button");
       private handler: (() => void) | null = null;
-      constructor(options: {map: Map2DMock; title: string}) {
+      constructor(options: { map: Map2DMock; title: string }) {
         this.button.textContent = options.title;
         this.button.setAttribute("aria-label", options.title);
-        (options.map as unknown as {host: HTMLElement}).host.append(this.button);
+        (options.map as unknown as { host: HTMLElement }).host.append(
+          this.button,
+        );
         this.button.addEventListener("click", () => this.handler?.());
       }
       addListener(_event: string, cb: () => void) {
         this.handler = cb;
-        return {remove: () => {this.handler = null;}};
+
+        return {
+          remove: () => {
+            this.handler = null;
+          },
+        };
       }
-      setMap(_map: null) {this.button.remove();}
-      setOpacity(value: number) {this.button.dataset.opacity = String(value);}
-      setZIndex(value: number) {this.button.dataset.zIndex = String(value);}
+      setMap(_map: null) {
+        this.button.remove();
+      }
+      setOpacity(value: number) {
+        this.button.dataset.opacity = String(value);
+      }
+      setZIndex(value: number) {
+        this.button.dataset.zIndex = String(value);
+      }
     }
     customElements.define("igor-map-mock", MapMock);
     customElements.define("igor-marker-mock", MarkerMock);
@@ -113,8 +134,8 @@ test("composed work persists through edits, filtering, planning, maps and refres
                   Marker3DInteractiveElement: MarkerMock,
                 }
               : name === "maps"
-                ? {Map: Map2DMock}
-                : {Marker: Marker2DMock},
+                ? { Map: Map2DMock }
+                : { Marker: Marker2DMock },
         },
       },
     });
@@ -262,22 +283,32 @@ test("composed work persists through edits, filtering, planning, maps and refres
   );
   await page.goto(`/app?view=conversation&task=${task.id}`);
   const mobile = info.project.name.startsWith("mobile");
+
   const evidence = async (name: string) => {
-    if (!mobile) return;
+    if (!mobile) {
+      return;
+    }
+
     mkdirSync("test-results/canvas/mobile-quality", { recursive: true });
     await page.screenshot({
       path: `test-results/canvas/mobile-quality/${info.project.name}-${name}.png`,
       fullPage: false,
     });
   };
+
   const canvas = page.getByRole("complementary", { name: "Task canvas" });
+
   if (mobile) {
     const transcriptTab = page.getByRole("tab", { name: "Conversation" });
     const canvasTab = page.getByRole("tab", { name: "Your result" });
     await transcriptTab.click();
     await expect(transcriptTab).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("Prepare a product launch plan using my supplied data.")).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Product navigation" })).toBeHidden();
+    await expect(
+      page.getByText("Prepare a product launch plan using my supplied data."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Product navigation" }),
+    ).toBeHidden();
     const composer = page.getByRole("textbox", { name: "Message Igor" });
     await expect(composer).toBeVisible();
     const inputBox = await composer.boundingBox();
@@ -290,16 +321,23 @@ test("composed work persists through edits, filtering, planning, maps and refres
     await expect(canvasTab).toHaveAttribute("aria-selected", "true");
     await expect(canvas).toBeVisible();
     await evidence("02-result-morph");
+
     if (info.project.name === "mobile") {
       await evidence("07-reduced-motion");
     }
+
     // Simulate an occupied mobile keyboard viewport; the composer must reflow
     // without covering the result. Real keyboard behavior requires device QA.
     await page.evaluate(() =>
-      document.documentElement.style.setProperty("--igor-visible-height", "600px"),
+      document.documentElement.style.setProperty(
+        "--igor-visible-height",
+        "600px",
+      ),
     );
     await expect(composer).toBeVisible();
-    const composerFrame = await page.locator(".ip-conversation-composer").boundingBox();
+    const composerFrame = await page
+      .locator(".ip-conversation-composer")
+      .boundingBox();
     expect(composerFrame).not.toBeNull();
     expect(composerFrame!.y + composerFrame!.height).toBeLessThanOrEqual(601);
     await evidence("06-keyboard-viewport-simulated");
@@ -307,17 +345,22 @@ test("composed work persists through edits, filtering, planning, maps and refres
       document.documentElement.style.removeProperty("--igor-visible-height"),
     );
   }
+
   await expect(canvas).toBeVisible();
   await expect(
     canvas.getByRole("heading", { name: "A launch worth making" }),
   ).toBeVisible();
+
   if (mobile) {
     await canvas.getByRole("button", { name: "Expand canvas" }).click();
     await expect(canvas).toHaveClass(/ic-fullscreen/);
     await evidence("03-expanded-artifact");
-    await canvas.getByRole("button", { name: "Exit full screen canvas" }).click();
+    await canvas
+      .getByRole("button", { name: "Exit full screen canvas" })
+      .click();
     await expect(canvas).not.toHaveClass(/ic-fullscreen/);
   }
+
   await canvas.getByRole("button", { name: "Edit draft", exact: true }).click();
   await canvas
     .getByRole("textbox", { name: "Edit Launch brief" })
@@ -346,34 +389,56 @@ test("composed work persists through edits, filtering, planning, maps and refres
   await canvas.getByRole("button", { name: "Apply", exact: true }).click();
   await expect(canvas.locator("tbody tr")).toHaveCount(1);
   await expect(canvas.locator(".ic-chart>div")).toHaveCount(1);
-  await canvas.getByRole("combobox", {
-    name: "Comparison measure for Effort by stage",
-  }).selectOption("2");
+  await canvas
+    .getByRole("combobox", {
+      name: "Comparison measure for Effort by stage",
+    })
+    .selectOption("2");
   await expect(canvas.locator(".ic-chart > div strong")).toContainText(["3"]);
-  await expect.poll(async () => (await (
-    await page.request.get(`/api/tasks/${task.id}`)
-  ).json() as Task).canvas?.chartAxes["chart"]).toBe(2);
+  await expect
+    .poll(
+      async () =>
+        (
+          (await (
+            await page.request.get(`/api/tasks/${task.id}`)
+          ).json()) as Task
+        ).canvas?.chartAxes["chart"],
+    )
+    .toBe(2);
   await evidence("04b-comparison-measure-changed");
-  const spatialViews = canvas.getByRole("group", { name: "Geographic result view" });
+  const spatialViews = canvas.getByRole("group", {
+    name: "Geographic result view",
+  });
   await spatialViews.getByRole("button", { name: "List" }).click();
   await expect(canvas.locator(".ic-map-stage")).toBeHidden();
-  await expect(canvas.getByRole("group", { name: "Choose a place" })).toBeVisible();
+  await expect(
+    canvas.getByRole("group", { name: "Choose a place" }),
+  ).toBeVisible();
   await spatialViews.getByRole("button", { name: "Map" }).click();
   await canvas.getByRole("button", { name: "Explore in 3D" }).click();
   await expect(page.locator("[data-google-map-test-double]")).toBeVisible();
   // This click invokes the actual gmp-click listener on the test-double
   // marker; the selection itself goes through the live task mutation API.
-  await page.locator("igor-marker-mock").filter({
-    hasText: "Supplied venue 2",
-  }).click();
+  await page
+    .locator("igor-marker-mock")
+    .filter({
+      hasText: "Supplied venue 2",
+    })
+    .click();
   await expect(
-    canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 2"}),
+    canvas.locator(".ic-place-card").filter({ hasText: "Supplied venue 2" }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(canvas.getByLabel("Selected place detail")).toContainText("Supplied venue 2");
+  await expect(canvas.getByLabel("Selected place detail")).toContainText(
+    "Supplied venue 2",
+  );
   await expect
-    .poll(() => page.locator("[data-google-map-test-double]").evaluate(
-      (el) => String((el as unknown as {center: {lat: number}}).center.lat),
-    ))
+    .poll(() =>
+      page
+        .locator("[data-google-map-test-double]")
+        .evaluate((el) =>
+          String((el as unknown as { center: { lat: number } }).center.lat),
+        ),
+    )
     .toBe(String(40.732));
   await evidence("05-marker-detail-synced");
   await canvas
@@ -383,24 +448,44 @@ test("composed work persists through edits, filtering, planning, maps and refres
     "Supplied venue 2",
   );
   await evidence("08-itinerary-added");
-  await canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 1"}).click();
-  await canvas.getByRole("button", {name: "Add to your plan", exact: true}).click();
-  await canvas.getByRole("button", {name: "Move Supplied venue 1 earlier"}).click();
-  await expect(canvas.locator(".ic-map-plan li").first()).toContainText("Supplied venue 1");
-  await canvas.getByRole("combobox", {name: "Day for Supplied venue 1"}).selectOption("2");
-  await canvas.getByRole("combobox", {name: "Day for Supplied venue 2"}).selectOption("1");
-  await expect.poll(async () => (await (
-    await page.request.get(`/api/tasks/${task.id}`)
-  ).json() as Task).canvas?.itineraryDays["venue-one"]).toBe(2);
+  await canvas
+    .locator(".ic-place-card")
+    .filter({ hasText: "Supplied venue 1" })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Add to your plan", exact: true })
+    .click();
+  await canvas
+    .getByRole("button", { name: "Move Supplied venue 1 earlier" })
+    .click();
+  await expect(canvas.locator(".ic-map-plan li").first()).toContainText(
+    "Supplied venue 1",
+  );
+  await canvas
+    .getByRole("combobox", { name: "Day for Supplied venue 1" })
+    .selectOption("2");
+  await canvas
+    .getByRole("combobox", { name: "Day for Supplied venue 2" })
+    .selectOption("1");
+  await expect
+    .poll(
+      async () =>
+        (
+          (await (
+            await page.request.get(`/api/tasks/${task.id}`)
+          ).json()) as Task
+        ).canvas?.itineraryDays["venue-one"],
+    )
+    .toBe(2);
   await evidence("09-itinerary-reordered");
-  await canvas.getByRole("button", {name: "Remove Supplied venue 1"}).click();
+  await canvas.getByRole("button", { name: "Remove Supplied venue 1" }).click();
   await expect(canvas.locator(".ic-map-plan li")).toHaveCount(1);
   // Force a provider failure and verify that the selected place and itinerary
   // remain usable as the user changes to the 2D provider adapter.
-  await page.locator("[data-google-map-test-double]").evaluate(
-    (el) => el.dispatchEvent(new Event("gmp-error")),
-  );
-  await canvas.getByRole("button", {name: "Use 2D map"}).click();
+  await page
+    .locator("[data-google-map-test-double]")
+    .evaluate((el) => el.dispatchEvent(new Event("gmp-error")));
+  await canvas.getByRole("button", { name: "Use 2D map" }).click();
   await expect(canvas.locator("[data-google-2d-test-double]")).toBeVisible();
   await evidence("10-2d-fallback");
   const saved = (await (
@@ -426,20 +511,27 @@ test("composed work persists through edits, filtering, planning, maps and refres
   const measurements = await page.evaluate(() => {
     const composer = document.querySelector(".ip-conversation-composer");
     const rect = composer?.getBoundingClientRect();
-    const metrics = (window as Window & {
-      __igorInteractionMetrics?: {
-        layoutShift: number; longTasks: number; longestTaskMs: number;
-      };
-    }).__igorInteractionMetrics;
+    const metrics = (
+      window as Window & {
+        __igorInteractionMetrics?: {
+          layoutShift: number;
+          longTasks: number;
+          longestTaskMs: number;
+        };
+      }
+    ).__igorInteractionMetrics;
+
     return {
-      viewport: {width: innerWidth, height: innerHeight},
+      viewport: { width: innerWidth, height: innerHeight },
       scrollWidth: document.documentElement.scrollWidth,
-      composerVisible: rect ? rect.top >= 0 &&
-        rect.bottom <= (window.visualViewport?.height ?? innerHeight) + 1 : false,
+      composerVisible: rect
+        ? rect.top >= 0 &&
+          rect.bottom <= (window.visualViewport?.height ?? innerHeight) + 1
+        : false,
       ...metrics,
     };
   });
-  mkdirSync("test-results/canvas/metrics", {recursive: true});
+  mkdirSync("test-results/canvas/metrics", { recursive: true });
   writeFileSync(
     `test-results/canvas/metrics/${info.project.name}.json`,
     JSON.stringify(measurements, null, 2),
@@ -495,28 +587,45 @@ test("composed work persists through edits, filtering, planning, maps and refres
   const withoutGeo = (await (
     await page.request.get(`/api/tasks/${task.id}`)
   ).json()) as Task;
+
   for (const candidate of withoutGeo.candidates) {
     if (candidate.type === "place" && candidate.place) {
       candidate.place.latitude = null;
       candidate.place.longitude = null;
     }
   }
+
   const missingGeoDb = new DatabaseSync(".igor/canvas-e2e/tasks.sqlite");
-  missingGeoDb.prepare("UPDATE tasks SET state=? WHERE id=?").run(
-    JSON.stringify(withoutGeo),
-    task.id,
-  );
+  missingGeoDb
+    .prepare("UPDATE tasks SET state=? WHERE id=?")
+    .run(JSON.stringify(withoutGeo), task.id);
   missingGeoDb.close();
   await page.reload();
-  await expect(canvas.getByText(/No current coordinates are available/)).toBeVisible();
-  const views = canvas.getByRole("group", {name: "Geographic result view"});
-  await expect(views.getByRole("button", {name: "Map"})).toBeDisabled();
-  await expect(canvas.getByRole("group", {name: "Choose a place"})).toBeVisible();
-  await canvas.locator(".ic-place-card").filter({hasText: "Supplied venue 1"}).click();
-  await expect.poll(async () => (await (
-    await page.request.get(`/api/tasks/${task.id}`)
-  ).json() as Task).canvas?.selectedCandidateId).toBe("venue-one");
-  await expect(canvas.locator(".ic-map-plan")).toContainText("Supplied venue 2");
+  await expect(
+    canvas.getByText(/No current coordinates are available/),
+  ).toBeVisible();
+  const views = canvas.getByRole("group", { name: "Geographic result view" });
+  await expect(views.getByRole("button", { name: "Map" })).toBeDisabled();
+  await expect(
+    canvas.getByRole("group", { name: "Choose a place" }),
+  ).toBeVisible();
+  await canvas
+    .locator(".ic-place-card")
+    .filter({ hasText: "Supplied venue 1" })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        (
+          (await (
+            await page.request.get(`/api/tasks/${task.id}`)
+          ).json()) as Task
+        ).canvas?.selectedCandidateId,
+    )
+    .toBe("venue-one");
+  await expect(canvas.locator(".ic-map-plan")).toContainText(
+    "Supplied venue 2",
+  );
   await evidence("11-unmapped-place-list");
   expect(errors).toEqual([]);
 });

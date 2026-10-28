@@ -39,6 +39,7 @@ export async function executeTaskPlan(
     const latestUser =
       task.messages.filter((message) => message.role === "user").at(-1)?.text ||
       "";
+
     if (
       task.mode === "qloo-live" &&
       !localChangeOnly &&
@@ -67,13 +68,16 @@ export async function executeTaskPlan(
           entity.status === "resolved" &&
           entity.providerId,
       );
+
       if (resolution.status !== "ok" || !anchor?.providerId) {
         task.status = "partial";
         task.brief.unresolved = [
           "Igor could not verify its exploration seed with Qloo. Retry discovery; no recommendations were invented.",
         ];
+
         return task;
       }
+
       task.brief.contextAnchor = {
         providerId: anchor.providerId,
         name: anchor.name,

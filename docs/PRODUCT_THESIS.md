@@ -17,7 +17,7 @@ Accept an unfinished thought and offer one immediately useful first step. Do not
 ## Engineering decision filter
 
 1. Does this capability help an ordinary person reach a recognizable outcome?
-2. Would authentic cross-domain Qloo evidence *change* a meaningful choice or deliverable?
+2. Would authentic cross-domain Qloo evidence _change_ a meaningful choice or deliverable?
 3. Can the user inspect the actual cultural source and the unknown facts?
 4. Can the capability be reused across several kinds of goals, rather than a hardcoded vertical?
 5. Can the user edit, approve, preserve and later refine the result without losing the thread?

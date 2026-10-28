@@ -73,14 +73,14 @@ export function EvidenceView({
                     : evidence.source === "illustrative-example"
                       ? "Illustrative"
                       : evidence.source === "provider-returned"
-                      ? evidence.kind === "practical"
-                        ? "Web source"
-                        : "Provider"
-                      : evidence.source === "user-supplied"
-                        ? "Supplied"
-                        : evidence.source === "recorded-fixture"
-                          ? "Recorded"
-                          : "Unverified"}
+                        ? evidence.kind === "practical"
+                          ? "Web source"
+                          : "Provider"
+                        : evidence.source === "user-supplied"
+                          ? "Supplied"
+                          : evidence.source === "recorded-fixture"
+                            ? "Recorded"
+                            : "Unverified"}
               </span>
               {evidence.summary.split(":")[0]}
             </summary>

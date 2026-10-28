@@ -53,41 +53,45 @@ export function runtimeModelProvider(mode: Task["mode"]) {
   const configured: { id: string; model: ModelProvider }[] = [];
   const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
 
-  if (grokKey)
-    {configured.push({
+  if (grokKey) {
+    configured.push({
       id: "grok",
       model: new GrokModel(
         grokKey,
         process.env.XAI_MODEL || process.env.GROK_MODEL || "grok-4.3",
       ),
-    });}
+    });
+  }
 
-  if (process.env.ANTHROPIC_API_KEY)
-    {configured.push({
+  if (process.env.ANTHROPIC_API_KEY) {
+    configured.push({
       id: "claude",
       model: new AnthropicModel(
         process.env.ANTHROPIC_API_KEY,
         process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
       ),
-    });}
+    });
+  }
 
-  if (process.env.GEMINI_API_KEY)
-    {configured.push({
+  if (process.env.GEMINI_API_KEY) {
+    configured.push({
       id: "gemini",
       model: new ResponsiveGeminiModel(
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
       ),
-    });}
+    });
+  }
 
-  if (process.env.LLM_API_KEY && process.env.LLM_MODEL)
-    {configured.push({
+  if (process.env.LLM_API_KEY && process.env.LLM_MODEL) {
+    configured.push({
       id: "openai",
       model: new ToolCallingModel(
         process.env.LLM_API_KEY,
         process.env.LLM_MODEL,
       ),
-    });}
+    });
+  }
 
   const preference = process.env.IGOR_MODEL_PROVIDER?.toLowerCase()
     .replace("anthropic", "claude")
@@ -96,16 +100,20 @@ export function runtimeModelProvider(mode: Task["mode"]) {
   if (preference) {
     const index = configured.findIndex((item) => item.id === preference);
 
-    if (index < 0)
-      {throw new Error("The preferred model provider is not configured.");}
+    if (index < 0) {
+      throw new Error("The preferred model provider is not configured.");
+    }
 
     configured.unshift(...configured.splice(index, 1));
   }
 
-  if (configured.length >= 2)
-    {return new FallbackModel(configured[0].model, configured[1].model);}
+  if (configured.length >= 2) {
+    return new FallbackModel(configured[0].model, configured[1].model);
+  }
 
-  if (configured.length === 1) {return configured[0].model;}
+  if (configured.length === 1) {
+    return configured[0].model;
+  }
 
   return process.env.IGOR_TEST_FIXTURES === "1" ||
     process.env.IGOR_QLOO_RECORDING ||

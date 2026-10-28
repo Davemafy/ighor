@@ -49,6 +49,7 @@ describe("read-only web research through Igor's persistent execution", () => {
         throw new Error("Cultural planner must not run");
       }),
     };
+
     try {
       const completed = await runTurn(
         store,
@@ -155,7 +156,11 @@ describe("read-only web research through Igor's persistent execution", () => {
         store,
         task.id,
         "owner",
-        { type: "message", text: "Research recent market findings", version: 0 },
+        {
+          type: "message",
+          text: "Research recent market findings",
+          version: 0,
+        },
         () => {},
         undefined,
         model,
@@ -198,6 +203,7 @@ describe("read-only web research through Igor's persistent execution", () => {
     task.status = "ready";
     task.brief.goal = "Previously completed Qloo direction";
     store.create(task);
+
     try {
       const completed = await runTurn(
         store,
@@ -221,7 +227,11 @@ describe("read-only web research through Igor's persistent execution", () => {
           },
         },
         undefined,
-        { async research() { return { status: "ok" as const, sources, requests: 2 }; } },
+        {
+          async research() {
+            return { status: "ok" as const, sources, requests: 2 };
+          },
+        },
       );
       expect(completed.status).toBe("ready");
       expect(completed.error).toBeNull();
@@ -239,6 +249,7 @@ describe("read-only web research through Igor's persistent execution", () => {
     task.brief.goal = "Approved cultural work";
     task.mode = "qloo-live";
     store.create(task);
+
     try {
       const result = await runTurn(
         store,
@@ -253,7 +264,10 @@ describe("read-only web research through Igor's persistent execution", () => {
         undefined,
         {
           async routeConversation() {
-            return { intent: "research" as const, query: "today public updates" };
+            return {
+              intent: "research" as const,
+              query: "today public updates",
+            };
           },
           async interpret() {
             throw new Error("Should not call the work planner");
@@ -301,6 +315,7 @@ describe("read-only web research through Igor's persistent execution", () => {
         throw new Error("No full interpreter");
       }),
     };
+
     try {
       const result = await runTurn(
         store,
@@ -338,17 +353,25 @@ describe("read-only web research through Igor's persistent execution", () => {
     const task = freshTask("research-uncited", "owner");
     task.mode = "qloo-live";
     store.create(task);
+
     try {
       const result = await runTurn(
         store,
         task.id,
         "owner",
-        { type: "message", text: "Research the latest information", version: 0 },
+        {
+          type: "message",
+          text: "Research the latest information",
+          version: 0,
+        },
         () => {},
         undefined,
         {
           async routeConversation() {
-            return { intent: "research" as const, query: "public developments" };
+            return {
+              intent: "research" as const,
+              query: "public developments",
+            };
           },
           async synthesizeResearch() {
             return {
@@ -393,6 +416,7 @@ describe("read-only web research through Igor's persistent execution", () => {
         throw new Error("No full interpreter");
       }),
     };
+
     try {
       const result = await runTurn(
         store,

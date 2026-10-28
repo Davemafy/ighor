@@ -79,7 +79,10 @@ describe("server-only Bright Data research", () => {
 
         // User-verified Bright Data /request format wraps JSON SERP data
         // inside a {status_code, body} envelope.
-        return Response.json({ status_code: 200, body: JSON.stringify(searchResults) });
+        return Response.json({
+          status_code: 200,
+          body: JSON.stringify(searchResults),
+        });
       }
 
       expect(request.zone).toBe("read-test");
@@ -128,7 +131,9 @@ describe("server-only Bright Data research", () => {
     const transport = vi.fn<typeof fetch>(async (_url, init) => {
       const data = JSON.parse(String(init?.body));
 
-      if (data.zone === "serp") {return Response.json(searchResults);}
+      if (data.zone === "serp") {
+        return Response.json(searchResults);
+      }
 
       if (data.url.includes("example.org")) {
         return new Response("private upstream body", { status: 503 });
@@ -249,11 +254,23 @@ describe("server-only Bright Data research", () => {
       const request = JSON.parse(String(init?.body));
       expect(request.format).toBe("json");
       expect(request.data_format).toBe("parsed");
-      return Response.json({ organic: [
-        { title: "A directory", link: "https://www.reddit.com/r/travel", description: "community" },
-      ] });
+
+      return Response.json({
+        organic: [
+          {
+            title: "A directory",
+            link: "https://www.reddit.com/r/travel",
+            description: "community",
+          },
+        ],
+      });
     });
-    const provider = new BrightDataResearchProvider("key", "gor_serp", "reader", transport);
+    const provider = new BrightDataResearchProvider(
+      "key",
+      "gor_serp",
+      "reader",
+      transport,
+    );
     const result = await provider.searchOnce("board game cafes NYC");
     expect(result.requests).toBe(1);
     expect(result.sources).toHaveLength(1);
@@ -266,14 +283,28 @@ describe("server-only Bright Data research", () => {
       expect(request.url).toBe("https://example.org/official");
       expect(request.zone).toBe("reader");
       expect(request.data_format).toBe("markdown");
+
       return new Response("# Venue details");
     });
-    const provider = new BrightDataResearchProvider("key", "gor_serp", "reader", transport);
-    expect((await provider.readSource("https://www.google.com/goto?url=bad")).status).toBe("blocked");
-    expect((await provider.readSource("http://127.0.0.1/admin")).status).toBe("blocked");
+    const provider = new BrightDataResearchProvider(
+      "key",
+      "gor_serp",
+      "reader",
+      transport,
+    );
+    expect(
+      (await provider.readSource("https://www.google.com/goto?url=bad")).status,
+    ).toBe("blocked");
+    expect((await provider.readSource("http://127.0.0.1/admin")).status).toBe(
+      "blocked",
+    );
     expect(transport).not.toHaveBeenCalled();
     const read = await provider.readSource("https://example.org/official");
-    expect(read).toMatchObject({ status: "ok", requests: 1, excerpt: "# Venue details" });
+    expect(read).toMatchObject({
+      status: "ok",
+      requests: 1,
+      excerpt: "# Venue details",
+    });
     expect(transport).toHaveBeenCalledTimes(1);
   });
 

@@ -165,4 +165,3 @@ export function completedTurnAfter(
       .some((message) => message.role === "assistant")
   );
 }
-

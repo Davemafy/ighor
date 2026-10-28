@@ -14,6 +14,7 @@ export function delegatedMoviePick(text: string, context?: Task) {
           /\b(?:movies?|films?|cinema)\b/i.test(message.text),
       ),
     );
+
   return permission && movieContext;
 }
 
@@ -27,6 +28,7 @@ export function interfaceReply(text: string, context?: Task) {
       targetType: "movie",
     });
   }
+
   if (
     /\b(?:ui|interface|chat|workspace|theme)\b/i.test(text) &&
     /\b(?:fluid|water[ -]?like|morphing|ripples?|water physics)\b/i.test(
@@ -50,6 +52,7 @@ export function interfaceReply(text: string, context?: Task) {
       context?.candidates.filter(
         (candidate) => candidate.freshness === "current" && candidate.imageUrl,
       ) ?? [];
+
     if (candidates.length) {
       return LiveDecisionSchema.parse({
         intent: "conversation",
@@ -71,6 +74,7 @@ export function interfaceReply(text: string, context?: Task) {
         },
       });
     }
+
     // Preserve the requested content and avoid pretending the provider returned
     // artwork for model-only prose suggestions. No invented image URLs.
     return LiveDecisionSchema.parse({

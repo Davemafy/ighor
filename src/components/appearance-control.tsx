@@ -22,20 +22,33 @@ export function AppearanceControl() {
       const saved = JSON.parse(
         localStorage.getItem("igor-appearance") || "null",
       );
-      if (palettes.some((item) => item.id === saved?.palette))
+
+      if (palettes.some((item) => item.id === saved?.palette)) {
+        // This hydration synchronizes persisted browser settings after SSR.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPalette(saved.palette);
-      if (typeof saved?.motion === "boolean") setMotion(saved.motion);
+      }
+
+      if (typeof saved?.motion === "boolean") {
+        setMotion(saved.motion);
+      }
     } catch {
       /* Unavailable storage keeps the default appearance. */
     }
+
     setLoaded(true);
   }, []);
 
   useEffect(() => {
     const app = anchor.current?.closest<HTMLElement>(".iw-app");
-    if (!app || !loaded) return;
+
+    if (!app || !loaded) {
+      return;
+    }
+
     app.dataset.palette = palette;
     app.dataset.motion = motion ? "on" : "off";
+
     try {
       localStorage.setItem(
         "igor-appearance",
@@ -47,15 +60,21 @@ export function AppearanceControl() {
   }, [palette, motion, loaded]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
+
     const dismiss = (event: PointerEvent) => {
       if (
         event.target instanceof Node &&
         !anchor.current?.contains(event.target)
-      )
+      ) {
         setOpen(false);
+      }
     };
+
     document.addEventListener("pointerdown", dismiss);
+
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [open]);
 
