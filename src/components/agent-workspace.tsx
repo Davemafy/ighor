@@ -45,6 +45,7 @@ import { useSavedOutcomes } from "./use-saved-outcomes";
 import "../app/product.css";
 import "../app/canvas.css";
 import "../app/connected-work.css";
+import "../app/revision-impact.css";
 import "../app/spatial-morph.css";
 import "../app/workbench.css";
 import "../app/native-workspace.css";
@@ -870,7 +871,7 @@ function Work({
   onTask: (t: Task) => void;
   onLoad: (id: string) => Promise<void>;
 }) {
-  const [resource, setResource] = useState("workspace");
+  const [resource, setResource] = useState("documents");
   const research = buildResearchCards(task);
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",

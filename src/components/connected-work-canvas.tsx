@@ -1,5 +1,6 @@
 "use client";
 import { ProductText } from "./product-surfaces";
+import { RevisionImpact } from "./revision-impact";
 
 import { useEffect, useState } from "react";
 import {
@@ -296,6 +297,9 @@ export function ConnectedWorkCanvas({
               </div>
             )}
           </section>
+        )}
+        {!editing && !historical && (
+          <RevisionImpact task={task} document={selected} />
         )}
         {editing && !historical ? (
           <div className="ig-connected-edit">

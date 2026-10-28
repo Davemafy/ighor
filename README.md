@@ -37,6 +37,10 @@ To connect live providers, see [development setup](docs/development.md).
 
 Start with [the orchestrator](src/core/orchestrator.ts) to follow a turn, or [the workspace](src/components/workspace.tsx) to follow the interface.
 
+## Judge-first release status
+
+The submission candidate is **not verified live**. Source-linked sample recordings are not live Qloo proof. The saved-document view now defaults ahead of raw discovery listings and shows its revision impact from persisted server state. The [judge package](docs/submission/DEVPOST_DRAFT.md) contains a draft entry, [85-second capture plan](docs/submission/JUDGE_FILM.md) and [release gates](docs/submission/RELEASE_GATES.md); no screenshot or live execution is claimed until captured at the exact candidate SHA.
+
 ## Check a change
 
 ```bash
