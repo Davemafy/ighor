@@ -148,6 +148,22 @@ export class FallbackModel implements ModelProvider {
 
     return choice ?? { action: "finish" };
   }
+  async interpretAgentRequirements(goal: string, task: Task) {
+    const result = await this.readOnly(
+      this.primary.interpretAgentRequirements
+        ? () => this.primary.interpretAgentRequirements!(goal, task)
+        : undefined,
+      this.backup.interpretAgentRequirements
+        ? () => this.backup.interpretAgentRequirements!(goal, task)
+        : undefined,
+    );
+
+    if (!result) {
+      throw new Error("No acceptance interpreter configured");
+    }
+
+    return result;
+  }
   async chooseAgentAction(
     goal: string,
     tools: AgentToolBrief[],

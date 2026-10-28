@@ -12,3 +12,7 @@ artifacts
 # Captured model payloads retain their original bytes.
 tests/fixtures/conversation-probe-live.json
 tests/fixtures/conversation-probe-revision-2.json
+
+
+# Generated globe coordinates retain source bytes.
+public/marketing/assets/globe-points.json

@@ -24,7 +24,7 @@ async function message(page: Page, text: string) {
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("igor-task")))
     .toBeTruthy();
-  await expect(page.locator(".pp-compose")).toHaveAttribute(
+  await expect(page.locator(".iw-composer")).toHaveAttribute(
     "data-busy",
     "false",
   );
@@ -35,7 +35,7 @@ async function message(page: Page, text: string) {
     .poll(async () => (await saved(page)).brief.version)
     .toBeGreaterThan(previous);
   await expect(input).toBeEnabled();
-  await expect(page.locator(".pp-transcript")).toHaveAttribute(
+  await expect(page.locator(".iw-messages")).toHaveAttribute(
     "aria-busy",
     "false",
   );
@@ -105,7 +105,7 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
 
   await surface.getByRole("button", { name: "Close expanded work" }).click();
   await expect(surface).not.toHaveClass(/ic-fullscreen/);
-  await expect(page.locator(".pp-message-assistant").last()).toContainText(
+  await expect(page.locator(".iw-message.iw-assistant").last()).toContainText(
     "Launch brief: saved your wording.",
   );
   await message(page, "Budget: 1000");
@@ -140,7 +140,7 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
       ?.history.length,
   ).toBeGreaterThan(0);
   expect(task.receipts!.every((r) => r.culturalRequests === 0)).toBe(true);
-  await expect(page.locator(".pp-message-assistant").last()).toContainText(
+  await expect(page.locator(".iw-message.iw-assistant").last()).toContainText(
     "$700",
   );
   await page.reload();
@@ -184,7 +184,10 @@ test("technical recommendation changes audience without replacing its decision o
     task.work?.documents.filter((d) => d.goalId === "listening-bar"),
   ).toEqual(unrelated);
   expect(task.receipts!.every((r) => r.culturalRequests === 0)).toBe(true);
-  await expect(page.locator(".pp-message-assistant").last()).toContainText(
-    "shortened for beginners",
-  );
+  expect(report.content).toContain("shortened for beginners");
+  const work = page.getByRole("complementary", { name: "Connected work" });
+  await work
+    .getByRole("button", { name: "Technical recommendation", exact: true })
+    .click();
+  await expect(work).toContainText("shortened for beginners");
 });

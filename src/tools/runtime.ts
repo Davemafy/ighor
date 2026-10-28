@@ -1,3 +1,4 @@
+import { unavailableCulturalProvider } from "./unavailable-cultural";
 import { LiveQlooProvider, SqliteResponseCache } from "./qloo-live";
 import { GrokModel } from "./grok-model";
 import { AnthropicModel } from "./anthropic-model";
@@ -20,9 +21,15 @@ export function runtimeCulturalProvider(mode: Task["mode"]) {
   }
 
   if (process.env.IGOR_QLOO_RECORDING) {
-    return new RecordedQlooProvider(
-      JSON.parse(readRecordingText(process.env.IGOR_QLOO_RECORDING)),
-    );
+    try {
+      return new RecordedQlooProvider(
+        JSON.parse(readRecordingText(process.env.IGOR_QLOO_RECORDING)),
+      );
+    } catch {
+      return unavailableCulturalProvider(
+        "The configured Qloo recording is missing or invalid. Cultural discovery is blocked; no live or synthetic fallback was used.",
+      );
+    }
   }
 
   cache ??= new SqliteResponseCache(

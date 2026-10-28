@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LayoutGroup, motion, MotionConfig } from "motion/react";
-import { LiquefyProvider, LiquidButton } from "@liquefy-ui/react";
-import "@liquefy-ui/react/styles.css";
+import { LiquidSwitch } from "fluidkit";
 import "../app/integrated-discovery.css";
 import type { Task, TaskAction } from "@/core/contracts";
 import type { CanvasMutation, PresentationNode } from "@/core/presentation";
@@ -273,53 +272,44 @@ export function LiquidDiscovery({
           data-mode={mode}
           aria-label="Interactive connected discovery"
         >
-          <LiquefyProvider
-            theme="light"
-            webgl={false}
-            glow={false}
-            shimmer={false}
-            sparkle={false}
-            ripple={false}
-          >
-            <div className="iw-liquid-toolbar" aria-label="Workspace view">
-              <LiquidButton
-                type="button"
-                aria-pressed={mode === "explore"}
-                disabled={busy}
-                onClick={() => setMode("explore")}
-              >
-                Explore
-              </LiquidButton>
-              <LiquidButton
-                type="button"
-                aria-pressed={mode === "connections"}
-                disabled={busy || culturalConnections.length === 0}
-                onClick={() => setMode("connections")}
-              >
-                Connections{" "}
-                {culturalConnections.length > 0
-                  ? "(" + culturalConnections.length + ")"
-                  : ""}
-              </LiquidButton>
-              <LiquidButton
-                type="button"
-                aria-pressed={mode === "compare"}
-                disabled={busy || compare.length < 2}
-                onClick={() => setMode("compare")}
-              >
-                <GitCompareArrows aria-hidden="true" /> Compare{" "}
-                {compare.length > 0 ? "(" + compare.length + ")" : ""}
-              </LiquidButton>
-              <LiquidButton
-                type="button"
-                aria-pressed={mode === "plan"}
-                disabled={busy || !selected}
-                onClick={() => setMode("plan")}
-              >
-                <ListChecks aria-hidden="true" /> Shape a plan
-              </LiquidButton>
-            </div>
-          </LiquefyProvider>
+          <div className="iw-liquid-toolbar" aria-label="Workspace view">
+            <button
+              type="button"
+              aria-pressed={mode === "explore"}
+              disabled={busy}
+              onClick={() => setMode("explore")}
+            >
+              Explore
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === "connections"}
+              disabled={busy || culturalConnections.length === 0}
+              onClick={() => setMode("connections")}
+            >
+              Connections{" "}
+              {culturalConnections.length > 0
+                ? "(" + culturalConnections.length + ")"
+                : ""}
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === "compare"}
+              disabled={busy || compare.length < 2}
+              onClick={() => setMode("compare")}
+            >
+              <GitCompareArrows aria-hidden="true" /> Compare{" "}
+              {compare.length > 0 ? "(" + compare.length + ")" : ""}
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === "plan"}
+              disabled={busy || !selected}
+              onClick={() => setMode("plan")}
+            >
+              <ListChecks aria-hidden="true" /> Shape a plan
+            </button>
+          </div>
           <div className="iw-liquid-intro" aria-live="polite">
             <div className="iw-liquid-kicker">
               <span>IGOR / DISCOVERY</span>
@@ -391,25 +381,29 @@ export function LiquidDiscovery({
                         ? "Selected"
                         : "Choose this"}
                     </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-pressed={compare.some(
-                        (item) => item.id === inspected.id,
-                      )}
-                      onClick={() =>
-                        mutate({
-                          operation: "compare-selection",
-                          nodeId: node.id,
-                          candidateId: inspected.id,
-                        })
-                      }
+                    <div
+                      className="iw-fluid-compare"
+                      data-fluid-candidate={inspected.id}
                     >
-                      <GitCompareArrows aria-hidden="true" />{" "}
-                      {compare.some((item) => item.id === inspected.id)
-                        ? "In comparison"
-                        : "Add to comparison"}
-                    </button>
+                      <LiquidSwitch
+                        size={32}
+                        material="flat"
+                        color="#d6e3c5"
+                        checkedTint="#cbdab9"
+                        label="Include in comparison"
+                        disabled={busy}
+                        checked={compare.some(
+                          (item) => item.id === inspected.id,
+                        )}
+                        onCheckedChange={() =>
+                          mutate({
+                            operation: "compare-selection",
+                            nodeId: node.id,
+                            candidateId: inspected.id,
+                          })
+                        }
+                      />
+                    </div>
                   </>
                 }
               />

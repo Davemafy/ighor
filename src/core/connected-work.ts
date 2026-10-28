@@ -490,7 +490,7 @@ export function applyWorkActions(
     .filter(Boolean);
 
   return documents.length
-    ? `${documents.map((document) => document.title).join(", ")} ${documents.length === 1 ? "is" : "are"} ready to review below.${documents.some((document) => document.conflict) ? " Some changes need your review." : ""}`
+    ? `${notes.length ? summary + "\n\n" : ""}${documents.map((document) => document.title).join(", ")} ${documents.length === 1 ? "is" : "are"} ready to review below.${documents.some((document) => document.conflict) ? " Some changes need your review." : ""}`
     : summary;
 }
 

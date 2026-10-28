@@ -14,6 +14,7 @@ export interface AgentToolOutcome {
   requests: number;
   sources?: ResearchSource[];
   artifactIds?: string[];
+  culturalSeedIds?: string[];
 }
 export interface AgentToolContext {
   task: Task;
@@ -92,6 +93,8 @@ const localityArguments = z.strictObject({
   interest: z.string().trim().min(3).max(200),
 });
 const documentArguments = z.strictObject({
+  fulfills: z.array(z.string().max(80)).max(6).optional(),
+  candidateIds: z.array(z.string()).max(12).optional(),
   title: z.string().trim().min(3).max(160),
   content: z.string().trim().min(30).max(10000),
   sourceIds: z.array(z.string()).max(12),
@@ -394,6 +397,7 @@ export function createAgentToolRegistry(
                 ? "blocked"
                 : "partial",
           requests: result.requestCount,
+          culturalSeedIds: [entity.providerId!],
           summary:
             `Qloo ${targetType} discovery returned ${result.data.options.length} actual candidates: ${result.data.options
               .slice(0, 5)
@@ -493,7 +497,22 @@ export function createAgentToolRegistry(
           content,
           sourceIds,
           evidenceIds: culturalIds = [],
+          fulfills,
+          candidateIds,
         } = documentArguments.parse(args);
+
+        if (
+          candidateIds?.some(
+            (id) => !ctx.task.catalogue.some((c) => c.id === id),
+          )
+        ) {
+          return {
+            status: "blocked",
+            requests: 0,
+            summary: "Document selected an unobserved cultural candidate.",
+          };
+        }
+
         const observed = new Set(ctx.sources.map((s) => s.id));
 
         if (sourceIds.some((id) => !observed.has(id))) {
@@ -538,6 +557,8 @@ export function createAgentToolRegistry(
         ctx.task.artifacts.push({
           id: `agent-doc-${ctx.runId}-${count + 1}`,
           kind: "research-report",
+          fulfills,
+          candidateIds,
           title,
           content,
           version: ctx.task.brief.version,
@@ -570,7 +591,22 @@ export function createAgentToolRegistry(
           content,
           sourceIds,
           evidenceIds = [],
+          fulfills,
+          candidateIds,
         } = reviseArguments.parse(args);
+
+        if (
+          candidateIds?.some(
+            (id) => !ctx.task.catalogue.some((c) => c.id === id),
+          )
+        ) {
+          return {
+            status: "blocked",
+            requests: 0,
+            summary: "Revision selected an unobserved cultural candidate.",
+          };
+        }
+
         const artifact = ctx.task.artifacts.find((a) => a.id === artifactId);
 
         if (
@@ -607,6 +643,8 @@ export function createAgentToolRegistry(
           };
         }
 
+        artifact.fulfills = fulfills;
+        artifact.candidateIds = candidateIds;
         artifact.title = title;
         artifact.content = content;
         artifact.version = ctx.task.brief.version;

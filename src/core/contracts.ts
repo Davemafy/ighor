@@ -1,4 +1,7 @@
-import { AgentAcceptanceSchema } from "./agent-acceptance";
+import {
+  AgentAcceptanceSchema,
+  AgentRequirementsSchema,
+} from "./agent-acceptance";
 import { z } from "zod";
 import {
   PresentationSchema,
@@ -184,6 +187,8 @@ export const EvidenceSchema = z.object({
 });
 
 export const ArtifactSchema = z.object({
+  fulfills: z.array(z.string().max(80)).max(6).optional(),
+  candidateIds: z.array(z.string()).max(12).optional(),
   details: OutcomeDetailsSchema.optional(),
   id: z.string(),
   kind: z.enum([
@@ -273,6 +278,8 @@ export const ScheduleSchema = z.object({
 /** Durable, per-task agent ledger; evidence bodies remain bounded. */
 export const AgentRunSchema = z.object({
   acceptance: AgentAcceptanceSchema.optional(),
+  requirements: AgentRequirementsSchema.optional(),
+  culturalSeedIds: z.array(z.string()).max(12).optional(),
   outputArtifactIds: z.array(z.string()).max(12).optional(),
   id: z.string().uuid(),
   goal: z.string().max(3000),

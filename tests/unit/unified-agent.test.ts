@@ -115,6 +115,11 @@ describe("unified tool orchestration", () => {
         research,
         cultural,
         model: {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           chooseAgentAction: choose,
           async interpret() {
             throw new Error("should not run");
@@ -123,8 +128,8 @@ describe("unified tool orchestration", () => {
         trace() {},
       });
       expect(response.sources).toHaveLength(1);
-      expect(response.status).toBe("ok");
-      expect(task.agentRun?.status).toBe("completed");
+      expect(response.status).toBe("partial");
+      expect(task.agentRun?.status).toBe("partially_completed");
       expect(task.agentRun?.steps.map((s) => s.tool)).toEqual([
         "web.search",
         "qloo.resolve_entity",
@@ -290,6 +295,11 @@ describe("unified tool orchestration", () => {
           readSource,
         },
         model: {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           chooseAgentAction: choose,
           async interpret() {
             throw new Error("unused");
@@ -340,6 +350,11 @@ describe("unified tool orchestration", () => {
         owner: "owner",
         research: { research: vi.fn(), searchOnce: search },
         model: {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           chooseAgentAction: chooser,
           async interpret() {
             throw new Error("unused");
@@ -392,6 +407,11 @@ describe("unified tool orchestration", () => {
           })),
         },
         model: {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           chooseAgentAction: vi.fn(async () => ({
             name: "web.search",
             arguments: { query: "official venue Berlin" },
@@ -444,6 +464,11 @@ describe("unified tool orchestration", () => {
         goal: "Inspect a source",
         research,
         model: {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           chooseAgentAction: selected,
           async interpret() {
             throw new Error("unused");
@@ -483,6 +508,11 @@ describe("unified tool orchestration", () => {
       goal: "Find a venue",
       research,
       model: {
+        interpretAgentRequirements: async () => ({
+          culturalDecision: false,
+          culturalReferences: [],
+          deliverables: [],
+        }),
         chooseAgentAction: async () => ({
           name: "web.search",
           arguments: { query: "venue Berlin" },
@@ -583,6 +613,11 @@ describe("unified tool orchestration", () => {
         () => {},
         undefined,
         {
+          interpretAgentRequirements: async () => ({
+            culturalDecision: false,
+            culturalReferences: [],
+            deliverables: [],
+          }),
           routeConversation: async () => ({
             intent: "research" as const,
             query: "Berlin listening bars",

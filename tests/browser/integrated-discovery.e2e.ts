@@ -7,13 +7,20 @@ import {
 } from "../../src/core/presentation";
 import type { Task } from "../../src/core/contracts";
 
-for (const mobile of [false, true]) {
-  test(`persistent candidate inspection ${mobile ? "mobile" : "desktop"}`, async ({
+for (const { mobile, reduced } of [
+  { mobile: false, reduced: false },
+  { mobile: true, reduced: false },
+  { mobile: true, reduced: true },
+]) {
+  test(`persistent candidate inspection ${mobile ? "mobile" : "desktop"}${reduced ? " reduced motion" : ""}`, async ({
     page,
   }, info) => {
     await page.setViewportSize(
       mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 },
     );
+    await page.emulateMedia({
+      reducedMotion: reduced ? "reduce" : "no-preference",
+    });
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     const created = await page.request.post("/api/tasks", {
@@ -65,7 +72,9 @@ for (const mobile of [false, true]) {
         ],
       }),
     );
-    const db = new DatabaseSync(".igor/integration-browser/tasks.sqlite");
+    const db = new DatabaseSync(
+      `${process.env.IGOR_BROWSER_RUN_DIR ?? ".igor/integration-browser"}/tasks.sqlite`,
+    );
     db.prepare("UPDATE tasks SET state=? WHERE id=?").run(
       JSON.stringify(task),
       task.id,
@@ -96,6 +105,61 @@ for (const mobile of [false, true]) {
     await page.screenshot({
       path: info.outputPath("detail.png"),
       fullPage: true,
+    });
+    await page.evaluate(() => {
+      const samples: { at: number; paths: string[] }[] = [];
+      Object.assign(window, { __igorFluidSamples: samples });
+      const start = performance.now();
+
+      const frame = () => {
+        const root = document.querySelector("[data-fluid-candidate]");
+        const paths = [
+          ...(root?.querySelectorAll<HTMLElement>("[style]") ?? []),
+        ]
+          .map((el) => el.style.clipPath)
+          .filter(Boolean);
+        samples.push({
+          at: performance.now() - start,
+          paths: [...new Set(paths)],
+        });
+
+        if (performance.now() - start < 2400) {
+          requestAnimationFrame(frame);
+        }
+      };
+
+      frame();
+    });
+    const fluid = detail.getByRole("switch", { name: "Include in comparison" });
+    await detail.getByText("Include in comparison", { exact: true }).click();
+    await expect(fluid).toBeChecked();
+    await page.waitForTimeout(550);
+    await page.screenshot({ path: info.outputPath("fluid-split.png") });
+    await detail.getByText("Include in comparison", { exact: true }).click();
+    await expect(fluid).not.toBeChecked();
+    await page.waitForTimeout(1100);
+    const samples = await page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __igorFluidSamples: { at: number; paths: string[] }[];
+          }
+        ).__igorFluidSamples,
+    );
+    const unique = [...new Set(samples.flatMap((s) => s.paths))];
+
+    if (!reduced) {
+      expect(unique.length).toBeGreaterThan(3);
+      expect(unique.some((p) => p.includes("C"))).toBe(true);
+    }
+
+    // No continuing geometry loop once the interaction has settled.
+    expect(
+      new Set(samples.slice(-8).map((s) => JSON.stringify(s.paths))).size,
+    ).toBeLessThanOrEqual(2);
+    await info.attach("fluid-geometry", {
+      body: JSON.stringify(samples),
+      contentType: "application/json",
     });
     await page.keyboard.press("Escape");
     await expect(

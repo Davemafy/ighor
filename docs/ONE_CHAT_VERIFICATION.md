@@ -1,74 +1,73 @@
-# One-chat integration verification — 28 October 2026
+# PR21 verification — continued integration, 28 October 2026
 
-Draft only. Base: PR #19, `c6af78d5b1136a8f3106b5d4d1cf6fdffcc3b7bc`.
-No merge, deployment, credentials, repository visibility or submission changed.
+**Draft only. No merge, deployment, credentials, visibility or submission changes.** Continues the existing integration branch; no new implementation PR.
 
-## Integrated changes
+## Acceptance correctness
 
-- Retained PR19's unified server executor, validated tool registry, observations, ownership and optimistic SQLite versioning. Retained its selective PR18 cultural attribution. Reused PR20's candidate inspector rather than merging its divergent branch.
-- Persisted typed execution acceptance: requested saved work cannot complete on search results alone; explicit Qloo requests require current provider-returned cultural evidence. This verifies execution obligations, not prose accuracy or an independently audited budget. Goal recognition is conservative lexical detection, not a complete semantic acceptance planner.
-- Documents accept current cultural evidence IDs. Agent-created documents can be revised without changing artifact identity; edited and locked documents are protected. Current document content is available to the next model decision.
-- Qloo discovery now evaluates and projects returned candidates into the existing candidate collection, connecting the tool result to the real discovery canvas. No second task store.
-- Motion 14.7.1 provides task-scoped shared candidate identity, interruptible spring layout, and reduced-motion support. Native view-transition snapshots are bypassed while the Motion discovery subtree is mounted.
-- Liquefy React 1.2.0 (MIT, React >=18.2) supplies only task view controls. React19/Next16 production build and real Chromium checks pass. WebGL is deliberately disabled; there is no claim of verified lens optics or true liquid bridge/pinch-off/split. QuickLiquid/Fluidkit were not integrated. This is an explicit incomplete interaction requirement.
-- Light surfaces, type hierarchy, a genuine-media hero when available and typographic fallbacks. Keyboard inspector entry, Escape and return focus survive card remounting.
-- Mechanical ESLint fixes and Prettier formatting resolve inherited quality-gate debt. Fixed an unbalanced marketing CSS transform. Three narrowly documented hydration/server-state synchronization lint exceptions retain required reconciliation behavior; workflows are retained.
+Removed lexical completion detection from `agent-acceptance.ts`. A bounded model interpretation now declares the current turn's cultural decision, active reference names (including conversational replacements) and required deliverable keys. Missing/failed interpretation remains unknown. Requirements are persisted on the server-owned run and are supplied to the next action decision. Provider fallback supports this read-only interpretation.
 
-## Measured verification
+Completion requires each declared deliverable to be bound to a current saved/revised artifact. Cultural decisions require selected candidate IDs and cited evidence whose provider/query/scope/candidate identity, freshness, delivery and seed IDs agree. Every active named reference must resolve and be covered by the current decision's cited signals. Unrelated stored evidence, an entity lookup, uncited signals and stale records cannot satisfy this check. If the executor actually invokes cultural discovery, server-owned seed receipts require cultural grounding even if the interpreter mistakenly declared it unnecessary.
 
-| Check                             | Result                                                                                                                                                                     |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Clean dependency install          | PASS, npm ci, 414 packages                                                                                                                                                 |
-| Typecheck                         | PASS, Node 24.22.1                                                                                                                                                         |
-| Production build                  | PASS, Next 16.4.3 webpack                                                                                                                                                  |
-| Format                            | PASS                                                                                                                                                                       |
-| Lint                              | PASS with 24 warnings, zero errors                                                                                                                                         |
-| Unit suite                        | 419 passed; two assertions and five suites blocked by missing `qloo-cultural.json.gz` (six red files total)                                                                |
-| Blinded-evaluation harness tests  | 6 passed; this is harness correctness, not Qloo effectiveness                                                                                                              |
-| Full existing browser suite       | 14 passed, 12 failed (legacy selectors and recorded-provider turn errors); not a clean release gate                                                                        |
-| Integrated Chromium               | 2 passed: 1440×900 and 390×844; inspect, keyboard focus, Escape return, server-owned selection, reload, two-candidate comparison, horizontal overflow and zero page errors |
-| Live Qloo/model flagship          | BLOCKED: no authorized runtime credentials available to this checkout                                                                                                      |
-| Qloo/no-Qloo same-pool experiment | NOT RUN; no claim of material advantage                                                                                                                                    |
-| Refractive liquid split/rejoin    | NOT IMPLEMENTED/VERIFIED                                                                                                                                                   |
-| Hosted Actions                    | Not used as proof; prior PR19 reports runner allocation failures                                                                                                           |
+Regression coverage uses the Brooklyn request without “Qloo”, then replaces Radiohead with Bad Bunny while retaining Sade/Wong Kar-wai. Old Radiohead-only coverage fails; correctly bound new coverage passes; stale/uncited evidence fails. An actual executor + SQLite reload regression confirms that a saved Bad Bunny revision without new supporting evidence remains partial, keeps artifact identity, preserves the $3,000 constraint and retains independent locked work exactly. These are **unit provider-boundary fixtures**, not live cultural proof.
 
-The browser fixture is **SAMPLE**, clearly marked in the conversation and candidate rationale. It uses actual Next routes, owner cookies, SQLite persistence and canvas mutations; initial task data is seeded by the test. It is not a live model-driven Brooklyn flagship. Real provider-paid acceptance must still be performed. No invented Qloo score, supplier price, availability, booking, participant or route is introduced.
+Limit: this verifies typed evidence/decision dependencies and execution obligations, not semantic truth of every generated sentence or independently validated production feasibility. Interpretation itself remains model-dependent. An unsupported or unresolved cultural reference must remain unknown; no representative film/director identity is silently invented.
 
-## Reproduce
+## Working interaction
 
-```
-npm ci
-npm run format:check
-npm run typecheck
-npm run lint
-npm test
-npm run test:eval
-npm run build
-npx playwright test --config tests/integrated.playwright.config.mts
-npm run test:browser
-```
+Fluidkit **0.5.0**, MIT, uses the existing Motion peer rather than a second animation engine. Its surface-tension `LiquidSwitch` now controls actual “Include in comparison” state in a candidate inspector. The material stretches into a neck, breaks into departing bead/thumb/satellite shapes and reunites at the opposite well. Labels and native switch input remain crisp HTML; the server still owns comparison IDs. Toggling back uses native keyboard Space in browser verification.
 
-The integration browser suite records PNGs, WebM videos and Playwright traces under `test-results/integrated/`. Tests clear provider credentials and set Qloo calls to zero. Existing full browser tests depend on the cultural recording and include older UI expectations; their result is reported separately, never implied green by the integration suite.
+This implementation uses **flat material**, not claimed refractive optics. Liquefy was removed. QuickLiquid was evaluated and rejected: its group scheduler calls `updatePositions()` each frame, which marks work pending again, preventing idle sleep. Neither its group nor a custom fluid engine was shipped. No WebGL/maps context was added. Reduced motion snaps directly while preserving operable semantic controls. The renderer settles after the bounded interaction; there is no ornamental infinite loop.
 
-## Release blockers and owner actions
+Verified in Chromium at 1440×900 and 390×844, plus mobile reduced motion. Tests check temporal clip-path variation with curved bridges, final settled geometry, native switch state, Escape/focus return, server-backed selection/comparison, reload identity, readable controls, no horizontal overflow and zero page errors. All three pass. The task data is **SAMPLE**, explicitly labeled; these recordings are not the Brooklyn flagship.
 
-1. Restore the byte-identical cultural fixture from GitHub to this environment. The GitHub connector cannot decode this gzip; attempts to retrieve the oversized historical JSON also failed. Do not replace it with synthetic data or change its integrity hash.
-2. Run the source-grounded, model-driven Brooklyn flagship with authorized credentials against this branch in a private review environment. Verify saved proposal, provisional budget, partner pitch, approved-work preservation and Bad Bunny revision after reload.
-3. Run the existing blinded comparison with identical pool/constraints/model, preserving source IDs and reporting a negative/inconclusive result honestly.
-4. Finish bounded liquid split/rejoin and reduced-motion/browser validation if required for release; current CSS material and shared layout are not that proof.
-5. Verify actual geocoded map handoff and no-key fallback in the integrated real task. The existing Maps engine is retained; this new browser test does not claim map acceptance.
-6. Private repository currently has an MIT license. Public demo/visibility, deployment SHA, full secret audit and submission materials remain release work. Environment variables and credentials were not changed; source was not certified secret-free by this pass.
-7. Owner approval is required before merging, publishing source, deploying, changing credentials or submitting. This draft is not a submission-ready release claim.
+## Verification matrix
 
-Visual review: the captured samples have clear text and touch targets; mobile has no horizontal overflow. The existing mobile header still occupies substantial vertical space. They do not yet establish Cosmos-level composition with real media, Partiful-level finished outcomes, or physical liquid behavior. No generated render is used as evidence.
+| Check                                                       | Current result                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Typecheck                                                   | PASS                                                                                                               |
+| Format                                                      | PASS                                                                                                               |
+| Lint                                                        | PASS, zero errors / 24 warnings                                                                                    |
+| Production build                                            | PASS, Next16/React19; Fluidkit shares Motion14.7.1                                                                 |
+| Unit suite                                                  | 424 passed / 1 failed assertion; five additional suites cannot load their archive, six red files total             |
+| Targeted acceptance/executor/provider/connected-work checks | 60 passed before the additional persisted-revision test; final critical slice 16 passed including it               |
+| Evaluation harness                                          | 6 passed; not an effectiveness experiment                                                                          |
+| Full existing browser suite                                 | **16 passed / 10 failed**, all ten fail explicitly on missing original archive                                     |
+| Fluid + continuity browser suite                            | **3 passed**, desktop/mobile/reduced motion, real screenshots/video/traces                                         |
+| Credentialed flagship                                       | **BLOCKED**; no Qloo, Gemini, xAI/Grok or Anthropic key in runtime; no local credential file beyond `.env.example` |
+| Same-pool Qloo/no-Qloo evaluation                           | **BLOCKED / not executed**; no ranking result, improvement number or effectiveness claim                           |
+| Original cultural archive                                   | Retained in repository, unavailable to this host; authentic search archive and available fixture hashes retained   |
+| Hosted CI                                                   | Not used as code proof; prior base job had null steps/logs. Local failures above remain release blockers           |
 
-## Recorded artifacts
+The exact twelve original failures, their causes, migrations and current disposition are in [BROWSER_FAILURES.md](BROWSER_FAILURES.md). Nothing was deleted/skipped to turn the suite green. Migrated archived journeys remain unverified past the integrity gate until the original bytes are restored. Unit integrity failures are retained.
 
-- [Desktop inspector](evidence/one-chat/desktop-detail.png)
-- [Mobile inspector](evidence/one-chat/mobile-detail.png)
-- [Desktop comparison](evidence/one-chat/desktop-comparison.png)
-- [Actual desktop browser recording](evidence/one-chat/desktop.webm)
+## Diff review
 
-`proof`, `attack`, and `test:flagship` were invoked and failed because those scripts are absent on PR19; no substitute success is claimed. The full browser run is red: legacy route/selector tests and archived-provider journeys fail. The new integration suite is independently green, not a replacement for those failures. Final targeted regressions: 25 passed.
+Functional changes remain concentrated in the executor/requirements, tool bindings, protected revisions, current workspace controls and verification tests. No replacement task store or interface architecture was introduced. The initial mechanical ESLint/Prettier cleanup remains a separate reviewable commit; it accounts for much of the wide diff. The generated globe coordinate file's unrelated reformat was reverted to its source bytes and is explicitly excluded from formatting as generated data. Landing visual behavior was not redesigned. Existing license/workflows/provider boundaries remain.
 
-A bounded source scan for xAI/Anthropic/Google/OpenAI key-shaped literals found no matches in src, scripts, tests, docs and workflows. This is not an exhaustive credential or public-release audit.
+Source scan found no key-shaped xAI/Anthropic/Google/OpenAI literals in source, tests, scripts, docs or workflows during the initial pass. This is bounded scanning, not an exhaustive public-release certification. No secrets were read or changed for these tests.
+
+## Real evidence
+
+- [Fluid desktop recording](evidence/one-chat/fluid-desktop.webm)
+- [Fluid mobile recording](evidence/one-chat/fluid-mobile.webm)
+- [Reduced-motion recording](evidence/one-chat/fluid-reduced.webm)
+- [Desktop control capture](evidence/one-chat/fluid-desktop.png)
+- [Mobile control capture](evidence/one-chat/fluid-mobile.png)
+
+Playwright traces are generated locally under `test-results/integrated/`; recordings show the genuine running Next app. No generated renders are verification evidence.
+
+## Release checklist
+
+- [x] Correct provider-independent interpreted acceptance and decision-linked cultural evidence checks.
+- [x] Brooklyn/Bad Bunny regressions, saved revision identity, budget and locked-work retention.
+- [x] Repair current-selector tests and actual budget-summary loss; preserve test intent.
+- [x] One real semantic fluid split/rejoin with native controls, reduced motion and browser recording.
+- [ ] Recover original gzip and pass all integrity/unit/browser gates; verify migrated recorded journeys beyond preflight.
+- [ ] Configure authorized credentials in a private review runtime, without putting secrets in source/chat.
+- [ ] Run the **same** model-driven Brooklyn journey through actual Qloo discovery, defensible selection, proposal/budget/pitch, Bad Bunny revision and reload; retain LIVE/CACHED provenance.
+- [ ] Run a genuine frozen-pool, identical model/constraints Qloo/no-Qloo comparison; publish actual rankings, source IDs and honest negative/inconclusive outcomes.
+- [ ] Verify geo handoff where applicable, practical constraints, licensing/availability and final deliverable quality independently.
+- [ ] Complete final public-source audit, setup/demo/submission review and owner approval.
+- [ ] Only after approval: merge, deploy with SHA/rollback verification, change visibility or submit.
+
+**This is not yet a verified flagship or submission-ready release.** The smallest next unblock is restoring the existing archive and making authorized providers available on a private review runtime. No additional infrastructure rewrite is needed to perform those checks.

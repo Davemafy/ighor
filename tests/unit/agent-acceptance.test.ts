@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { freshTask } from "../../src/data/fixtures";
+import { freshTask, sampleCatalogue } from "../../src/data/fixtures";
 import { verifyAgentOutcome } from "../../src/core/agent-acceptance";
 import { SqliteTaskStore } from "../../src/data/store";
 import { runUnifiedAgent } from "../../src/core/unified-agent";
@@ -50,7 +50,7 @@ describe("server outcome acceptance", () => {
       expect(store.load(task.id, "owner").agentRun?.acceptance).toEqual(
         task.agentRun?.acceptance,
       );
-      expect(verifyAgentOutcome(task, "Use Qloo", true).status).toBe("blocked");
+      expect(verifyAgentOutcome(task, "Use Qloo", true).status).toBe("unknown");
     } finally {
       store.close();
     }
@@ -107,4 +107,215 @@ it("revises a saved artifact without changing identity and refuses manually edit
     ).status,
   ).toBe("blocked");
   expect(task.artifacts[0].content).toBe(args.content);
+});
+
+const brooklyn =
+  "I run a 100-capacity space in Brooklyn. Our community loves Radiohead, Sade and Wong Kar-wai films. Design an unexpected Saturday experience, keep the proposed production budget under $3,000, and give me something I can pitch to partners.";
+const revision =
+  "Actually, replace Radiohead with Bad Bunny. Keep the budget and everything we've already approved. Show me why the creative direction changes.";
+
+function culturalTask() {
+  const task = freshTask("brooklyn", "owner");
+  task.brief.constraints.budget = 3000;
+  task.entities = ["Radiohead", "Sade", "Wong Kar-wai", "Bad Bunny"].map(
+    (name, i) => ({
+      id: `seed-${i}`,
+      name,
+      original: name,
+      type: i === 2 ? ("movie" as const) : ("artist" as const),
+      providerId: `provider-${i}`,
+      status: "resolved" as const,
+      metadata: "unit provider response",
+      choices: [],
+    }),
+  );
+  task.agentRun = {
+    id: "11111111-1111-4111-8111-111111111111",
+    goal: brooklyn,
+    status: "verifying",
+    startedAt: "2026-10-28T00:00:00Z",
+    updatedAt: "2026-10-28T00:00:00Z",
+    maxSteps: 8,
+    maxRequests: 8,
+    requests: 2,
+    modelSteps: 2,
+    steps: [],
+    sources: [],
+    warnings: [],
+    requirements: {
+      culturalDecision: true,
+      culturalReferences: ["Radiohead", "Sade", "Wong Kar-wai"],
+      deliverables: ["proposal", "budget", "partner-pitch"],
+    },
+  };
+  task.catalogue = [];
+  task.artifacts = [
+    {
+      id: `agent-doc-${task.agentRun.id}-1`,
+      kind: "creative-brief",
+      title: "Brooklyn partner proposal",
+      content:
+        "Unit test proposal. Estimated production budget $2,800. Availability unknown.",
+      version: 1,
+      dependencies: [],
+      evidenceIds: [],
+      candidateIds: ["direction"],
+      fulfills: ["proposal", "budget", "partner-pitch"],
+      assumptions: [],
+      freshness: "current",
+      edited: false,
+    },
+  ];
+
+  return task;
+}
+
+function bindCulture(
+  task: ReturnType<typeof culturalTask>,
+  seeds: string[],
+  query = "current",
+) {
+  const id = `qloo:${query}:context:direction-provider`;
+  task.evidence.push({
+    id,
+    source: "provider-returned",
+    kind: "cultural",
+    delivery: "CACHED",
+    at: "2026-10-28T00:00:00Z",
+    entityIds: ["direction-provider"],
+    reference: `qloo:${query}`,
+    summary: "Unit provider-boundary signal, not live proof",
+    limitations: [],
+    explanation: null,
+    dependencies: [],
+    freshness: "current",
+  });
+  const candidate = {
+    ...sampleCatalogue()[0],
+    id: "direction",
+    providerId: "direction-provider",
+    sample: false,
+    cultural: {
+      context: {
+        signalScope: "context" as const,
+        affinity: null,
+        rank: 1,
+        queryId: query,
+        seedIds: seeds,
+        delivery: "CACHED" as const,
+        retrievedAt: "2026-10-28T00:00:00Z",
+        explanationEntities: [],
+      },
+    },
+  };
+  task.catalogue = [candidate];
+  task.artifacts[0].evidenceIds = [id];
+}
+
+it("Brooklyn needs current decision-linked cultural evidence although it never says Qloo", () => {
+  const task = culturalTask();
+  expect(brooklyn).not.toMatch(/qloo/i);
+  expect(verifyAgentOutcome(task, brooklyn, true).status).toBe("unknown");
+  bindCulture(task, ["provider-0", "provider-1", "provider-2"]);
+  expect(verifyAgentOutcome(task, brooklyn, true).status).toBe("satisfied");
+  task.artifacts[0].evidenceIds = [];
+  expect(verifyAgentOutcome(task, brooklyn, true).status).toBe("unknown");
+});
+it("Bad Bunny revision rejects old Radiohead evidence, preserves the budget and approved work, and accepts newly bound evidence", () => {
+  const task = culturalTask();
+  bindCulture(task, ["provider-0", "provider-1", "provider-2"]);
+  const approved = {
+    ...task.artifacts[0],
+    id: "approved-independent",
+    locked: true,
+    content: "Approved wording and budget are retained exactly.",
+  };
+  task.artifacts.push(approved);
+  const before = JSON.stringify(approved);
+  task.agentRun!.requirements!.culturalReferences = [
+    "Bad Bunny",
+    "Sade",
+    "Wong Kar-wai",
+  ];
+  expect(verifyAgentOutcome(task, revision, true).status).toBe("unknown");
+  bindCulture(task, ["provider-3", "provider-1", "provider-2"], "revised");
+  expect(verifyAgentOutcome(task, revision, true).status).toBe("satisfied");
+  expect(task.brief.constraints.budget).toBe(3000);
+  expect(JSON.stringify(approved)).toBe(before);
+  task.evidence.at(-1)!.freshness = "stale";
+  expect(verifyAgentOutcome(task, revision, true).status).toBe("unknown");
+});
+
+it("executes the Brooklyn revision against persisted work; stale Radiohead evidence cannot complete it", async () => {
+  const task = culturalTask();
+  bindCulture(task, ["provider-0", "provider-1", "provider-2"], "old");
+  const artifactId = task.artifacts[0].id;
+  const approved = {
+    ...task.artifacts[0],
+    id: "approved-independent",
+    locked: true,
+    content: "Approved production agreement",
+  };
+  task.artifacts.push(approved);
+  const originalApproved = structuredClone(approved);
+  const store = new SqliteTaskStore(":memory:");
+  store.create(task);
+
+  try {
+    await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: revision,
+      trace() {},
+      research: {
+        research: async () => ({ status: "blocked", requests: 0, sources: [] }),
+      },
+      model: {
+        interpret: async () => {
+          throw Error("unused");
+        },
+        interpretAgentRequirements: async () => ({
+          culturalDecision: true,
+          culturalReferences: ["Bad Bunny", "Sade", "Wong Kar-wai"],
+          deliverables: ["proposal", "budget", "partner-pitch"],
+        }),
+        chooseAgentAction: async (_goal, _tools, observed) =>
+          observed.length
+            ? { name: "agent.finish", arguments: {} }
+            : {
+                name: "document.revise",
+                arguments: {
+                  artifactId,
+                  title: "Revised partner proposal",
+                  content:
+                    "Replace Radiohead with Bad Bunny. Keep the approved budget under $3,000; this unit example lacks new provider evidence.",
+                  sourceIds: [],
+                  evidenceIds: ["qloo:old:context:direction-provider"],
+                  candidateIds: ["direction"],
+                  fulfills: ["proposal", "budget", "partner-pitch"],
+                },
+              },
+      },
+    });
+    const loaded = store.load(task.id, "owner");
+    expect(loaded.agentRun?.status).toBe("partially_completed");
+    expect(loaded.agentRun?.requirements?.culturalReferences).toEqual([
+      "Bad Bunny",
+      "Sade",
+      "Wong Kar-wai",
+    ]);
+    expect(
+      loaded.artifacts.find((a) => a.id === artifactId)?.content,
+    ).toContain("Bad Bunny");
+    expect(loaded.artifacts.find((a) => a.id === artifactId)?.id).toBe(
+      artifactId,
+    );
+    expect(loaded.artifacts.find((a) => a.id === approved.id)).toEqual(
+      originalApproved,
+    );
+    expect(loaded.brief.constraints.budget).toBe(3000);
+  } finally {
+    store.close();
+  }
 });

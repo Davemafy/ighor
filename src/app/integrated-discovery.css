@@ -157,3 +157,23 @@
   border-radius: 24px;
   padding: 12px 18px;
 }
+
+/* Fluidkit owns only the moving material; label/input remain native HTML. */
+.iw-fluid-compare {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+.iw-fluid-compare label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 12px;
+  color: #293127;
+}
+.iw-fluid-compare input:focus-visible {
+  outline: 3px solid #536b35;
+  outline-offset: 4px;
+}

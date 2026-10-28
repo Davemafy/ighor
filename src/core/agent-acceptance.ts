@@ -1,6 +1,19 @@
 import { z } from "zod";
 import type { Task } from "./contracts";
 
+/** Model interpretation of the current turn in its conversational context.
+ * Missing interpretation is unknown, never inferred from provider keywords. */
+export const AgentRequirementsSchema = z
+  .object({
+    culturalDecision: z.boolean(),
+    culturalReferences: z.array(z.string().trim().min(1).max(120)).max(12),
+    deliverables: z.array(z.string().trim().min(1).max(80)).max(6),
+  })
+  .refine(
+    (value) => value.culturalDecision || value.culturalReferences.length === 0,
+    "Named cultural obligations require cultural grounding",
+  );
+export type AgentRequirements = z.infer<typeof AgentRequirementsSchema>;
 export const AgentAcceptanceSchema = z.object({
   requestedOutcome: z.string(),
   status: z.enum(["satisfied", "unknown", "blocked"]),
@@ -14,72 +27,131 @@ export const AgentAcceptanceSchema = z.object({
   ),
 });
 
-/** Conservative server checks. Satisfied means execution obligations were met,
- * never that prose, estimated budgets or external availability were verified. */
 export function verifyAgentOutcome(
   task: Task,
   goal: string,
   modelFinished: boolean,
 ) {
   const run = task.agentRun!;
+  const requirements = run.requirements;
   const documents = task.artifacts.filter(
     (a) =>
       (a.id.startsWith(`agent-doc-${run.id}-`) ||
         run.outputArtifactIds?.includes(a.id)) &&
       a.freshness === "current",
   );
-  const requiresDocument =
-    /\b(save|draft|create|write|design|proposal|pitch|deliverable|report|plan)\b/i.test(
-      goal,
-    );
-  const cultural = task.evidence.filter(
-    (e) =>
-      e.kind === "cultural" &&
-      e.source === "provider-returned" &&
-      e.freshness === "current",
-  );
   const checks: z.infer<typeof AgentAcceptanceSchema>["checks"] = [];
-
-  if (requiresDocument) {
+  const check = (
+    requirement: string,
+    satisfied: boolean,
+    artifactIds: string[] = [],
+    evidenceIds: string[] = [],
+  ) =>
     checks.push({
-      requirement:
-        "Requested editable work is saved in this run; content and practical estimates still require review.",
-      status: documents.length ? "satisfied" : "unknown",
-      artifactIds: documents.map((a) => a.id),
-      evidenceIds: documents.flatMap((a) => a.evidenceIds),
+      requirement,
+      status: satisfied ? "satisfied" : "unknown",
+      artifactIds,
+      evidenceIds,
     });
+  check(
+    "Current turn requirements have been interpreted",
+    Boolean(requirements),
+  );
+
+  for (const key of requirements?.deliverables ?? []) {
+    const matching = documents.filter((a) => a.fulfills?.includes(key));
+    check(
+      `Saved editable deliverable: ${key}`,
+      matching.length > 0,
+      matching.map((a) => a.id),
+      matching.flatMap((a) => a.evidenceIds),
+    );
   }
 
-  if (/\bqloo\b/i.test(goal)) {
-    checks.push({
-      requirement:
-        "Requested Qloo relationships have inspectable provider evidence, beyond entity resolution.",
-      status: cultural.length ? "satisfied" : "blocked",
-      artifactIds: [],
-      evidenceIds: cultural.map((e) => e.id),
-    });
+  if (requirements?.culturalDecision || run.culturalSeedIds?.length) {
+    // A cultural decision must bind a selected candidate to current provider
+    // evidence AND to all current reference seeds. An old unrelated record,
+    // entity lookup, or a Radiohead query after a Bad Bunny revision cannot pass.
+    const referenceNames = requirements?.culturalReferences.length
+      ? requirements.culturalReferences
+      : (run.culturalSeedIds ?? []).map(
+          (id) =>
+            task.entities.find((e) => e.providerId === id)?.name ??
+            "Unresolved cultural seed",
+        );
+    const refs = referenceNames.map(
+      (name) =>
+        task.entities.find(
+          (e) =>
+            e.status === "resolved" &&
+            e.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+        )?.providerId,
+    );
+    const seedIds = new Set(refs.filter((id): id is string => Boolean(id)));
+    const supporting = new Set<string>();
+    const covered = new Set<string>();
+    const bindings = documents.filter((a) => a.candidateIds?.length);
+
+    for (const doc of bindings) {
+      for (const id of doc.candidateIds ?? []) {
+        const candidate = task.catalogue.find((c) => c.id === id && !c.sample);
+
+        if (
+          !candidate ||
+          task.candidates.some((c) => c.id === id && c.freshness !== "current")
+        ) {
+          continue;
+        }
+
+        for (const [scope, signal] of Object.entries(
+          candidate.cultural ?? {},
+        )) {
+          const evidenceId = `qloo:${signal.queryId}:${scope}:${candidate.providerId ?? candidate.id}`;
+          const evidence = task.evidence.find(
+            (e) =>
+              e.id === evidenceId &&
+              e.source === "provider-returned" &&
+              e.kind === "cultural" &&
+              e.freshness === "current" &&
+              e.delivery === signal.delivery &&
+              e.entityIds.includes(candidate.providerId ?? candidate.id),
+          );
+
+          if (
+            !evidence ||
+            !doc.evidenceIds.includes(evidenceId) ||
+            !signal.seedIds.some((seed) => seedIds.has(seed))
+          ) {
+            continue;
+          }
+
+          supporting.add(evidenceId);
+          signal.seedIds
+            .filter((seed) => seedIds.has(seed))
+            .forEach((seed) => covered.add(seed));
+        }
+      }
+    }
+
+    check(
+      "Current cultural decision is grounded in cited candidate/query evidence for every current reference",
+      refs.length > 0 && refs.every((id) => Boolean(id) && covered.has(id!)),
+      bindings.map((a) => a.id),
+      [...supporting],
+    );
   }
 
-  checks.push({
-    requirement:
-      "The agent reviewed useful observations or saved work before ending.",
-    status:
-      (modelFinished || documents.length > 0) &&
-      (documents.length > 0 || run.sources.length > 0 || cultural.length > 0)
-        ? "satisfied"
-        : "unknown",
-    artifactIds: documents.map((a) => a.id),
-    evidenceIds: cultural.map((e) => e.id),
-  });
-  const status = checks.some((c) => c.status === "blocked")
-    ? "blocked"
-    : checks.every((c) => c.status === "satisfied")
-      ? "satisfied"
-      : "unknown";
+  check(
+    "Agent reviewed observations or saved work before ending",
+    (modelFinished || documents.length > 0) &&
+      (documents.length > 0 || run.sources.length > 0),
+  );
 
   return AgentAcceptanceSchema.parse({
     requestedOutcome: goal.slice(0, 3000),
-    status,
+    status: checks.every((c) => c.status === "satisfied")
+      ? "satisfied"
+      : "unknown",
     checks,
   });
 }

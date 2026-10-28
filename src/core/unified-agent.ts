@@ -1,4 +1,8 @@
-import { verifyAgentOutcome } from "./agent-acceptance";
+import {
+  AgentRequirementsSchema,
+  type AgentRequirements,
+  verifyAgentOutcome,
+} from "./agent-acceptance";
 import { randomUUID } from "node:crypto";
 import type { Task, Event } from "./contracts";
 import { TaskSchema } from "./contracts";
@@ -23,6 +27,7 @@ export interface UnifiedAgentInput {
   store: TaskStore;
   goal: string;
   model: ModelProvider;
+  requirements?: AgentRequirements;
   research: ResearchProvider;
   cultural?: CulturalProvider;
   places?: Pick<GooglePlacesProvider, "search">;
@@ -148,6 +153,27 @@ export async function runUnifiedAgent(
   const attempted = new Set<string>();
   let modelFinished = false;
   task.agentRun.status = "reasoning";
+
+  try {
+    if (input.requirements) {
+      task.agentRun.requirements = AgentRequirementsSchema.parse(
+        input.requirements,
+      );
+    } else if (model.interpretAgentRequirements) {
+      task.agentRun.modelSteps++;
+      task.agentRun.requirements = AgentRequirementsSchema.parse(
+        await withToolDeadline(
+          model.interpretAgentRequirements(input.goal, structuredClone(task)),
+          18000,
+        ),
+      );
+    }
+  } catch {
+    task.agentRun.warnings.push(
+      "Could not interpret acceptance requirements; completion remains unverified.",
+    );
+  }
+
   persist();
 
   for (let index = 0; index < maxSteps; index++) {
@@ -293,6 +319,12 @@ export async function runUnifiedAgent(
       ...new Set([
         ...(run.outputArtifactIds ?? []),
         ...(outcome.artifactIds ?? []),
+      ]),
+    ].slice(-12);
+    run.culturalSeedIds = [
+      ...new Set([
+        ...(run.culturalSeedIds ?? []),
+        ...(outcome.culturalSeedIds ?? []),
       ]),
     ].slice(-12);
     run.requests += outcome.requests;

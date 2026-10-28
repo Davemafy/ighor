@@ -1,101 +1,63 @@
-import { test, expect, type Page } from "@playwright/test";
-import type { Task } from "../../src/core/contracts";
+import { test, expect } from "@playwright/test";
+import {
+  startRecorded,
+  recordedTurn,
+  currentTask,
+  keyboardMessage,
+} from "./recorded-session";
 
-async function current(page: Page) {
-  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
-
-  return (await (await page.request.get(`/api/tasks/${id}`)).json()) as Task;
-}
-
-async function message(page: Page, text: string) {
-  const before = (await current(page)).brief.version;
-  const input = page.getByLabel("Tell Igor your goal or correction");
-  await input.fill(text);
-  await input.press("Enter");
-  await expect
-    .poll(async () => {
-      const t = await current(page);
-
-      return t.brief.version > before && t.status !== "running";
-    })
-    .toBe(true);
-  await expect(page.getByLabel("Send message")).toBeDisabled();
-
-  return current(page);
-}
-
-async function tokyo(page: Page) {
-  await page.goto("/workspace");
-  await page.getByRole("button", { name: /Tokyo/ }).click();
-  await expect(
-    page.getByRole("tab", { name: "Options · 10", exact: true }),
-  ).toBeVisible();
-}
-
+// /workspace redirects to /app. Set up the same owner-scoped recorded actions
+// the retired starter buttons dispatched; all correction turns use the real UI.
 test("conversation → itinerary → supplied facts → keyboard revision → persisted structured export", async ({
   page,
 }) => {
-  await tokyo(page);
-  let t = await message(page, "Build a 3-day itinerary in Tokyo.");
-  await expect(
-    page.getByRole("heading", {
-      name: "A cultural journey, with the gaps visible",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "No confirmed schedule",
-  );
+  let task = await startRecorded(page, {
+    type: "place-example",
+    city: "Tokyo",
+  });
+  task = await keyboardMessage(page, "Build a 3-day itinerary in Tokyo.");
+  expect(task.artifacts[0].details?.kind).toBe("itinerary");
 
-  for (const c of t.candidates.slice(0, 3)) {
-    t = await message(
+  for (const c of task.candidates.slice(0, 3)) {
+    task = await keyboardMessage(
       page,
       `For ${c.name}: cost $5, duration 20 minutes, access confirmed.`,
     );
   }
 
-  await page.getByText("Adjust the journey", { exact: true }).click();
-  await page.getByLabel("Transition allowance", { exact: true }).fill("10");
-  await page
-    .getByRole("button", { name: "Recalculate programme", exact: true })
-    .focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "feasible from supplied facts",
+  task = await keyboardMessage(page, "Transfer allowance: 10 minutes.");
+  expect(task.artifacts[0].details?.status).toBe(
+    "feasible-from-supplied-facts",
   );
-  await expect(
-    page.getByRole("region", { name: "Day 2", exact: true }),
-  ).toBeVisible();
-  const before = await current(page);
-  const requests = before.trace.filter(
+  expect(
+    task.artifacts[0].details?.segments.some((segment) => segment.day === 2),
+  ).toBe(true);
+  const requests = task.trace.filter(
     (e) => e.action === "cultural.discover",
   ).length;
-  t = await message(page, "Budget $4.");
-  expect(t.brief.selected).toEqual([]);
-  expect(t.trace.filter((e) => e.action === "cultural.discover")).toHaveLength(
-    requests,
-  );
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "No confirmed schedule",
-  );
+  task = await keyboardMessage(page, "Budget $4.");
+  expect(task.brief.selected).toEqual([]);
+  expect(
+    task.trace.filter((e) => e.action === "cultural.discover"),
+  ).toHaveLength(requests);
   const response = await page.request.get(
-    `/api/tasks/${t.id}/export?format=json&artifacts=main`,
+    `/api/tasks/${task.id}/export?format=json&artifacts=main`,
   );
   expect(response.status()).toBe(200);
   const snapshot = await response.json();
   expect(snapshot.artifacts[0].details.kind).toBe("itinerary");
   expect(snapshot.artifacts[0].details.segments).toEqual([]);
   await page.reload();
+  expect((await currentTask(page)).artifacts).toEqual(task.artifacts);
   await expect(
-    page.getByRole("heading", {
-      name: "A cultural journey, with the gaps visible",
-      exact: true,
-    }),
+    page
+      .getByRole("heading", { name: task.artifacts[0].title, exact: true })
+      .first(),
   ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBe(true);
 });
@@ -103,108 +65,99 @@ test("conversation → itinerary → supplied facts → keyboard revision → pe
 test("personal taste → listening programme → transitions → editable source", async ({
   page,
 }) => {
-  await page.goto("/workspace");
-  await page.getByText("Start from your own taste", { exact: true }).click();
-  await page
-    .getByLabel("An artist you love", { exact: true })
-    .fill("Radiohead");
-  await page
-    .getByRole("button", { name: "Explore from my taste", exact: true })
-    .click();
-  await expect(
-    page.getByRole("tab", { name: "Options · 30", exact: true }),
-  ).toBeVisible();
-  let t = await message(
+  let task = await startRecorded(page, {
+    type: "personal-profile",
+    name: "You",
+    artist: "Radiohead",
+  });
+  expect(task.candidates).toHaveLength(30);
+  expect(task.preferences).toEqual([]);
+  task = await keyboardMessage(
     page,
     "Build a playlist with 120 minutes and budget $20.",
   );
-  await expect(
-    page.getByRole("heading", {
-      name: "A listening programme to refine",
-      exact: true,
-    }),
-  ).toBeVisible();
+  expect(task.artifacts[0].details?.kind).toBe("listening");
 
-  for (const c of t.candidates.slice(0, 2)) {
-    t = await message(
+  for (const c of task.candidates.slice(0, 2)) {
+    task = await keyboardMessage(
       page,
       `For ${c.name}: cost $5, duration 30 minutes, access confirmed.`,
     );
   }
 
-  await message(page, "Transition allowance: 5 minutes.");
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "65 / 120 total minutes",
+  task = await keyboardMessage(page, "Transition allowance: 5 minutes.");
+  expect(task.artifacts[0].details?.totalMinutes).toBe(65);
+  expect(task.brief.constraints.duration).toBe(120);
+  const wording =
+    "A quiet opening, followed by a discussion. Owner-authored direction.";
+  task = await keyboardMessage(
+    page,
+    `Edit ${task.artifacts[0].id}: ${wording}`,
   );
-  await page.getByText("Edit the working document", { exact: true }).click();
-  await page
-    .getByLabel("Edit listening-plan", { exact: true })
-    .fill(
-      "A quiet opening, followed by a discussion. Owner-authored direction.",
-    );
-  await page
-    .getByRole("button", { name: /Save.*edit|Save draft|Save changes/i })
-    .click();
-  await expect(
-    page
-      .getByText(
-        "A quiet opening, followed by a discussion. Owner-authored direction.",
-        { exact: true },
-      )
-      .first(),
-  ).toBeVisible();
+  expect(task.artifacts[0].content).toBe(wording);
+  await expect(page.getByText(wording, { exact: true }).first()).toBeVisible();
+  await page.reload();
+  expect((await currentTask(page)).artifacts[0].content).toBe(wording);
 });
 
 test("research report exposes cited claims, unknowns and exportable references", async ({
   page,
 }) => {
-  await tokyo(page);
-  const t = await message(page, "Create a cultural research report.");
-  await expect(
-    page.getByRole("heading", {
-      name: "What the cultural evidence supports",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page
-    .getByText("Inspect the claim ledger · 10 claims", { exact: true })
-    .click();
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "retrieved association",
+  await startRecorded(page, { type: "place-example", city: "Tokyo" });
+  const task = await keyboardMessage(
+    page,
+    "Create a cultural research report.",
   );
-  expect(t.brief.selected).toEqual([]);
-  expect(t.artifacts[0].details?.references).toHaveLength(10);
-  await page.getByRole("tab", { name: "Keep & share", exact: true }).click();
-  const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: /JSON/ }).click();
-  const file = await download;
-  expect(file.suggestedFilename()).toMatch(/\.json$/);
+  expect(task.brief.selected).toEqual([]);
+  expect(task.artifacts[0].details?.references).toHaveLength(10);
+  expect(
+    task.artifacts[0].details?.claims?.some(
+      (claim) => claim.basis === "retrieved-association",
+    ),
+  ).toBe(true);
+  expect(task.artifacts[0].details?.openQuestions.length).toBeGreaterThan(0);
+  expect(task.artifacts[0].evidenceIds.length).toBeGreaterThan(0);
+  await expect(
+    page
+      .getByRole("heading", { name: task.artifacts[0].title, exact: true })
+      .first(),
+  ).toBeVisible();
+  const response = await page.request.get(
+    `/api/tasks/${task.id}/export?format=json&artifacts=${task.artifacts[0].id}`,
+  );
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-disposition"]).toContain(".json");
+  const snapshot = await response.json();
+  expect(snapshot.artifacts[0].details.references).toHaveLength(10);
+  expect(snapshot.artifacts[0].evidenceIds).toEqual(
+    task.artifacts[0].evidenceIds,
+  );
 });
 
 test("place → artist context → music direction preserves the real anchor and exposes rights uncertainty", async ({
   page,
 }) => {
-  await tokyo(page);
-  await page.getByRole("tab", { name: "Connections", exact: true }).click();
-  await page
-    .getByRole("button", {
-      name: "Explore artists connected to this place",
-      exact: true,
-    })
-    .click();
-  await expect(
-    page.getByText("Context: Ghibli Museum", { exact: true }).first(),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Creative brief", exact: true }).click();
-  await message(page, "Develop a music direction from these artists.");
-  await expect(
-    page.getByRole("heading", {
-      name: "A music direction, grounded in references",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(page.getByLabel("Structured outcome")).toContainText(
-    "commercial playback rights",
+  let task = await startRecorded(page, {
+    type: "place-example",
+    city: "Tokyo",
+  });
+  const museum = task.candidates.find((c) => c.name === "Ghibli Museum")!;
+  task = await recordedTurn(page, task, {
+    type: "connection",
+    candidateId: museum.id,
+    targetType: "artist",
+  });
+  await page.reload();
+  task = await keyboardMessage(
+    page,
+    "Develop a music direction from these artists.",
   );
-  expect((await current(page)).brief.contextAnchor?.name).toBe("Ghibli Museum");
+  expect(task.brief.contextAnchor?.name).toBe("Ghibli Museum");
+  expect(task.artifacts[0].details?.kind).toBe("music-direction");
+  expect(task.artifacts[0].content).toContain("commercial playback rights");
+  await expect(
+    page
+      .getByRole("heading", { name: task.artifacts[0].title, exact: true })
+      .first(),
+  ).toBeVisible();
 });

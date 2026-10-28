@@ -1,3 +1,4 @@
+import type { AgentRequirements } from "../core/agent-acceptance";
 import type { ResearchSource } from "./live-research";
 import type {
   CandidateInput,
@@ -93,6 +94,10 @@ export interface AgentToolChoice {
 }
 
 export interface ModelProvider {
+  interpretAgentRequirements?(
+    goal: string,
+    task: Task,
+  ): Promise<AgentRequirements>;
   readonly failures?: readonly {
     provider: string;
     status: number;

@@ -1,3 +1,9 @@
+import {
+  startRecorded,
+  recordedTurn,
+  requireOriginalArchive,
+  keyboardMessage,
+} from "./recorded-session";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import type { Task } from "../../src/core/contracts";
@@ -7,6 +13,7 @@ async function turn(
   task: Task,
   action: Record<string, unknown>,
 ): Promise<Task> {
+  requireOriginalArchive();
   const response = await page.request.post(`/api/tasks/${task.id}/turn`, {
     data: { ...action, version: task.brief.version },
   });
@@ -195,42 +202,33 @@ test("recorded cultural outcome → collection → export → independent review
 test("one-click Tokyo discovery renders actual mapped places and locality revision", async ({
   page,
 }) => {
-  await page.goto("/workspace");
-  await page
-    .getByRole("button", {
-      name: "Explore Tokyo through Radiohead",
-      exact: false,
-    })
-    .click();
-  await expect(
-    page.getByRole("img", { name: /Geographic overview/ }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "1. Ghibli Museum", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText(/Matched locality: Tokyo/)).toBeVisible();
-  await page.getByLabel("Location", { exact: true }).fill("Amsterdam");
-  await page
-    .getByRole("button", { name: "Update brief", exact: false })
-    .click();
-  await expect(
-    page.getByRole("button", {
-      name: "1. Moco Museum | Amsterdam",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(page.getByText(/Matched locality: Amsterdam/)).toBeVisible();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page.getByRole("img", { name: /Geographic overview/ }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: "/tmp/igor-current-mobile.png",
-    fullPage: true,
+  let task = await startRecorded(page, {
+    type: "place-example",
+    city: "Tokyo",
   });
+  const museum = task.candidates.find((c) => c.name === "Ghibli Museum")!;
+  expect(museum.place?.latitude).toEqual(expect.any(Number));
+  expect(museum.place?.longitude).toEqual(expect.any(Number));
+  await expect(page.locator(".ic-spatial")).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "Choose a place" }),
+  ).toContainText("Ghibli Museum");
+  await expect(
+    page.getByText("Ghibli Museum", { exact: true }).first(),
+  ).toBeVisible();
+  task = await keyboardMessage(page, "Location: Amsterdam");
+  expect(
+    task.candidates.some((c) => c.name === "Moco Museum | Amsterdam"),
+  ).toBe(true);
+  expect(task.evidence.some((e) => e.summary.includes("Amsterdam"))).toBe(true);
+  await expect(
+    page.getByText("Moco Museum | Amsterdam", { exact: true }).first(),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Your work", exact: true }).click();
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBe(true);
 });
@@ -305,37 +303,27 @@ test("HTTP ownership, chunked bounds, memory continuity and share snapshots rema
 test("a geographic discovery continues into real artist references in the same conversation", async ({
   page,
 }) => {
-  await page.goto("/workspace");
-  await page
-    .getByRole("button", {
-      name: "Explore Tokyo through Radiohead",
-      exact: false,
-    })
-    .click();
-  await expect(
-    page.getByRole("button", {
-      name: "Explore artists connected to this place",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", {
-      name: "Explore artists connected to this place",
-      exact: true,
-    })
-    .click();
-  await expect(
-    page.getByText("Context: Ghibli Museum", { exact: true }).first(),
-  ).toBeVisible();
-  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
-  const task = (await (
-    await page.request.get(`/api/tasks/${id}`)
-  ).json()) as Task;
+  let task = await startRecorded(page, {
+    type: "place-example",
+    city: "Tokyo",
+  });
+  const museum = task.candidates.find((c) => c.name === "Ghibli Museum")!;
+  const people = structuredClone(task.brief.participants);
+  task = await recordedTurn(page, task, {
+    type: "connection",
+    candidateId: museum.id,
+    targetType: "artist",
+  });
   expect(task.brief.contextAnchor?.name).toBe("Ghibli Museum");
+  expect(task.brief.participants).toEqual(people);
   expect(task.candidates).toHaveLength(10);
   expect(
     task.candidates.every((c) => c.type === "artist" && c.available === null),
   ).toBe(true);
+  await page.reload();
+  await expect(
+    page.getByText(task.candidates[0].name, { exact: true }).first(),
+  ).toBeVisible();
 });
 
 test("local account registration preserves work, logout revokes access, and login restores saved workspaces", async ({
@@ -385,22 +373,16 @@ test("local account registration preserves work, logout revokes access, and logi
 test("a personal start uses only the user's supplied taste, without silently saving memory", async ({
   page,
 }) => {
-  await page.goto("/workspace");
-  await page.getByText("Start from your own taste", { exact: true }).click();
-  await page
-    .getByLabel("An artist you love", { exact: true })
-    .fill("Radiohead");
-  await page
-    .getByRole("button", { name: "Explore from my taste", exact: true })
-    .click();
-  await expect(
-    page.getByRole("tab", { name: "Options · 30", exact: true }),
-  ).toBeVisible();
-  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
-  const task = (await (
-    await page.request.get(`/api/tasks/${id}`)
-  ).json()) as Task;
+  const task = await startRecorded(page, {
+    type: "personal-profile",
+    name: "You",
+    artist: "Radiohead",
+  });
+  expect(task.candidates).toHaveLength(30);
   expect(task.brief.participants).toHaveLength(1);
   expect(task.brief.participants[0].name).toBe("You");
   expect(task.preferences).toEqual([]);
+  await expect(
+    page.getByText(task.candidates[0].name, { exact: true }).first(),
+  ).toBeVisible();
 });

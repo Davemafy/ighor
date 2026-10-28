@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 
+const runDir = process.env.IGOR_BROWSER_RUN_DIR ?? ".igor/integration-browser";
 export default defineConfig({
   testDir: "./browser",
   testMatch: "integrated-discovery.e2e.ts",
@@ -34,9 +35,9 @@ export default defineConfig({
       LLM_MODEL: "",
       IGOR_QLOO_RECORDING: "",
       QLOO_MAX_CALLS: "0",
-      IGOR_DB_PATH: ".igor/integration-browser/tasks.sqlite",
-      IGOR_AUTH_PATH: ".igor/integration-browser/auth.sqlite",
-      IGOR_OUTCOMES_PATH: ".igor/integration-browser/outcomes.sqlite",
+      IGOR_DB_PATH: `${runDir}/tasks.sqlite`,
+      IGOR_AUTH_PATH: `${runDir}/auth.sqlite`,
+      IGOR_OUTCOMES_PATH: `${runDir}/outcomes.sqlite`,
     },
   },
 });
