@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { runUnifiedAgent } from "../../src/core/unified-agent";
+import { runTurn } from "../../src/core/orchestrator";
 import { freshTask } from "../../src/data/fixtures";
 import { SqliteTaskStore } from "../../src/data/store";
 import type { ResearchProvider } from "../../src/tools/live-research";
@@ -154,6 +155,47 @@ describe("unified tool orchestration", () => {
       expect(loaded.agentRun?.status).toBe("interrupted");
       expect(loaded.agentRun?.sources).toHaveLength(1);
       expect(loaded.status).toBe("partial");
+    } finally { store.close(); }
+  });
+
+
+  it("executes the agent through the real task-turn API and survives reload", async () => {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask("integrated-turn", "owner");
+    task.mode = "qloo-live";
+    store.create(task);
+    const research: ResearchProvider = {
+      research: vi.fn(),
+      searchOnce: vi.fn(async () => ({
+        status: "partial" as const, sources: [source()], requests: 1,
+      })),
+    };
+    const choose = vi.fn(async (_goal: string, _tools: unknown, observations: {tool:string}[]) =>
+      observations.length ? { name: "agent.finish", arguments: {} } :
+        { name: "web.search", arguments: {query: "Berlin official venue"} });
+    try {
+      const result = await runTurn(
+        store, task.id, "owner",
+        {type: "message", text: "Research listening bars in Berlin", version: 0},
+        () => {}, undefined, {
+          routeConversation: async () => ({ intent: "research" as const, query: "Berlin listening bars" }),
+          chooseAgentAction: choose,
+          synthesizeResearch: async () => ({
+            text: "An official venue page is a source lead [web-1].",
+            sourceIds: ["web-1"],
+          }),
+          async interpret() { throw new Error("Heavy interpreter should not run"); },
+        }, undefined, research,
+      );
+      expect(choose).toHaveBeenCalledTimes(2);
+      expect(result.agentRun?.steps[0].tool).toBe("web.search");
+      expect(result.agentRun?.status).toBe("completed");
+      expect(result.messages.at(-1)?.text).toContain("source lead");
+      expect(result.artifacts.some((a) => a.kind === "research-report")).toBe(true);
+      const reloaded = store.load(task.id, "owner");
+      expect(reloaded.agentRun?.id).toBe(result.agentRun?.id);
+      expect(reloaded.artifacts).toEqual(result.artifacts);
+      expect(reloaded.evidence.length).toBe(result.evidence.length);
     } finally { store.close(); }
   });
 
