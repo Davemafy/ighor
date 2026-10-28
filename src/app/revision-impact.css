@@ -8,33 +8,48 @@
   color: #f0f2e9;
   margin: 12px 0 24px;
 }
-.ig-revision-impact > header { padding: 23px 24px 17px; }
+
+.ig-revision-impact > header {
+  padding: 23px 24px 17px;
+}
+
 .ig-revision-impact > header p,
 .ig-revision-impact article h4 {
   font-size: 10px;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #b3c9b9;
   margin: 0 0 10px;
 }
+
 .ig-revision-impact > header h3 {
   font-size: clamp(18px, 2vw, 24px);
-  letter-spacing: -.025em;
+  letter-spacing: -0.025em;
   line-height: 1.18;
   margin: 0 0 9px;
 }
-.ig-revision-impact > header > span { font-size: 12px; color: #c0c8bf; }
+
+.ig-revision-impact > header > span {
+  font-size: 12px;
+  color: #c0c8bf;
+}
+
 .ig-revision-impact-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid #61706465;
   border-bottom: 1px solid #61706465;
 }
+
 .ig-revision-impact article {
   min-width: 0;
   padding: 22px 20px;
 }
-.ig-revision-impact article + article { border-left: 1px solid #61706465; }
+
+.ig-revision-impact article + article {
+  border-left: 1px solid #61706465;
+}
+
 .ig-revision-impact article p,
 .ig-revision-impact li,
 .ig-revision-impact blockquote {
@@ -42,32 +57,66 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.ig-revision-impact article p { margin: 4px 0 13px; }
+
+.ig-revision-impact article p {
+  margin: 4px 0 13px;
+}
+
 .ig-revision-impact article small {
   display: block;
   font-size: 9px;
   font-weight: 600;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
   color: #9ab39e;
   margin: 13px 0 7px;
 }
+
 .ig-revision-impact blockquote {
   border-left: 2px solid #8baf91;
   margin: 0 0 12px;
   padding-left: 11px;
   white-space: pre-wrap;
 }
-.ig-revision-impact ul { padding-left: 17px; margin: 6px 0 0; }
-.ig-revision-impact li + li { margin-top: 7px; }
+
+.ig-revision-impact ul {
+  padding-left: 17px;
+  margin: 6px 0 0;
+}
+
+.ig-revision-impact li + li {
+  margin-top: 7px;
+}
+
 .ig-revision-impact .ig-revision-impact-money {
   font-size: 24px;
-  letter-spacing: -.03em;
+  letter-spacing: -0.03em;
   font-weight: 650;
 }
-.ig-revision-impact-money small { font-weight: 400 !important; letter-spacing: 0 !important; }
-.ig-revision-impact > footer { padding: 14px 23px; font-size: 11px; line-height: 1.6; color: #bac8bd; }
+
+.ig-revision-impact-money small {
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+
+.ig-revision-impact > footer {
+  padding: 14px 23px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #bac8bd;
+}
+
 @media (max-width: 760px) {
-  .ig-revision-impact-grid { grid-template-columns: 1fr; }
-  .ig-revision-impact article + article { border-left: 0; border-top: 1px solid #61706465; }
-  .ig-revision-impact > header, .ig-revision-impact article { padding: 18px; }
+  .ig-revision-impact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ig-revision-impact article + article {
+    border-left: 0;
+    border-top: 1px solid #61706465;
+  }
+
+  .ig-revision-impact > header,
+  .ig-revision-impact article {
+    padding: 18px;
+  }
 }

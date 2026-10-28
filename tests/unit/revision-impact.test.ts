@@ -20,7 +20,12 @@ function savedTask() {
     content: "Direction: Bad Bunny with Sade and Wong Kar-wai. Budget: $3,000.",
     version: 2,
     history: [
-      { version: 1, content: oldDocument.content, at: "2026-10-28T00:00:00Z", reason: "saved" },
+      {
+        version: 1,
+        content: oldDocument.content,
+        at: "2026-10-28T00:00:00Z",
+        reason: "saved",
+      },
     ],
   };
   return {
@@ -63,7 +68,9 @@ describe("judge-facing persisted revision impact", () => {
     expect(impact.confirmedBudget).toBe(3000);
     expect(impact.approvedElsewhere).toEqual(["Access principle"]);
     expect(impact.retainedReferences).toEqual(["Sade", "Wong Kar-wai"]);
-    expect(impact.unresolved).toContain("Cultural revision grounded (unknown)");
+    expect(impact.unresolved).toContain(
+      "Cultural revision grounded (unknown)",
+    );
     expect(impact.cultural.live).toBe(1);
   });
 
@@ -85,6 +92,8 @@ describe("judge-facing persisted revision impact", () => {
     const task = savedTask();
     task.brief.constraints.budget = 2500;
     const impact = readRevisionImpact(task, task.work!.documents[0]);
-    expect(impact.unresolved).toContain("Saved work and brief do not agree on the budget.");
+    expect(impact.unresolved).toContain(
+      "Saved work and brief do not agree on the budget.",
+    );
   });
 });

@@ -30,8 +30,12 @@ export function readRevisionImpact(task: Task, document: SavedDocument) {
   const retainedReferences = previous
     ? (task.agentRun?.requirements?.culturalReferences ?? []).filter(
         (reference) =>
-          previous.content.toLocaleLowerCase().includes(reference.toLocaleLowerCase()) &&
-          document.content.toLocaleLowerCase().includes(reference.toLocaleLowerCase()),
+          previous.content
+            .toLocaleLowerCase()
+            .includes(reference.toLocaleLowerCase()) &&
+          document.content
+            .toLocaleLowerCase()
+            .includes(reference.toLocaleLowerCase()),
       )
     : [];
   const approvedElsewhere = [

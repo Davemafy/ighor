@@ -298,9 +298,6 @@ export function ConnectedWorkCanvas({
             )}
           </section>
         )}
-        {!editing && !historical && (
-          <RevisionImpact task={task} document={selected} />
-        )}
         {editing && !historical ? (
           <div className="ig-connected-edit">
             <label htmlFor={`ig-doc-${selected.id}`}>Document text</label>
@@ -351,6 +348,9 @@ export function ConnectedWorkCanvas({
           <div className="ig-connected-paper" aria-label="Document preview">
             <ProductText text={display} />
           </div>
+        )}
+        {!editing && !historical && (
+          <RevisionImpact task={task} document={selected} />
         )}
         {!editing && !historical && previous && (
           <section className="ig-work-version-review">

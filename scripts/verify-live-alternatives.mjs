@@ -2,7 +2,9 @@ import { chromium } from "playwright";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-const root = (process.env.IGOR_BASE_URL || "http://127.0.0.1:3570").replace(/\/$/, "");
+const root = (
+  process.env.IGOR_BASE_URL || "http://127.0.0.1:3570"
+).replace(/\/$/, "");
 const alternative = (process.env.IGOR_UNSCRIPTED_PROMPT || "").trim();
 const output = "test-results/live-alternatives";
 await fs.mkdir(output, { recursive: true });
@@ -32,7 +34,10 @@ try {
   });
   const page = await context.newPage();
   const cases = [
-    { name: "ordinary-conversation", prompt: "Hello Igor. What can you help me with?" },
+    {
+      name: "ordinary-conversation",
+      prompt: "Hello Igor. What can you help me with?",
+    },
     { name: "owner-unscripted-alternative", prompt: alternative },
   ];
 
@@ -106,14 +111,16 @@ try {
         fullPage: true,
       });
     } catch (error) {
-      result.failure = error instanceof Error ? error.message.slice(0, 150) : "unknown";
+      result.failure =
+        error instanceof Error ? error.message.slice(0, 150) : "unknown";
     }
   }
 
   report.passed = report.cases.every((item) => item.passed);
   await context.close();
 } catch (error) {
-  report.failure = error instanceof Error ? error.message.slice(0, 150) : "unknown";
+  report.failure =
+    error instanceof Error ? error.message.slice(0, 150) : "unknown";
 } finally {
   await fs.writeFile(output + "/report.json", JSON.stringify(report, null, 2));
   console.log("LIVE_ALTERNATIVE_REPORT", JSON.stringify(report));
