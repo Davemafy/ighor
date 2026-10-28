@@ -5,6 +5,13 @@ import type { Task } from "./contracts";
  * Missing interpretation is unknown, never inferred from provider keywords. */
 export const AgentRequirementsSchema = z
   .object({
+    budget: z
+      .object({
+        amount: z.number().min(0).max(1000000),
+        sourceText: z.string().trim().min(1).max(1000),
+      })
+      .nullable()
+      .optional(),
     culturalDecision: z.boolean(),
     culturalReferences: z.array(z.string().trim().min(1).max(120)).max(12),
     deliverables: z.array(z.string().trim().min(1).max(80)).max(6),
@@ -57,6 +64,15 @@ export function verifyAgentOutcome(
     "Current turn requirements have been interpreted",
     Boolean(requirements),
   );
+
+  if (requirements?.budget) {
+    check(
+      "Interpreted budget is confirmed and retained",
+      task.brief.constraints.budget === requirements.budget.amount &&
+        task.work?.budget?.amount === requirements.budget.amount &&
+        task.work.budget.confirmed,
+    );
+  }
 
   for (const key of requirements?.deliverables ?? []) {
     const matching = documents.filter((a) => a.fulfills?.includes(key));

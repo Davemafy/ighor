@@ -1,3 +1,4 @@
+import { applyWorkActions } from "./connected-work";
 import { agentStepLimit } from "../tools/model-budget";
 import { interpretationFailure } from "./interpretation-failure";
 import {
@@ -177,6 +178,29 @@ export async function runUnifiedAgent(
           decisionDeadline,
         ),
       );
+    }
+
+    const budget = task.agentRun.requirements?.budget;
+
+    if (budget) {
+      const userTexts = [
+        input.goal,
+        ...task.messages.filter((m) => m.role === "user").map((m) => m.text),
+      ];
+
+      if (!userTexts.some((text) => text.includes(budget.sourceText))) {
+        throw new Error("Unbound budget source");
+      }
+
+      applyWorkActions(
+        task,
+        [{ kind: "budget", amount: budget.amount }],
+        budget.sourceText,
+      );
+    }
+
+    if (!task.brief.goal) {
+      task.brief.goal = input.goal;
     }
   } catch (error) {
     trace("agent.requirements.error", interpretationFailure(error));

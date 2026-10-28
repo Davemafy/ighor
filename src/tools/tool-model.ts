@@ -44,7 +44,7 @@ const quickRouteInstructions = [
   "Choose research whenever a recommendation needs live places, hours, pricing, availability, opening/booking links or other current sources. Return the useful full search query containing user supplied city, activity, dates and size where known. Never claim a venue search was done in a conversation reply.",
   "Current popularity, popular demand, market demand, trends, most-played games and commercial viability require research, even in a short follow-up to a creative draft. For example, after a game concept, 'stop asking questions use popular demand' means research current gaming demand to inform that concept, not ask for a genre and not invent market trends from general knowledge. Resolve the topic from history and include it in a standalone query. General brainstorming may use assumptions, but never present those as current market evidence.",
   "Choose agent for multi-step goals needing two or more of public research, cultural intelligence, venue investigation and creation of saved work. Supply a standalone goal/query preserving user-supplied cultural references, city, dates and constraints. The server chooses actual tools next; never pretend they have run. Choose agent for revisions to prior agent-created cultural work requiring new evidence. Choose delegate for direct wording edits or approvals that need no external discovery.",
-  "Choose delegate for saved document changes, actions, and Qloo cultural discovery when the user supplied a resolvable supported film/artist/TV anchor. Use the Qloo capability instead of fabricating cultural associations. Do not demand multiple named tastes before a first useful discovery attempt.",
+  "Choose delegate for direct saved-document wording changes or approval actions. Choose agent for Qloo cultural discovery when the user supplied a supported cultural anchor. Use the Qloo capability instead of fabricating cultural associations. Do not demand multiple named tastes before a first useful discovery attempt.",
   "Choose conversation for explanations, ordinary discussion, greetings and questions that need no external action or fresh facts. Clarify only a genuinely blocking missing parameter, at most one question; otherwise act and offer verification steps with the results.",
   "Research creates saved, evidence-linked work; a request to see results ('show me', 'where', 'go ahead') after planning needs tool execution or display of actual saved findings, never a promise that a plan exists.",
   "Switch subjects naturally. Do not restart an abandoned intake merely because it is in the saved task.",
@@ -470,7 +470,7 @@ export class ToolCallingModel implements ModelProvider {
         {
           role: "system",
           content:
-            "Interpret the user's current goal in conversation context. Return culturalDecision (true when taste/film/music/brand/cultural references should determine a decision, even if no provider is named), culturalReferences (ALL currently active named references, applying replacements from this turn and retaining others), deliverables (short stable keys for each requested saved output, e.g. proposal, budget, partner-pitch). Do not require culture for greetings or technical assistance. Do not invent references. Do not treat old rejected references as current. This is requirements interpretation, not evidence or completion.",
+            "Interpret the user's current goal in conversation context. Return culturalDecision (true when taste/film/music/brand/cultural references should determine a decision, even if no provider is named), culturalReferences (ALL currently active named references, applying replacements from this turn and retaining others), deliverables (short stable keys for each requested saved output, e.g. proposal, budget, partner-pitch). Do not require culture for greetings or technical assistance. Do not invent references. Do not treat old rejected references as current. Return budget as {amount,sourceText} using an exact quote from the current or prior user message explicitly supplying the spending limit (commas allowed); otherwise null. Never use an editable default as a supplied budget. This is requirements interpretation, not evidence or completion.",
         },
         {
           role: "user",
@@ -491,11 +491,26 @@ export class ToolCallingModel implements ModelProvider {
             type: "object",
             additionalProperties: false,
             properties: {
+              budget: {
+                anyOf: [
+                  { type: "null" },
+                  {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      amount: { type: "number" },
+                      sourceText: { type: "string" },
+                    },
+                    required: ["amount", "sourceText"],
+                  },
+                ],
+              },
               culturalDecision: { type: "boolean" },
               culturalReferences: { type: "array", items: { type: "string" } },
               deliverables: { type: "array", items: { type: "string" } },
             },
             required: [
+              "budget",
               "culturalDecision",
               "culturalReferences",
               "deliverables",

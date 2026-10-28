@@ -719,3 +719,85 @@ it("checkpoints a safe request-budget diagnostic without claiming completion", a
     store.close();
   }
 });
+
+it("grounds and persists a comma-formatted budget through the existing work contract", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("ground-budget", "owner");
+  store.create(task);
+
+  try {
+    const result = await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: "Keep the total budget within $3,000.",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: [],
+        budget: {
+          amount: 3000,
+          sourceText: "Keep the total budget within $3,000.",
+        },
+      },
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async () => ({
+          name: "agent.finish",
+          arguments: {},
+        }),
+      },
+      research: { research: vi.fn() },
+      trace: vi.fn(),
+    });
+    // Confirming a budget alone must not claim a completed deliverable.
+    expect(result.status).toBe("blocked");
+    const saved = store.load(task.id, "owner");
+    expect(
+      saved.agentRun?.acceptance?.checks.find(
+        (check) =>
+          check.requirement === "Interpreted budget is confirmed and retained",
+      )?.status,
+    ).toBe("satisfied");
+    expect(saved.brief.constraints.budget).toBe(3000);
+    expect(saved.work?.budget).toMatchObject({ amount: 3000, confirmed: true });
+  } finally {
+    store.close();
+  }
+});
+
+it("does not confirm an invented budget quote", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("invented-budget", "owner");
+  store.create(task);
+
+  try {
+    await runUnifiedAgent({
+      task,
+      store,
+      owner: "owner",
+      goal: "Create a useful plan",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: [],
+        budget: { amount: 3000, sourceText: "Budget $3,000" },
+      },
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async () => ({
+          name: "agent.finish",
+          arguments: {},
+        }),
+      },
+      research: { research: vi.fn() },
+      trace: vi.fn(),
+    });
+    const saved = store.load(task.id, "owner");
+    expect(saved.brief.constraints.budget).toBe(task.brief.constraints.budget);
+    expect(saved.work?.budget?.confirmed).not.toBe(true);
+    expect(saved.agentRun?.status).toBe("partially_completed");
+  } finally {
+    store.close();
+  }
+});
