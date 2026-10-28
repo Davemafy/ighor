@@ -519,6 +519,7 @@ export function AgentWorkspace({
                       busy={w.isBusy || w.isLoadingWorkspace}
                       feedback={w.feedback}
                       message={w.executionMessage}
+                      task={task}
                     />
                     {!!w.feedback?.steps.length && !w.isBusy && hasResult && (
                       <details className="iw-receipt">

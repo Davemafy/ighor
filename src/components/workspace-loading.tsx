@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { TurnFeedback } from "./turn-feedback";
 import { ChevronDown } from "./workspace-icons";
+import type { Task } from "@/core/contracts";
+import { loadingFormat } from "./loading-format";
 
 export function LoadingSurface({
   mode,
@@ -107,10 +109,12 @@ export function AgentActivity({
   busy,
   feedback,
   message,
+  task,
 }: {
   busy: boolean;
   feedback: TurnFeedback | null;
   message: string;
+  task?: Task | null;
 }) {
   if (!busy || !feedback) {
     return null;
@@ -135,12 +139,7 @@ export function AgentActivity({
                 ? "Considering your request"
                 : "Saving your changes";
   // Only the visual placeholder changes; routing and execution stay server-owned.
-  const input = feedback.input || "";
-  const format = /\b(?:films?|movies?|cinema|watch)\b/i.test(input)
-    ? "sleeves"
-    : /\b(?:trip|travel|places?|getaway|itinerary)\b/i.test(input)
-      ? "postcards"
-      : "reply";
+  const format = loadingFormat(feedback.input || "", task);
   const events = (feedback.activities ?? [])
     .filter(
       (item) =>
@@ -178,19 +177,29 @@ export function AgentActivity({
       </div>
       {message && !quiet && <p className="iw-working-detail">{message}</p>}
       <div className={`iw-reply-proof iw-proof-${format}`} aria-hidden="true">
-        {format === "reply" ? (
-          <>
-            <i className="iw-skeleton" />
-            <i className="iw-skeleton" />
-          </>
-        ) : (
-          [0, 1, 2].map((index) => (
-            <div className="iw-proof-card" key={index}>
-              <span className="iw-proof-image iw-skeleton" />
-              <i className="iw-skeleton" />
-            </div>
-          ))
-        )}
+        {[0, 1, 2].map((index) => (
+          <div className="iw-proof-card" key={index}>
+            <span className="iw-proof-image">
+              {/* Existing brand artwork is decorative, never a claimed result. */}
+              <img
+                src={`/marketing/assets/covers/c0${index + 1}.webp`}
+                alt=""
+                width="180"
+                height="180"
+              />
+            </span>
+            <span className="iw-proof-caption">
+              <img
+                src="/marketing/assets/brand/igor-mark-black.svg"
+                alt=""
+                width="12"
+                height="12"
+              />
+              <span className="iw-skeleton" />
+              <small>0{index + 1}</small>
+            </span>
+          </div>
+        ))}
       </div>
       {events.length > 0 && (
         <details className="iw-live-activity">
