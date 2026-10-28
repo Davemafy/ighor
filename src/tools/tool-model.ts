@@ -512,6 +512,20 @@ export class ToolCallingModel implements ModelProvider {
               summary: e.summary.slice(0, 450),
               reference: e.reference,
             })),
+            priorExecution: (context.agentRunHistory ?? []).slice(-4).map((run) => ({
+              id: run.id,
+              goal: run.goal.slice(0, 240),
+              status: run.status,
+              tools: run.toolNames,
+              sourceCount: run.sourceCount,
+              savedArtifactIds: run.savedArtifactIds,
+            })),
+            priorEvidence: context.evidence.filter((e) =>
+              e.kind === "practical"
+            ).slice(-6).map((e) => ({
+              id: e.id, source: e.source, reference: e.reference,
+              summary: e.summary.slice(0, 260), freshness: e.freshness,
+            })),
             tools, observations: observations.slice(-12),
           }),
         },
