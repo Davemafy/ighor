@@ -307,8 +307,24 @@ export const AgentRunSchema = z.object({
   warnings: z.array(z.string().max(500)).max(20),
 });
 
+/** Compact completed/interrupted run history. Keep the latest observations in
+ * agentRun; archive only provenance and counts to avoid large SQLite payloads. */
+export const AgentRunHistorySchema = z.object({
+  id: z.string().uuid(),
+  goal: z.string().max(3000),
+  status: AgentRunSchema.shape.status,
+  startedAt: z.string(),
+  archivedAt: z.string(),
+  requests: z.number().int().nonnegative(),
+  modelSteps: z.number().int().nonnegative(),
+  toolNames: z.array(z.string().max(70)).max(12),
+  sourceCount: z.number().int().nonnegative(),
+  savedArtifactIds: z.array(z.string()).max(12),
+});
+
 export const TaskSchema = z.object({
   agentRun: AgentRunSchema.optional(),
+  agentRunHistory: z.array(AgentRunHistorySchema).max(12).optional(),
   canvas: CanvasStateSchema.optional(),
   work: WorkStateSchema.optional(),
   evidenceArchive: z.array(EvidenceSchema).optional(),
