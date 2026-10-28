@@ -280,6 +280,12 @@ export const AgentRunSchema = z.object({
   maxRequests: z.number().int().min(1).max(40),
   requests: z.number().int().nonnegative(),
   modelSteps: z.number().int().nonnegative(),
+  usage: z.object({
+    modelCalls: z.number().int().nonnegative(),
+    providerRequests: z.number().int().nonnegative(),
+    modelTokens: z.number().int().nonnegative().nullable(),
+    estimatedCostUsd: z.number().nonnegative().nullable(),
+  }).optional(),
   steps: z.array(z.object({
     id: z.string().uuid(),
     tool: z.string().max(70),
