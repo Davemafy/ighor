@@ -3,6 +3,7 @@ import type { Task } from "./contracts";
 import type { CulturalProvider } from "../tools/interfaces";
 import type { ResearchProvider, ResearchSource } from "../tools/live-research";
 import type { GooglePlacesProvider } from "../tools/google-maps";
+import type { BrowserbaseObserver } from "../tools/browserbase-observer";
 import { publicResearchUrl } from "../tools/live-research";
 
 export type AgentToolPermission = "read" | "internal";
@@ -17,6 +18,7 @@ export interface AgentToolContext {
   research: ResearchProvider;
   cultural?: CulturalProvider;
   places?: Pick<GooglePlacesProvider, "search">;
+  browser?: Pick<BrowserbaseObserver, "observe">;
   sources: ResearchSource[];
   runId: string;
 }
@@ -106,6 +108,21 @@ export function createAgentToolRegistry(context: AgentToolContext): AgentToolDef
         return { status: result.status, summary: source.excerpt
           ? `Opened ${source.title}. Actual excerpt: ${source.excerpt.slice(0, 1000)}`
           : result.warning ?? "Page could not be opened.", requests: result.requests };
+      }),
+    tool("browser.observe", "Inspect a real rendered public webpage, identified by an already observed source ID. Read-only, isolated Browserbase session.", readArguments, "read", Boolean(context.browser),
+      async (args, ctx) => {
+        const { sourceId } = readArguments.parse(args);
+        const source = ctx.sources.find((s) => s.id === sourceId);
+        if (!source || source.excerpt || !ctx.browser) {
+          return { status: "blocked", requests: 0, summary: "Unknown or already opened source. Browser navigation is limited to observed sources." };
+        }
+        const result = await ctx.browser.observe(source.url);
+        if (result.status === "ok") {
+          source.excerpt = result.excerpt;
+          return { status: "ok", requests: result.requests,
+            summary: `Browserbase observed ${result.title}: ${result.excerpt.slice(0,900)}` };
+        }
+        return { status: result.status, requests: result.requests, summary: result.warning };
       }),
     tool("places.search", "Resolve real place names, addresses, coordinates and Google Maps URLs.", searchArguments, "read", Boolean(context.places),
       async (args, ctx) => {
