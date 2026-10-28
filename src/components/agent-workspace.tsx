@@ -270,9 +270,7 @@ export function AgentWorkspace({
       setPrompt("");
       navigate("work");
 
-      if (!hasResult) {
-        setPane("thread");
-      }
+      setPane("thread");
     }
 
     await w.sendTurn(action);
@@ -476,6 +474,31 @@ export function AgentWorkspace({
                 )}
               </span>
             </header>
+            {hasResult && (
+              <nav
+                className="iw-pane-switch"
+                aria-label="Conversation and work"
+              >
+                <button
+                  type="button"
+                  aria-pressed={pane === "thread"}
+                  aria-controls="iw-thread"
+                  onClick={() => morphLayout(() => setPane("thread"))}
+                >
+                  <MessageCircle />
+                  Conversation
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={pane === "work"}
+                  aria-controls="iw-work-stage"
+                  onClick={() => morphLayout(() => setPane("work"))}
+                >
+                  <FileText />
+                  Your work
+                </button>
+              </nav>
+            )}
             <div className="iw-workgrid">
               <section
                 className="iw-thread"
@@ -576,31 +599,32 @@ export function AgentWorkspace({
                               inline
                             />
                           ))}
-                      {hasResult && (
-                        <section
-                          className="iw-inline-output"
-                          aria-label="Your work"
-                          aria-busy={w.isBusy}
-                        >
-                          {task ? (
-                            <Work
-                              key={task.id}
-                              task={task}
-                              busy={w.isBusy || w.isLoadingWorkspace}
-                              onTurn={turn}
-                              onTask={w.acceptTask}
-                              onLoad={open}
-                            />
-                          ) : (
-                            <LoadingSurface mode="output" />
-                          )}
-                        </section>
-                      )}
                     </AdaptiveStage>
                     <div ref={end} />
                   </div>
                 </div>
               </section>
+              {hasResult && (
+                <section
+                  className="iw-work-stage"
+                  id="iw-work-stage"
+                  aria-label="Your work"
+                  aria-busy={w.isBusy}
+                >
+                  {task ? (
+                    <Work
+                      key={task.id}
+                      task={task}
+                      busy={w.isBusy || w.isLoadingWorkspace}
+                      onTurn={turn}
+                      onTask={w.acceptTask}
+                      onLoad={open}
+                    />
+                  ) : (
+                    <LoadingSurface mode="output" />
+                  )}
+                </section>
+              )}
             </div>
             <footer className="iw-workspace-footer">
               <div className="iw-dock">
