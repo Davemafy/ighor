@@ -2149,3 +2149,55 @@
     color: #37412c;
   }
 }
+
+/* Control proportions measured in Partiful's public create editor; Igor palette and font. */
+.iw-app {
+  --iw-control-radius: 800px;
+  --iw-control-transition: background-color .2s ease-out, border-color .2s ease-out;
+}
+.iw-app .iw-pane-switch button,
+.iw-app .iw-work-stage .iw-resource-tabs button,
+.iw-app .ird-filters button {
+  border-radius: var(--iw-control-radius);
+  padding-inline: 15px;
+  min-height: 40px;
+  line-height: 1.4;
+  transition: var(--iw-control-transition);
+}
+.iw-app .iw-pane-switch button[aria-pressed="true"],
+.iw-app .iw-work-stage .iw-resource-tabs button[aria-pressed="true"] {
+  background: #fffefa;
+  border: 1px solid #dcded5;
+  box-shadow: none;
+}
+.iw-app .ird-card { border-radius: 8px; box-shadow: none; }
+.iw-app .ird-card:hover { transform: translateY(-2px); box-shadow: 0 2px 6px #0000000a, 0 4px 32px #0000000a; }
+.iw-app .ird-detail-actions :is(a, button) {
+  min-height: 44px;
+  border-radius: 800px;
+  padding-inline: 24px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: var(--iw-control-transition);
+}
+.iw-app .ird-detail-actions .ird-primary { background: #242820; color: #fff; }
+.iw-app .ird-detail-actions :is(a, button):hover { border-color: #7b8370; }
+.iw-app .ird-detail-actions .ird-primary:hover { background: #3b4432; }
+.iw-app .ic-question :is(input, select, textarea) {
+  border-radius: 4px;
+  background: #fffefa;
+  border: 1px solid #dcded5;
+  min-height: 44px;
+}
+.iw-app .ic-question > button {
+  min-height: 44px;
+  padding-inline: 24px;
+  border-radius: 800px;
+  transition: var(--iw-control-transition);
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app .ird-card,
+  .iw-app .ird-detail-actions :is(a, button),
+  .iw-app .iw-pane-switch button { transition: none; transform: none; }
+}
+.iw-app[data-motion="off"] .ird-card { transition: none; transform: none; }
