@@ -45,6 +45,33 @@ describe("real provider boundaries (mock transport, never labeled LIVE)", () => 
     expect((await browser.observe("https://www.google.com/goto?url=x")).status).toBe("blocked");
     expect(transport).not.toHaveBeenCalled();
   });
+  it("creates distinct bounded internal documents without changing prior work", async () => {
+    const task = freshTask("multi-document", "owner");
+    const ctx = {
+      task, research: {async research() { return {status: "blocked" as const, sources: [], requests: 0}; }},
+      sources: [{
+        id: "web-1", title: "Official source",
+        url: "https://example.org/venue", snippet: "Provider returned source.",
+        retrievedAt: "2026-10-28T10:00:00.000Z",
+      }],
+      runId: "11111111-1111-4111-8111-111111111111",
+    };
+    const definition = createAgentToolRegistry(ctx).find((tool) => tool.name === "document.create");
+    expect(definition).toBeDefined();
+    const invoke = (title: string) => definition!.execute({
+      title, content: "An evidence-linked report based on the same returned source.",
+      sourceIds: ["web-1"],
+    }, ctx);
+    expect((await invoke("First report")).status).toBe("ok");
+    expect((await invoke("Second report")).status).toBe("ok");
+    expect((await invoke("Third report")).status).toBe("ok");
+    expect((await invoke("Fourth report")).status).toBe("blocked");
+    expect(task.artifacts.map((a) => a.title)).toEqual([
+      "First report", "Second report", "Third report",
+    ]);
+    expect(new Set(task.artifacts.map((a) => a.id)).size).toBe(3);
+  });
+
   it("does not expose a browser tool when no Browserbase provider is attached", () => {
     const tools = createAgentToolRegistry({
       task:freshTask("t","owner"),
