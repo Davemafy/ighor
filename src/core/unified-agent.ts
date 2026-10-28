@@ -6,6 +6,7 @@ import type { TaskStore } from "../data/store";
 import type { ModelProvider, CulturalProvider } from "../tools/interfaces";
 import type { ResearchProvider, ResearchResult, ResearchSource } from "../tools/live-research";
 import type { GooglePlacesProvider } from "../tools/google-maps";
+import type { BrowserbaseObserver } from "../tools/browserbase-observer";
 import { withToolDeadline } from "./execution";
 import { createAgentToolRegistry, type AgentToolContext } from "./agent-tool-registry";
 
@@ -18,6 +19,7 @@ export interface UnifiedAgentInput {
   research: ResearchProvider;
   cultural?: CulturalProvider;
   places?: Pick<GooglePlacesProvider, "search">;
+  browser?: Pick<BrowserbaseObserver, "observe">;
   send?: (event: Event) => void;
   trace: (action: string, outcome: string, requests?: number, evidenceIds?: string[]) => void;
 }
@@ -40,7 +42,7 @@ export async function runUnifiedAgent(input: UnifiedAgentInput): Promise<Researc
   const sources: ResearchSource[] = [];
   const ctx: AgentToolContext = {
     task, research: input.research, cultural: input.cultural,
-    places: input.places, sources, runId,
+    places: input.places, browser: input.browser, sources, runId,
   };
   const tools = createAgentToolRegistry(ctx);
   task.agentRun = {
