@@ -9,10 +9,11 @@ describe("release-parity liveness", () => {
       const response = await GET();
       expect(response.status).toBe(200);
       expect(response.headers.get("Cache-Control")).toBe("no-store");
-      expect(await response.json()).toEqual({
+      const body = await response.text();
+      expect(JSON.parse(body)).toEqual({
         status: "ok", revision: "a".repeat(40),
       });
-      expect(await response.clone().text()).not.toContain("never-expose");
+      expect(body).not.toContain("never-expose");
     } finally { vi.unstubAllEnvs(); }
   });
 
