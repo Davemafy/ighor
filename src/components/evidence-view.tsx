@@ -1,6 +1,7 @@
 "use client";
 
 import type { Task, TaskAction } from "@/core/contracts";
+import { CulturalConnections } from "./cultural-connections";
 
 export function EvidenceView({
   task,
@@ -57,6 +58,7 @@ export function EvidenceView({
           </div>
         ))}
       </details>
+      <CulturalConnections task={task} />
       <div className="evidence-records">
         {task.evidence.map((evidence) => (
           <details key={evidence.id} className="evidence-details">
