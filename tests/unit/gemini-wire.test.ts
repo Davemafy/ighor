@@ -32,7 +32,10 @@ function modelWithActions(actions: unknown) {
     const schema = body.tools[0].functionDeclarations[0].parametersJsonSchema;
     expect(Object.keys(schema.properties)).toEqual(["decision"]);
     expect(schema.required).toEqual(["decision"]);
-    expect(JSON.parse(schema.properties.decision.description)).toEqual(
+    const description = schema.properties.decision.description as string;
+    expect(description).toContain("optional");
+    const schemaJson = description.slice(description.indexOf("{"));
+    expect(JSON.parse(schemaJson)).toEqual(
       z.toJSONSchema(LiveDecisionSchema, { io: "input" }),
     );
 

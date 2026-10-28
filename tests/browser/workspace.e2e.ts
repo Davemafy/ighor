@@ -1,103 +1,78 @@
 import { test, expect } from "@playwright/test";
 
-test("full workspace, revision engine, failure recovery and persistence", async ({
+test("the current workspace saves genuine corrections, reloads and preserves earlier context", async ({
   page,
 }) => {
   const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/workspace");
-  await expect(
-    page.getByRole("button", { name: "Try the six-person evening" }),
-  ).toBeEnabled();
-  await page
-    .getByRole("button", { name: "Try the six-person evening" })
-    .click();
-  await expect(page.getByText("Current · fixture-backed")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "The evening, considered" }),
-  ).toBeVisible();
-  await expect(page.locator(".participant")).toHaveCount(6);
-  await expect(
-    page.getByText("Facts & assumptions", { exact: true }),
-  ).toBeVisible();
-  await expect(page.locator(".timeline-row")).toHaveCount(4);
-  const calls = await page.locator(".execution-progress").innerText();
-  expect(calls).toContain("1 fixture discovery");
-  await page.getByRole("tab", { name: /Options/ }).click();
-  await expect(
-    page.getByText("The unconfirmed screening", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText("Needs review", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "Programme", exact: true }).click();
-  await page.getByLabel("Group budget", { exact: true }).fill("10");
-  await page.getByRole("button", { name: "Update brief" }).click();
-  await expect(page.getByRole("status")).toContainText("1 fixture discovery");
-  await expect(page.locator(".prose")).toContainText("No complete selection");
-  await page.getByLabel("Group budget", { exact: true }).fill("60");
-  await page.getByRole("button", { name: "Update brief" }).click();
-  await expect(page.locator(".timeline-row")).toHaveCount(4);
-  await page.getByRole("tab", { name: "Invitation", exact: true }).click();
-  await page
-    .getByRole("textbox", { name: "Edit invitation" })
-    .fill("A good evening. Bring your curiosity.");
-  await page.getByRole("button", { name: "Save draft", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("1 fixture discovery");
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/app");
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  await composer.fill(
+    "Plan a gathering for six friends, budget $60 and 180 minutes.",
+  );
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-user")).toHaveCount(1);
+
+  // The fixture provider is offline; all cultural associations must remain
+  // clearly marked as illustrative rather than masquerading as live Qloo.
+  const id = await page.evaluate(() => localStorage.getItem("igor-task"));
+  expect(id).toBeTruthy();
+  const initial = await (
+    await page.request.get(`/api/tasks/${id}`)
+  ).json();
+  expect(initial.brief.constraints.budget).toBe(60);
+  expect(initial.messages[0].text).toContain("Plan a gathering");
+  expect(initial.mode).toBe("illustrative-fixtures");
+
+  await composer.fill("Lower budget to $15");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-user")).toHaveCount(2);
+  await expect
+    .poll(async () => {
+      const response = await page.request.get(`/api/tasks/${id}`);
+      return (await response.json()).brief.constraints.budget;
+    })
+    .toBe(15);
+
   await page.reload();
-  await page.getByRole("tab", { name: "Invitation", exact: true }).click();
+  await expect(page.locator(".iw-message.iw-user")).toHaveCount(2);
   await expect(
-    page.getByRole("textbox", { name: "Edit invitation" }),
-  ).toHaveValue("A good evening. Bring your curiosity.");
-  await page.locator(".participant summary").first().click();
-  await page
-    .getByRole("textbox", { name: "Amara likes", exact: true })
-    .fill("jazz, warm");
-  await page.getByRole("button", { name: "Save Amara’s preferences" }).click();
-  await expect(page.getByRole("status")).toContainText("2 fixture discovery");
-  await page.getByRole("tab", { name: "Evidence", exact: true }).click();
-  await page.getByLabel("Fixture provider behavior").selectOption("timeout");
+    page.locator(".iw-message.iw-user").first(),
+  ).toContainText("Plan a gathering");
   await expect(
-    page.getByRole("region", { name: "Conversation" }).getByRole("alert"),
-  ).toContainText("timed out");
-  await page.getByLabel("Fixture provider behavior").selectOption("none");
-  await expect(
-    page.getByRole("region", { name: "Conversation" }).getByRole("alert"),
-  ).toHaveCount(0);
-  await page.getByRole("tab", { name: "Programme", exact: true }).click();
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({
-    path: "test-results/workspace-desktop.png",
-    fullPage: true,
-  });
+    page.locator(".iw-message.iw-user").last(),
+  ).toContainText("Lower budget to $15");
+  const restored = await (
+    await page.request.get(`/api/tasks/${id}`)
+  ).json();
+  expect(restored.brief.constraints.budget).toBe(15);
+  expect(restored.messages.length).toBeGreaterThanOrEqual(3);
   expect(errors).toEqual([]);
 });
 
-test("mobile layout and keyboard entry", async ({ page }) => {
+test("mobile messaging supports keyboard entry, a saved reply and no horizontal overflow", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/workspace");
-  await expect(
-    page.getByRole("button", { name: "Try the six-person evening" }),
-  ).toBeEnabled();
-  await page
-    .getByRole("button", { name: "Try the six-person evening" })
-    .focus();
+  await page.goto("/app");
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  await expect(composer).toBeInViewport();
+  await composer.focus();
+  await page.keyboard.type("hey");
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Current · fixture-backed")).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Tell Igor your goal or correction" })
-    .focus();
-  await page.keyboard.type("Invitation: A quieter night, together.");
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toContainText("1 fixture discovery");
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "Hey! I’m Igor.",
+  );
+  await expect(page.locator(".iw-message.iw-user")).toContainText("hey");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({
-    path: "test-results/workspace-mobile.png",
-    fullPage: true,
-  });
+  await page.reload();
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "Hey! I’m Igor.",
+  );
 });
 
 test("HTTP ownership, input validation and stale request rejection", async ({

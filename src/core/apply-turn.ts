@@ -26,6 +26,10 @@ export interface TurnUpdate {
   clarification: string | null;
   interpretationFailed: boolean;
   conversationOnly?: boolean;
+  /** Live read-only research query, validated by the provider boundary. */
+  researchQuery?: string;
+  /** Actual location supplied in this thread; permits optional Qloo place lookup. */
+  practicalLocation?: string;
   /** Trusted canvas view only: persist without rerunning cultural planning. */
   uiOnly?: boolean;
 }

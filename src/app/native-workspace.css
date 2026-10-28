@@ -75,6 +75,53 @@
   background: #eaeae7;
   border-radius: 18px 18px 5px 18px;
 }
+.iw-app .iw-message-sources {
+  margin-top: 12px;
+  padding-left: 34px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666a62;
+}
+.iw-app .iw-message-sources summary {
+  cursor: pointer;
+  width: fit-content;
+  font-weight: 600;
+}
+.iw-app .iw-message-sources ul {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 0;
+  margin: 0;
+  list-style: none;
+}
+.iw-app .iw-message-sources li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+.iw-app .iw-message-sources li > span:first-child {
+  color: #777d75;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.iw-app .iw-message-sources a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #2c453e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.iw-app .iw-message-sources a svg {
+  width: 12px;
+  height: 12px;
+}
+.iw-app .iw-message-sources small {
+  width: 100%;
+  color: #85867e;
+}
 .iw-app .iw-author img {
   width: 24px;
   height: 24px;

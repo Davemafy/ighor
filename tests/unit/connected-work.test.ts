@@ -371,8 +371,10 @@ describe("Connected work through the real orchestrator (scripted model, no live 
   });
   it("accepts connected work from the production Gemini wire protocol", async () => {
     const h = setup();
-    const transport = vi.fn(async () =>
-      Response.json({
+    const transport = vi.fn(async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      const toolName = body.tools[0].functionDeclarations[0].name;
+      return Response.json({
         candidates: [
           {
             finishReason: "STOP",
@@ -381,8 +383,8 @@ describe("Connected work through the real orchestrator (scripted model, no live 
               parts: [
                 {
                   functionCall: {
-                    name: "update_brief",
-                    args: {
+                    name: toolName,
+                    args: toolName === "route_conversation" ? { intent: "delegate" } : {
                       decision: JSON.stringify({
                         intent: "goal",
                         kind: "creative",
@@ -406,14 +408,14 @@ describe("Connected work through the real orchestrator (scripted model, no live 
             },
           },
         ],
-      }),
-    );
+      });
+    });
     const t = await h.turn(
       { type: "message", text: "Draft a note" },
       new GeminiModel("test-key", "gemini-test", transport as typeof fetch),
     );
     expect(t.work?.documents[0].id).toBe("note-draft");
-    expect(transport).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(2);
   });
 });
 

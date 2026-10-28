@@ -1,75 +1,113 @@
 import { expect, test } from "@playwright/test";
 import { freshTask } from "../../src/data/fixtures";
-import { CandidateSchema } from "../../src/core/contracts";
 
-test("the first screen offers an immediate action on desktop and mobile", async ({
+test("the current first screen offers usable conversation starters on desktop and mobile", async ({
   page,
 }) => {
-  await page.goto("/");
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/app");
   await expect(
-    page.getByRole("heading", { name: /A world beyond your usual/ }),
+    page.getByRole("heading", { name: /What.s on\s+your mind/i }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Find common ground" }),
-  ).toBeEnabled();
-  const composer = page.getByRole("textbox", {
-    name: "What would you like to explore?",
+
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  const desktopAudit = await page.evaluate(() => {
+    const element = document.querySelector("#iw-message");
+    const rect = element?.getBoundingClientRect();
+
+    return {
+      pathname: location.pathname,
+      apps: document.querySelectorAll(".iw-app").length,
+      welcomes: document.querySelectorAll(".iw-welcome").length,
+      composers: document.querySelectorAll(".iw-composer").length,
+      textareas: document.querySelectorAll("textarea").length,
+      headings: document.querySelectorAll("h1").length,
+      exists: !!element,
+      rect: rect
+        ? {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          }
+        : null,
+      scrollY: Math.round(window.scrollY),
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
   });
-  await expect(composer).toBeInViewport();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(composer).toBeInViewport();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
-    )
-    .toBe(true);
-  await composer.fill("A new direction");
+  const labeledComposers = await composer.count();
+  expect(
+    labeledComposers,
+    `Desktop composer count=${labeledComposers} path=${desktopAudit.pathname} app=${desktopAudit.apps} welcome=${desktopAudit.welcomes} composers=${desktopAudit.composers} textareas=${desktopAudit.textareas} headings=${desktopAudit.headings} rect=${JSON.stringify(desktopAudit.rect)}`,
+  ).toBe(1);
   await expect(
-    page.getByRole("button", { name: "Start exploring" }),
+    composer,
+    `Desktop composer geometry: ${JSON.stringify(desktopAudit)}`,
+  ).toBeInViewport();
+  await expect(
+    page.getByRole("button", { name: /A thoughtful gift/ }),
   ).toBeEnabled();
-});
-
-test("a sample journey refines, saves a reference and survives refresh", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Find common ground" }).click();
-  await page.getByRole("button", { name: /Explore Moonrise Kingdom/ }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(
-    dialog.getByText(
-      "An illustrative example, not a live cultural association.",
-    ),
-  ).toBeVisible();
-  await dialog.getByRole("button", { name: "Save reference" }).click();
-  await expect(
-    dialog.getByRole("button", { name: "Reference saved" }),
-  ).toBeDisabled();
-  await page.keyboard.press("Escape");
-  await expect(dialog).not.toBeVisible();
-  await page.getByRole("textbox", { name: "Message Igor" }).fill("Budget: 20");
-  await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.locator(".ig-results")).toHaveAttribute(
-    "aria-busy",
-    "false",
+  await page.getByRole("button", { name: /Something together/ }).click();
+  await expect(composer).toHaveValue(
+    "Plan something great with friends. Use the details I provide to explore real options, show a sourced shortlist, and save a usable plan. Ask only for essential missing information.",
   );
+  await expect(
+    page.getByRole("button", { name: "Send message" }),
+  ).toBeEnabled();
+
+  // A clean mobile load is the real first-impression scenario. Resizing
+  // a focused desktop textbox can preserve an unrelated scroll position.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Different tastes. Common ground." }),
-  ).toBeVisible();
-  const outputs = await page.evaluate(async () => {
-    const id = localStorage.getItem("igor-task");
-    const response = await fetch(`/api/tasks/${id}/outputs`);
-
-    return response.json();
-  });
+    page.getByRole("textbox", { name: "Message Igor" }),
+    "Mobile composer must be visible without scrolling on first load",
+  ).toBeInViewport();
   expect(
-    outputs.collections.some(
-      (item: { title: string }) => item.title === "Moonrise Kingdom",
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("a conversation survives refresh, a new thread, and history reopening", async ({
+  page,
+}) => {
+  await page.goto("/app");
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  await composer.fill("hey");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "Hey! I’m Igor.",
+  );
+  const savedId = await page.evaluate(() => localStorage.getItem("igor-task"));
+  expect(savedId).toBeTruthy();
+
+  await page.reload();
+  await expect(page.locator(".iw-message.iw-user")).toContainText("hey");
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "Hey! I’m Igor.",
+  );
+
+  await page.getByRole("button", { name: "New conversation" }).click();
+  await expect(
+    page.getByRole("heading", { name: /What.s on\s+your mind/i }),
+  ).toBeVisible();
+  const newId = await page.evaluate(() => localStorage.getItem("igor-task"));
+  expect(newId).not.toBe(savedId);
+
+  await page.getByRole("button", { name: "Conversations", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Conversations", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".iw-history-list button").first()).toBeVisible();
+  await page.locator(".iw-history-list button").first().click();
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "Hey! I’m Igor.",
+  );
 });
 
 test("workspace startup failures remain visible with a recovery action", async ({
@@ -78,7 +116,7 @@ test("workspace startup failures remain visible with a recovery action", async (
   await page.route("**/api/tasks", (route) =>
     route.fulfill({ status: 503, json: { error: "Unavailable" } }),
   );
-  await page.goto("/");
+  await page.goto("/app");
   await expect(
     page.getByRole("alert").filter({ hasText: "workspace could not start" }),
   ).toBeVisible();
@@ -87,168 +125,112 @@ test("workspace startup failures remain visible with a recovery action", async (
   ).toBeEnabled();
 });
 
-test("saved spaces supports Escape and restores focus", async ({ page }) => {
-  await page.goto("/");
-  const trigger = page.getByRole("button", {
-    name: "Your spaces",
-    exact: true,
-  });
-  await trigger.click();
-  await expect(page.getByRole("dialog", { name: "Your spaces" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(trigger).toBeFocused();
-});
-
-test("stale candidates are hidden and provider limitations stay inspectable", async ({
+test("mobile navigation closes with Escape and restores keyboard focus", async ({
   page,
 }) => {
-  const task = freshTask("mock-discovery", "owner");
-  task.brief.goal = "A synthetic browser test";
-  task.brief.kind = "discovery";
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/app");
+  const trigger = page.getByRole("button", { name: "Open navigation" });
+  await trigger.click();
+  await expect(page.locator("#iw-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#iw-menu")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Open navigation" }),
+  ).toBeFocused();
+});
+
+test("recorded cultural evidence keeps its source and limitations inspectable", async ({
+  page,
+}) => {
+  const task = freshTask("mock-source", "owner");
   task.mode = "qloo-live";
-  const reference = CandidateSchema.parse({
-    ...task.catalogue[0],
-    id: "current-film",
-    name: "Synthetic film",
-    imageUrl: "https://images.qloo.com/igor-unavailable-test.jpg",
-    sample: false,
-    cultural: {
-      test: {
-        rank: 1,
-        affinity: null,
-        queryId: "synthetic-query",
-        seedIds: [],
-        explanationEntities: [],
-        delivery: "LIVE",
-        retrievedAt: "2026-10-25T00:00:00Z",
-      },
-    },
-    eligibility: "needs-review",
-    freshness: "current",
-    missing: ["cost"],
-    violations: [],
-    dependencies: [],
-    evidenceIds: [],
-    fit: {},
-    fitReason: "",
-    cost: {
-      value: null,
-      source: "user-supplied",
-      reference: "Not supplied",
+  task.brief.goal = "Why these cultural references?";
+  task.messages = [
+    {
+      role: "user",
+      text: "Why these cultural references?",
       at: "2026-10-25T00:00:00Z",
     },
-    available: null,
-  });
-  task.candidates = [
-    reference,
     {
-      ...reference,
-      id: "stale-film",
-      name: "Outdated film",
-      freshness: "stale",
+      role: "assistant",
+      kind: "conversation",
+      text: "The cultural references are saved for inspection.",
+      evidenceIds: ["mock-qloo-evidence"],
+      at: "2026-10-25T00:00:01Z",
     },
   ];
   task.evidence = [
     {
-      id: "test-evidence",
+      id: "mock-qloo-evidence",
       source: "provider-returned",
-      delivery: "LIVE",
+      delivery: "CACHED",
       kind: "cultural",
       at: "2026-10-25T00:00:00Z",
-      reference: "mock-only",
+      reference: "mock-recorded-qloo-source",
       entityIds: [],
-      summary: "Synthetic response for browser test",
-      limitations: ["No real Qloo request was made."],
+      summary: "Recorded cultural response for browser verification",
+      limitations: ["No new live Qloo request was made."],
       explanation: null,
       dependencies: [],
       freshness: "current",
     },
   ];
   await page.route("**/api/tasks", (route) => route.fulfill({ json: task }));
+  await page.goto("/app");
 
-  let finishImage: () => void = () => {};
-
-  const pendingImage = new Promise<void>((resolve) => {
-    finishImage = resolve;
-  });
-  await page.route(
-    "https://images.qloo.com/igor-unavailable-test.jpg",
-    async (route) => {
-      await pendingImage;
-      await route.abort();
-    },
-  );
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".ig-lead .ig-artwork-title")).toHaveText(
-    "Synthetic film",
-  );
-  finishImage();
-  await expect(page.locator(".ig-lead img")).toHaveCount(0);
-  await expect(page.locator(".ig-lead .ig-artwork-title")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Explore Synthetic film" }),
-  ).toBeVisible();
-  await expect(page.getByText("Outdated film", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Explore Synthetic film" }).click();
-  await page.getByText("Practical details", { exact: true }).click();
-  await expect(
-    page.getByRole("dialog").getByText("Unknown", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("dialog").getByText("Not confirmed", { exact: true }),
-  ).toBeVisible();
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Behind the connections" }).click();
-  await expect(
-    page.getByRole("dialog").getByText("No real Qloo request was made."),
-  ).toBeVisible();
+  const receipt = page.locator(".iw-message-sources");
+  await expect(receipt.locator("summary")).toContainText("Sources");
+  await receipt.locator("summary").click();
+  await expect(receipt).toContainText("Qloo");
+  await expect(receipt).toContainText("No new live Qloo request was made.");
+  await expect(receipt).not.toContainText("Web source");
 });
 
-test("a greeting gets a reply without discovery failure or an empty-results warning", async ({
+test("ordinary greetings and topic changes produce saved replies without fake discovery", async ({
   page,
 }) => {
-  await page.goto("/");
-  await expect(
-    page.getByRole("button", { name: "Find common ground", exact: true }),
-  ).toBeEnabled();
-  await page
-    .getByRole("textbox", { name: "What would you like to explore?" })
-    .fill("hey");
-  await page
-    .getByRole("button", { name: "Start exploring", exact: true })
-    .click();
-  await expect(
-    page.getByRole("region", { name: "Igor’s reply" }),
-  ).toContainText("Hey! I’m Igor.");
-  await expect(
-    page.getByText("A new direction needs a starting point.", { exact: true }),
-  ).toHaveCount(0);
-  await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toHaveCount(
-    0,
+  await page.goto("/app");
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  await composer.fill("hey");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-assistant").last()).toContainText(
+    "Hey! I’m Igor.",
   );
-  await page.getByText("Conversation · 2 messages", { exact: true }).click();
-  const transcript = page.getByRole("list", { name: "Saved conversation" });
-  await expect(transcript).toContainText("hey");
-  await expect(transcript).toContainText("Hey! I’m Igor.");
+  await composer.fill("what can you do?");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-assistant").last()).toContainText(
+    "agent with taste",
+  );
+  await expect(
+    page.locator(".iw-message.iw-user"),
+    "Before reload, both user turns must be visible",
+  ).toHaveCount(2);
+
   await page.reload();
   await expect(
-    page.getByRole("region", { name: "Igor’s reply" }),
-  ).toContainText("Hey! I’m Igor.");
-  await page.getByText("Conversation · 2 messages", { exact: true }).click();
-  await expect(transcript).toContainText("hey");
+    page.locator(".iw-message.iw-user"),
+    "After reload, both user turns must be restored",
+  ).toHaveCount(2);
+  await expect(
+    page.locator(".iw-message.iw-assistant"),
+    "After reload, both assistant replies must be restored",
+  ).toHaveCount(2);
+  const alertSnapshot = await page.locator('[role="alert"]').evaluateAll(
+    (nodes) =>
+      nodes.map((node) => ({
+        className: node.className,
+        visible: !!(node as HTMLElement).offsetParent,
+      })),
+  );
+  await expect(
+    page.locator(".iw-error"),
+    `After reload, no actionable workspace error. Alerts: ${JSON.stringify(alertSnapshot)}`,
+  ).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "Your spaces", exact: true }).click();
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "hey", exact: true })
-    .click();
-  await expect(
-    page.getByRole("region", { name: "Igor’s reply" }),
-  ).toContainText("Hey! I’m Igor.");
 });

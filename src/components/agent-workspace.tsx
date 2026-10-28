@@ -32,6 +32,7 @@ import { morphLayout } from "./mobile-transitions";
 import { hasPendingInput } from "./turn-feedback";
 import { TaskCanvas } from "./task-canvas";
 import { ConnectedWorkCanvas } from "./connected-work-canvas";
+import { ResearchDiscovery, buildResearchCards } from "./research-discovery";
 import {
   ProductText,
   ProductCollections,
@@ -44,6 +45,7 @@ import "../app/connected-work.css";
 import "../app/spatial-morph.css";
 import "../app/workbench.css";
 import "../app/native-workspace.css";
+import "../app/research-discovery.css";
 
 const assets = "/marketing/assets/";
 const starts = [
@@ -59,7 +61,7 @@ const starts = [
     caption: "Room for everyone.",
     image: "covers/c02.webp",
     prompt:
-      "Help me plan something with friends. Ask about our location, interests and constraints.",
+      "Plan something great with friends. Use the details I provide to explore real options, show a sourced shortlist, and save a usable plan. Ask only for essential missing information.",
   },
   {
     title: "A new direction",
@@ -98,6 +100,7 @@ export function AgentWorkspace({
   const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const scrolledTask = useRef<string | null>(null);
   const task = w.task;
@@ -176,24 +179,28 @@ export function AgentWorkspace({
         `${viewport?.height ?? innerHeight}px`,
       );
 
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMenu(false);
-      }
-    };
-
     resize();
     viewport?.addEventListener("resize", resize);
     window.addEventListener("resize", resize);
-    window.addEventListener("keydown", escape);
 
     return () => {
       viewport?.removeEventListener("resize", resize);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("keydown", escape);
       document.documentElement.style.removeProperty("--iw-height");
     };
   }, []);
+  useEffect(() => {
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && menu) {
+        setMenu(false);
+        menuTrigger.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", escape);
+
+    return () => window.removeEventListener("keydown", escape);
+  }, [menu]);
 
   function canLeave() {
     const check = new Event("beforeunload", { cancelable: true });
@@ -375,6 +382,7 @@ export function AgentWorkspace({
           <span>New conversation</span>
         </button>
         <button
+          ref={menuTrigger}
           className="iw-menu-toggle"
           aria-label={menu ? "Close navigation" : "Open navigation"}
           aria-expanded={menu}
@@ -529,7 +537,75 @@ export function AgentWorkspace({
                             "You"
                           )}
                         </span>
-                        <ProductText text={m.text} />
+                        {m.role === "assistant" &&
+                        !!m.evidenceIds?.length &&
+                        task?.artifacts.some(
+                          (artifact) =>
+                            artifact.kind === "research-report" &&
+                            m.evidenceIds?.some((id) =>
+                              artifact.evidenceIds.includes(id),
+                            ),
+                        ) ? (
+                          <p className="ird-chat-receipt">
+                            Your references are ready in Your work. Open a card
+                            for a closer look, or build on a direction you like.
+                          </p>
+                        ) : (
+                          <ProductText text={m.text} />
+                        )}
+                        {m.role === "assistant" && !!m.evidenceIds?.length && (
+                          <details className="iw-message-sources">
+                            <summary>Sources · {m.evidenceIds.length}</summary>
+                            <ul>
+                              {m.evidenceIds.map((id) => {
+                                const source = task?.evidence.find(
+                                  (item) => item.id === id,
+                                );
+
+                                if (!source) {
+                                  return (
+                                    <li key={id}>Source unavailable · {id}</li>
+                                  );
+                                }
+
+                                const label =
+                                  source.kind === "practical" &&
+                                  source.source === "provider-returned"
+                                    ? "Web"
+                                    : source.kind === "cultural"
+                                      ? "Qloo"
+                                      : "Context";
+
+                                return (
+                                  <li key={id}>
+                                    <span>{label}</span>
+                                    {source.kind === "practical" &&
+                                    source.source === "provider-returned" &&
+                                    source.reference.startsWith("https://") ? (
+                                      <a
+                                        href={source.reference}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        {source.summary.split(":")[0]}
+                                        <ArrowUpRight />
+                                      </a>
+                                    ) : (
+                                      <span>
+                                        {source.summary.slice(0, 130)}
+                                      </span>
+                                    )}
+                                    {!!source.limitations.length && (
+                                      <small>
+                                        {source.limitations.join(" ")}
+                                      </small>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </details>
+                        )}
                       </article>
                     ))}
                     {hasPendingInput(task?.messages ?? [], w.feedback) && (
@@ -739,6 +815,12 @@ export function AgentWorkspace({
         {w.errorMessage && (
           <div className="iw-error" role="alert">
             <p>{w.errorMessage}</p>
+            {!task && !w.isLoadingWorkspace && (
+              <button onClick={() => window.location.reload()}>
+                Retry workspace
+                <ArrowRight />
+              </button>
+            )}
             {w.feedback?.state === "error" && (
               <button
                 disabled={w.isBusy || w.isLoadingWorkspace}
@@ -775,6 +857,7 @@ function Work({
   onLoad: (id: string) => Promise<void>;
 }) {
   const [resource, setResource] = useState("workspace");
+  const research = buildResearchCards(task);
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",
   );
@@ -783,14 +866,18 @@ function Work({
       !["question", "stack", "columns", "tabs", "activity"].includes(node.type),
   );
   const resources = [
-    ...(hasCanvasWork ? [{ id: "workspace", title: "Current view" }] : []),
+    ...(hasCanvasWork || research
+      ? [{ id: "workspace", title: research ? "Explore" : "Current view" }]
+      : []),
     ...(task.work?.documents.length
       ? [{ id: "documents", title: "Documents" }]
       : []),
     ...(task.work?.decisions.length && !task.work?.documents.length
       ? [{ id: "options", title: "Options" }]
       : []),
-    ...(task.artifacts.length ? [{ id: "drafts", title: "Drafts" }] : []),
+    ...(task.artifacts.length
+      ? [{ id: "drafts", title: research ? "Research notes" : "Drafts" }]
+      : []),
     ...(placeNode ? [{ id: "places", title: "Places" }] : []),
   ];
   const active = resources.some((item) => item.id === resource)
@@ -829,9 +916,17 @@ function Work({
           ))}
         </nav>
       )}
-      {active === "workspace" && (
-        <TaskCanvas task={task} busy={busy} onTurn={onTurn} excludeQuestions />
-      )}
+      {active === "workspace" &&
+        (research ? (
+          <ResearchDiscovery task={task} busy={busy} onTurn={onTurn} />
+        ) : (
+          <TaskCanvas
+            task={task}
+            busy={busy}
+            onTurn={onTurn}
+            excludeQuestions
+          />
+        ))}
       {active === "documents" && (
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
       )}

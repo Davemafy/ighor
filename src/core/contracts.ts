@@ -171,6 +171,9 @@ export const EvidenceSchema = z.object({
   source: Source,
   at: z.string(),
   reference: z.string(),
+  // Optional verified research metadata for visual source cards.
+  title: z.string().max(220).optional(),
+  previewImageUrl: z.string().url().max(2048).optional(),
   entityIds: z.array(z.string()),
   summary: z.string(),
   limitations: z.array(z.string()),

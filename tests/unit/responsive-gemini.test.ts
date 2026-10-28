@@ -4,23 +4,29 @@ import { freshTask } from "../../src/data/fixtures";
 
 function result(tool: string, args: object) {
   return Response.json({
-    candidates: [{
-      finishReason: "STOP",
-      content: {
-        role: "model",
-        parts: [{
-          functionCall: { name: tool, id: "call-1", args },
-        }],
+    candidates: [
+      {
+        finishReason: "STOP",
+        content: {
+          role: "model",
+          parts: [
+            {
+              functionCall: { name: tool, id: "call-1", args },
+            },
+          ],
+        },
       },
-    }],
+    ],
   });
 }
 
-describe("responsive first-turn routing", () => {
-  it("asks one natural question without a huge agent schema or false work", async () => {
+describe("read-only conversation routing across the entire thread", () => {
+  it("answers an ordinary first turn without loading the full work schema", async () => {
     const transport = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body));
-      expect(payload.tools[0].functionDeclarations[0].name).toBe("route_conversation");
+      expect(payload.tools[0].functionDeclarations[0].name).toBe(
+        "route_conversation",
+      );
       expect(JSON.stringify(payload)).not.toContain("workActions exact schema");
       return result("route_conversation", {
         intent: "clarification",
@@ -28,19 +34,23 @@ describe("responsive first-turn routing", () => {
       });
     });
     const task = freshTask("t", "owner");
-    const model = new ResponsiveGeminiModel("key", "gemini-test", transport as typeof fetch);
-    const decision = await model.interpret(
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      transport as typeof fetch,
+    );
+    const decision = await model.routeConversation(
       "Help me plan with friends. Ask about location, interests and constraints.",
       task,
     );
-    expect(decision.intent).toBe("clarification");
-    if (decision.intent !== "clarification") throw Error("Expected a clarification.");
-    expect(decision.reply).toBe("Where will you and your friends be meeting?");
-    expect(decision.replyEvidenceIds).toEqual([]);
+    expect(decision).toMatchObject({
+      intent: "clarification",
+      reply: "Where will you and your friends be meeting?",
+    });
     expect(transport).toHaveBeenCalledTimes(1);
   });
 
-  it("delegates actionable requests to the complete bounded agent contract", async () => {
+  it("delegates actionable work to the full validated decision protocol", async () => {
     const tools: string[] = [];
     const transport = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body));
@@ -48,29 +58,135 @@ describe("responsive first-turn routing", () => {
       tools.push(name);
       return name === "route_conversation"
         ? result(name, { intent: "delegate" })
-        : result(name, { decision: { intent: "conversation", reply: "I can start with a supported creative brief." } });
+        : result(name, {
+            decision: {
+              intent: "conversation",
+              reply: "I can start with a supported creative brief.",
+            },
+          });
     });
     const task = freshTask("t", "owner");
-    const model = new ResponsiveGeminiModel("key", "gemini-test", transport as typeof fetch);
-    const decision = await model.interpret("Create an original visual concept", task);
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      transport as typeof fetch,
+    );
+    expect(
+      await model.routeConversation("Create an original visual concept", task),
+    ).toBeNull();
+    const decision = await model.interpret(
+      "Create an original visual concept",
+      task,
+    );
     expect(decision.intent).toBe("conversation");
     expect(tools).toEqual(["route_conversation", "update_brief"]);
     expect(model.calls).toBe(2);
   });
 
-  it("uses full prior context rather than treating later corrections as fresh turns", async () => {
+  it("routes later corrections with prior context, not first-turn assumptions", async () => {
     const tools: string[] = [];
     const transport = vi.fn(async (_url: unknown, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body));
       const name = payload.tools[0].functionDeclarations[0].name as string;
       tools.push(name);
-      return result(name, { decision: { intent: "conversation", reply: "I meant your existing plan." } });
+      expect(JSON.stringify(payload)).toContain("Help me plan a weekend.");
+      return result(name, {
+        intent: "conversation",
+        reply: "The original plan is still saved. We can discuss it.",
+      });
     });
     const task = freshTask("t", "owner");
-    task.messages = [{role:"user",text:"Help me plan a weekend.",at:"2026-10-27T00:00:00.000Z"}];
-    const model = new ResponsiveGeminiModel("key", "gemini-test", transport as typeof fetch);
-    const decision = await model.interpret("No, keep the original idea", task);
-    expect(decision.intent).toBe("conversation");
-    expect(tools).toEqual(["update_brief"]);
+    task.messages = [
+      {
+        role: "user",
+        text: "Help me plan a weekend.",
+        at: "2026-10-27T00:00:00.000Z",
+      },
+    ];
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      transport as typeof fetch,
+    );
+    const decision = await model.routeConversation("Can we discuss that?", task);
+    expect(decision).toMatchObject({
+      intent: "conversation",
+      reply: "The original plan is still saved. We can discuss it.",
+    });
+    expect(tools).toEqual(["route_conversation"]);
+  });
+
+  it("delegates explanations with invented evidence IDs instead of citing them", async () => {
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      async () =>
+        result("route_conversation", {
+          intent: "conversation",
+          reply: "I recommend it because of a verified cultural signal.",
+          replyEvidenceIds: ["invented-qloo-source"],
+        }),
+    );
+    expect(
+      await model.routeConversation("Why this option?", freshTask("t", "owner")),
+    ).toBeNull();
+  });
+
+  it("routes current-information questions to bounded live research", async () => {
+    const transport = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body));
+      expect(payload.tools[0].functionDeclarations[0].name).toBe(
+        "route_conversation",
+      );
+      return result("route_conversation", {
+        intent: "research",
+        query: "2026 publicly released cultural report",
+      });
+    });
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      transport as typeof fetch,
+    );
+    expect(
+      await model.routeConversation(
+        "Find the latest public cultural report",
+        freshTask("t", "owner"),
+      ),
+    ).toEqual({
+      intent: "research",
+      query: "2026 publicly released cultural report",
+    });
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an invented completed action even with a contracted reply", async () => {
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      async () =>
+        result("route_conversation", {
+          intent: "conversation",
+          reply: "I've booked the table for your group.",
+        }),
+    );
+    expect(
+      await model.routeConversation("Can you book the table?", freshTask("t", "owner")),
+    ).toBeNull();
+  });
+
+  it("rejects a quick reply claiming a completed external action", async () => {
+    const model = new ResponsiveGeminiModel(
+      "key",
+      "gemini-test",
+      async () =>
+        result("route_conversation", {
+          intent: "conversation",
+          reply: "I booked your flight.",
+        }),
+    );
+    expect(
+      await model.routeConversation("Book my flight", freshTask("t", "owner")),
+    ).toBeNull();
   });
 });

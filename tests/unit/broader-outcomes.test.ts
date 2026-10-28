@@ -249,11 +249,23 @@ describe("Broader evidence-linked outcomes through the actual orchestrator", () 
       outcome: { kind: "music-direction" },
     });
     expect(main(t).kind).toBe("music-direction");
-    expect(t.artifacts.map((a) => a.id)).toEqual([
-      "main",
-      "concept",
-      "invitation",
-    ]);
+    // Revisions may retain locked earlier work as stale, rather than
+    // deleting the user's approved artifact when the output kind changes.
+    const currentIds = t.artifacts
+      .filter((artifact) => artifact.freshness === "current")
+      .map((artifact) => artifact.id);
+    expect(new Set(currentIds)).toEqual(
+      new Set(["main", "concept", "invitation"]),
+    );
+    expect(currentIds).toHaveLength(3);
+    // Earlier dependent work may also remain archived as stale; never
+    // silently drop or duplicate an artifact during a direction change.
+    expect(t.artifacts.some((artifact) => artifact.freshness === "stale")).toBe(
+      true,
+    );
+    expect(new Set(t.artifacts.map((artifact) => artifact.id)).size).toBe(
+      t.artifacts.length,
+    );
     expect(t.artifacts.every((a) => a.evidenceIds.length > 0)).toBe(true);
     expect(t.artifacts.find((a) => a.id === "concept")?.content).toContain(
       "Location",

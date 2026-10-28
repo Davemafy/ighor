@@ -31,6 +31,17 @@ export function ConversationThread({ task }: { task: Task }) {
                     <>
                       <p>{evidence.summary}</p>
                       <small>{evidence.limitations.join(" ")}</small>
+                      {evidence.kind === "practical" &&
+                        evidence.source === "provider-returned" &&
+                        evidence.reference.startsWith("https://") && (
+                          <a
+                            href={evidence.reference}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open retrieved source
+                          </a>
+                        )}
                     </>
                   )}
                 </details>

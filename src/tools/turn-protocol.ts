@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   validatePresentation,
   PresentationNodeSchema,
+  PresentationSchema,
 } from "../core/presentation";
 import { LiveDecisionSchema, type Task } from "../core/contracts";
 
@@ -193,25 +194,37 @@ export function readTurnDecision(
     }
   }
 
-  if (payload.presentation && context) {
-    try {
-      payload.presentation = validatePresentation(payload.presentation, {
+  if (payload.presentation) {
+    // Treat structure and context grounding as distinct boundaries. A broken
+    // optional view may be dropped for a standalone *textual* answer, but a
+    // wrong recipient, invented evidence or asserted completed UI must be
+    // repaired instead of silently misrepresented.
+    const structural = PresentationSchema.safeParse(payload.presentation);
+    const reply = typeof payload.reply === "string" ? payload.reply : "";
+    const claimsVisibleWork =
+      /\b(?:created|prepared|displayed|shown|built|generated)\b|\bhere (?:is|are)\b/i.test(
+        reply,
+      );
+    if (!structural.success) {
+      if (
+        (payload.intent === "conversation" ||
+          payload.intent === "clarification") &&
+        !claimsVisibleWork
+      ) {
+        delete payload.presentation;
+      } else {
+        throw structural.error;
+      }
+    } else if (context) {
+      payload.presentation = validatePresentation(structural.data, {
         ...context,
         messages: [
           ...context.messages,
           ...(currentMessage ? [{ role: "user", text: currentMessage }] : []),
         ],
       });
-    } catch (error) {
-      if (error instanceof z.ZodError) throw error;
-      throw new z.ZodError([
-        {
-          code: "custom",
-          path: ["presentation"],
-          message:
-            error instanceof Error ? error.message : "Invalid presentation",
-        },
-      ]);
+    } else {
+      payload.presentation = structural.data;
     }
   }
 

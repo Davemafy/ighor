@@ -14,7 +14,15 @@ const Message = z.object({
 });
 
 const Function = z.object({
-  name: z.enum(["update_brief", "inspect_candidates", "submit_selection", "route_conversation"]),
+  name: z.enum([
+    "update_brief",
+    "inspect_candidates",
+    "submit_selection",
+    "route_conversation",
+    "submit_research_answer",
+    "compose_draft",
+    "choose_research_step",
+  ]),
   description: z.string(),
   parameters: z.record(z.string(), z.unknown()),
 });
@@ -62,7 +70,11 @@ export class GeminiModel extends ToolCallingModel {
   usage: { model: string; input?: number; output?: number; total?: number }[] =
     [];
 
-  protected override async call(input: unknown[], tools: unknown[]) {
+  protected override async call(
+    input: unknown[],
+    tools: unknown[],
+    timeoutMs = 75000,
+  ) {
     if (!this.key || !/^gemini-[a-z0-9.-]+$/.test(this.model)) {
       throw new Error("Gemini provider is not configured safely.");
     }
@@ -161,7 +173,7 @@ export class GeminiModel extends ToolCallingModel {
           },
           body,
           redirect: "error",
-          signal: AbortSignal.timeout(75000),
+          signal: AbortSignal.timeout(timeoutMs),
         },
       );
     } catch {

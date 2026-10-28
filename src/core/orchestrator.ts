@@ -22,7 +22,13 @@ import {
   runtimeModelProvider,
 } from "../tools/runtime";
 import { safeSerialize } from "../tools/qloo";
-import { ExecutionBudget } from "./execution";
+import { ExecutionBudget, withToolDeadline } from "./execution";
+import {
+  runtimeResearchProvider,
+  researchPagePreview,
+  type ResearchProvider,
+  type ResearchResult,
+} from "../tools/live-research";
 import { invalidate } from "./revision";
 import { appendReceipt } from "./receipts";
 import { applyStructuredTurn } from "./apply-turn";
@@ -33,6 +39,7 @@ import { turnReply } from "./turn-reply";
 import { applyWorkActions } from "./connected-work";
 import { recordArtifactChanges } from "./preserve-artifacts";
 import { agentEmitter } from "./agent-events";
+import { agentResearchLoop } from "./agent-research";
 
 export { ExecutionBudget } from "./execution";
 
@@ -45,6 +52,7 @@ export async function runTurn(
   provider?: CulturalProvider,
   model?: ModelProvider,
   factsProvider: PracticalFactsProvider = new SuppliedFactsProvider(),
+  researchProvider?: ResearchProvider,
 ): Promise<Task> {
   let input = TurnSchema.parse(raw);
   let formAnswer: FormAnswerGrounding | undefined;
@@ -222,6 +230,303 @@ export async function runTurn(
           readMemory: () => store.memory(owner),
         });
   task = update.task;
+
+  if (update.researchQuery) {
+    const precedingStatus = task.status;
+    const precedingError = task.error;
+    // Commit the user's turn before any slow external request. This is the
+    // same checkpoint/optimistic-version pattern as the cultural planner:
+    // a dropped stream or process restart cannot silently lose their message.
+    // Another correction may advance the version while research is in flight;
+    // in that case the later result MUST NOT overwrite the newer work.
+    trace(
+      "tool.invoke:search_web",
+      "Searching public sources through Bright Data.",
+    );
+    const researchStageVersion = ++task.brief.version;
+    task.status = "running";
+    task.error = null;
+    task.trace = task.trace.slice(-100);
+    TaskSchema.parse(task);
+    store.save(task, receiptFromVersion, owner);
+    emit({ type: "state", task: structuredClone(task) });
+    // Run Qloo locality/category exploration alongside web research when
+    // the current conversation supplies a city. Unknown fees, opening times,
+    // games and bookings remain unknown.
+    if (update.practicalLocation && task.mode === "qloo-live") {
+      provider ??= runtimeCulturalProvider(task.mode);
+    }
+    const localityLookup =
+      update.practicalLocation && provider?.exploreLocality
+        ? (() => {
+            trace(
+              "tool.invoke:qloo_locality",
+              "Retrieving Qloo places matching the user-supplied locality and dining category.",
+            );
+            return withToolDeadline(
+              provider.exploreLocality!(
+                update.practicalLocation!,
+                update.researchQuery!,
+              ),
+              15000,
+            ).catch(() => null);
+          })()
+        : Promise.resolve(null);
+    const liveResearch = researchProvider ?? runtimeResearchProvider();
+    let research: ResearchResult;
+    try {
+      research = await withToolDeadline(
+        liveResearch.research(
+          update.researchQuery,
+        ),
+        40000,
+      );
+    } catch {
+      research = {
+        status: "error",
+        sources: [],
+        requests: 0,
+        warning: "Live research failed before source verification.",
+      };
+    }
+
+    trace(
+      "tool.result:search_web",
+      `Research returned ${research.status}: ${research.sources.length} sources, ${research.requests} external requests.`,
+      research.requests,
+    );
+    // Real agentic continuation: inspect the actual web observations before
+    // deciding whether a second search or a verified-source read is useful.
+    // The runtime enforces exact observed source IDs and a finite tool budget.
+    research = await agentResearchLoop(
+      input.type === "message" ? input.text : update.researchQuery,
+      update.researchQuery,
+      research,
+      liveResearch,
+      model,
+      task,
+      trace,
+    );
+    const locality = await localityLookup;
+    const qlooPlaces = locality?.data.places ?? [];
+    const qlooEvidence = locality?.data.evidence ?? [];
+    if (update.practicalLocation) {
+      trace(
+        "tool.result:qloo_locality",
+        locality
+          ? `Qloo locality lookup returned ${locality.status} with ${qlooPlaces.length} place leads and ${locality.requestCount} requests.`
+          : "Qloo locality exploration unavailable; public-web results remain independent.",
+        locality?.requestCount ?? 0,
+        locality?.evidenceIds ?? [],
+      );
+    }
+    task.evidence.push(...qlooEvidence);
+    const researchEvidenceIds = research.sources.map(
+      (source) => `${task.id}:web:${receiptFromVersion + 1}:${source.id}`,
+    );
+    for (const [index, source] of research.sources.entries()) {
+      const previewImageUrl = source.imageUrl ??
+        researchPagePreview(source.excerpt ?? "", source.url);
+
+      task.evidence.push({
+        id: researchEvidenceIds[index],
+        source: "provider-returned",
+        kind: "practical",
+        at: source.retrievedAt,
+        reference: source.url,
+        title: source.title,
+        ...(previewImageUrl ? { previewImageUrl } : {}),
+        entityIds: [],
+        summary: `${source.title}: ${(source.excerpt ?? source.snippet).slice(0, 1100)}`,
+        limitations: source.excerpt
+          ? ["Retrieved webpage text is third-party content, not independently verified."]
+          : ["Search snippet only; webpage was not opened."],
+        explanation: null,
+        dependencies: [],
+        freshness: "current",
+      });
+    }
+
+    let answer = "";
+    if (research.sources.length && model.synthesizeResearch) {
+      try {
+        const synthesized = await withToolDeadline(
+          model.synthesizeResearch(
+            input.type === "message" ? input.text : update.researchQuery,
+            research.sources,
+            structuredClone(task),
+          ),
+          model.timeoutMs ?? 30000,
+        );
+        const ids = new Set(research.sources.map((source) => source.id));
+        const used = new Set(synthesized.sourceIds);
+        const inline = [...synthesized.text.matchAll(/\[(web-\d+)\]/g)]
+          .map((match) => match[1]);
+        if (
+          !inline.length ||
+          !used.size ||
+          synthesized.sourceIds.some((sourceId) => !ids.has(sourceId)) ||
+          inline.some((sourceId) => !used.has(sourceId)) ||
+          synthesized.sourceIds.some((sourceId) => !inline.includes(sourceId)) ||
+          /\bI(?:\s+have|['’]ve)?\s+(?:booked|ordered|purchased|sent|reserved)\b/i.test(
+            synthesized.text,
+          )
+        ) {
+          throw new Error("Research synthesis contains unsupported claims.");
+        }
+        answer = synthesized.text;
+      } catch {
+        // Never replace real provider observations with fabricated synthesis.
+        trace(
+          "model.research.error",
+          "Research synthesis was unavailable; real source observations are preserved.",
+        );
+        research.status = "partial";
+      }
+    }
+
+    const references = research.sources
+      .map(
+        (source) =>
+          `[${source.id}] ${source.title.replace(/[\r\n]/g, " ").replaceAll("[", "(").replaceAll("]", ")").slice(0, 140)} — ${source.url}${source.excerpt ? " (page retrieved)" : " (search snippet only)"}`,
+      )
+      .join("\n");
+
+    const qlooReferences = qlooPlaces
+      .map(
+        (place, index) =>
+          `${index + 1}. ${place.name} (Qloo locality/category result${place.address ? ` · ${place.address}` : ""})${place.website ? ` — ${place.website}` : ""}; game inventory, Saturday hours, fees and bookings unverified`,
+      )
+      .join("\n");
+    const allEvidenceIds = [
+      ...researchEvidenceIds,
+      ...qlooEvidence.map((item) => item.id),
+    ];
+    const message = [
+      answer ||
+        (research.sources.length
+          ? "I retrieved these sources, but could not verify a complete answer. Here is the available evidence."
+          : research.warning ??
+            "Live research is unavailable; no external facts were retrieved."),
+      research.warning && research.sources.length ? research.warning : "",
+      references ? `Sources:\n${references}` : "",
+      qlooReferences
+        ? `Qloo place leads (geography/category matches, not personalized affinity):\n${qlooReferences}`
+        : "",
+      locality?.warnings.length
+        ? `Qloo limitation: ${locality.warnings.join(" ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    task.messages.push({
+      role: "assistant",
+      kind: "conversation",
+      text: message,
+      evidenceIds: allEvidenceIds,
+      at: at(),
+    });
+    if (research.sources.length || qlooPlaces.length) {
+      if (!task.brief.goal && update.practicalLocation) {
+        task.brief.goal = `Explore practical options in ${update.practicalLocation}`;
+      }
+      // Public research must deliver actual, persistent work rather than a
+      // chat promise. Each run creates a traceable, editable research document,
+      // with evidence IDs resolving to provider-returned source URLs.
+      // We never replace previous manually edited or locked documents.
+      const report = [
+        "# Explored options",
+        ...(update.practicalLocation
+          ? [
+              `Requested locality: ${update.practicalLocation} (user-supplied)`,
+              "",
+            ]
+          : []),
+        answer ||
+          "Research returned these references. A full synthesized comparison could not be verified.",
+        "",
+        "## Retrieved references",
+        ...research.sources.map(
+          (source) =>
+            `- [${source.id}] ${source.title.replace(/[\r\n]/g, " ").slice(0, 140)} — ${source.url} (${source.excerpt ? "page text opened" : "search snippet only"})`,
+        ),
+        "",
+        ...(qlooPlaces.length
+          ? [
+              "",
+              "## Qloo location and restaurant-category results",
+              ...qlooPlaces.map(
+                (place, index) =>
+                  `${index + 1}. ${place.name}${place.address ? ` — ${place.address}` : ""}${place.website ? ` — ${place.website}` : ""} (Qloo location/category lead; games and availability unverified)`,
+              ),
+            ]
+          : []),
+        "## Before you go",
+        "Sources are leads, not confirmation of prices, seating, operating hours, board games or a reservation. Confirm with the venue before committing money or travel.",
+        ...(research.warning ? ["", `Research limitation: ${research.warning}`] : []),
+      ].join("\n");
+      task.artifacts.push({
+        id: `web-research-${researchStageVersion}`,
+        kind: "research-report",
+        title: update.practicalLocation
+          ? `${update.practicalLocation} — options to check`
+          : "Research-backed options",
+        content: report,
+        version: researchStageVersion,
+        dependencies: ["evidence:research"],
+        evidenceIds: allEvidenceIds,
+        assumptions: [
+          "Public search and Qloo category results do not verify availability, games, seating or price.",
+        ],
+        freshness: "current",
+        edited: false,
+      });
+      trace(
+        "compose.research",
+        "Saved a sourced, editable research document with open verification questions.",
+        0,
+        allEvidenceIds,
+      );
+    }
+    if (research.status === "ok" && answer) {
+      // A read-only answer does not invalidate previously ready cultural work.
+      // Recover an earlier interpretation error only after this turn succeeds.
+      task.status =
+        precedingStatus === "error" || precedingStatus === "running"
+          ? "partial"
+          : precedingStatus;
+      task.error = precedingStatus === "error" ? null : precedingError;
+    } else {
+      // Report this research failure in the reply/trace without turning a
+      // previously completed cultural project into an unfinished project.
+      task.status = precedingStatus === "ready" ? "ready" : "partial";
+      task.error =
+        precedingStatus === "ready"
+          ? precedingError
+          : (research.warning ?? "Research was not fully verified.");
+    }
+    if (research.sources.length || qlooPlaces.length) {
+      ensureBoundPresentation(task);
+      if (task.status === "draft") task.status = "ready";
+    }
+    task.brief.version++;
+    task.trace = task.trace.slice(-100);
+    appendReceipt(
+      task,
+      input,
+      receiptFromVersion,
+      ["evidence:research"],
+      receiptTraceIds,
+      (model.calls ?? 0) - initialModelCalls,
+      task.status,
+      culturalRequestDelta() ?? 0,
+    );
+    TaskSchema.parse(task);
+    store.save(task, researchStageVersion, owner);
+    emit({ type: "done", task: structuredClone(task) });
+    return task;
+  }
 
   if (update.uiOnly) {
     // A conversational view switch is already validated by mutateCanvas.
@@ -559,3 +864,4 @@ export async function runTurn(
 
   return task;
 }
+

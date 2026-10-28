@@ -186,7 +186,6 @@ function CanvasTree({
   const transitionStyle = (nodeId: string) => ({
     viewTransitionName: `igor-node-${Array.from(`${surface.id}:${nodeId}`, (char) => char.codePointAt(0)!.toString(16)).join("-")}`,
   });
-
   function render(id: string): ReactNode {
     const node = surface.nodes.find((n) => n.id === id);
 
@@ -444,9 +443,7 @@ function CanvasTree({
       case "activity":
         body = (
           <details className="ic-activity iw-activity-disclosure">
-            <summary>
-              View what Igor checked <ChevronDown />
-            </summary>
+            <summary>View what Igor checked <ChevronDown /></summary>
             {task.trace.slice(-12).map((t) => (
               <details key={t.id}>
                 <summary>

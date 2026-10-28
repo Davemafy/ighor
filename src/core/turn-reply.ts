@@ -47,15 +47,16 @@ export function turnReply(task: Task, localChangeOnly = false): string {
     (evidence) => evidence.freshness === "current",
   );
 
-  if (
-    currentEvidence.some((evidence) => evidence.source === "provider-returned")
-  ) {
-    const live = currentEvidence.some(
-      (evidence) =>
-        evidence.source === "provider-returned" && evidence.delivery === "LIVE",
+  const qlooEvidence = currentEvidence.filter(
+    (evidence) =>
+      evidence.source === "provider-returned" && evidence.kind !== "practical",
+  );
+
+  if (qlooEvidence.length) {
+    const live = qlooEvidence.some(
+      (evidence) => evidence.delivery === "LIVE",
     );
-    const cachedOnly = currentEvidence
-      .filter((evidence) => evidence.source === "provider-returned")
+    const cachedOnly = qlooEvidence
       .every((evidence) => evidence.delivery === "CACHED");
     parts.push(
       cachedOnly

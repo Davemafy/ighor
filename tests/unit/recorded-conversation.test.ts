@@ -131,16 +131,42 @@ describe("Actual provider response replay (no live requests)", () => {
         const testCase = captured.cases[index];
         const response = captured.model_records[index].response;
         expect(response).toBeDefined();
-        const transport = (async () => Response.json(response)) as typeof fetch;
+        // The recording contains the full update_brief call. The new
+        // read-only routing step must delegate before that unchanged
+        // provider response is replayed; it is not a second Qloo request.
+        const transport = (async (_url: unknown, init?: RequestInit) => {
+          const body = JSON.parse(String(init?.body));
+          const toolName = body.tools[0].functionDeclarations[0].name;
+          return toolName === "route_conversation"
+            ? Response.json({
+                candidates: [
+                  {
+                    finishReason: "STOP",
+                    content: {
+                      role: "model",
+                      parts: [
+                        {
+                          functionCall: {
+                            name: "route_conversation",
+                            args: { intent: "delegate" },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              })
+            : Response.json(response);
+        }) as typeof fetch;
         const model = new GeminiModel(
           "recorded-test-only",
           "gemini-3.5-flash-lite",
           transport,
         );
         await message(testCase.text, model);
-        expect(model.calls).toBe(1); // Adapter calls, not external network requests.
+        expect(model.calls).toBe(2); // Routing + original recorded full interpretation; no live requests.
         expect(task.status).not.toBe("error");
-        expect(task.receipts?.at(-1)?.modelRequests).toBe(1);
+        expect(task.receipts?.at(-1)?.modelRequests).toBe(2);
       };
 
       await replay(0);

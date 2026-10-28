@@ -1,5 +1,9 @@
 import { installPresentation, validatePresentation } from "./presentation";
-import { interpretationFailure } from "./interpretation-failure";
+import { practicalDiscoveryOpportunity } from "./action-readiness";
+import {
+  interpretationFailure,
+  ProviderHttpError,
+} from "./interpretation-failure";
 import { assertGroundedOutcome, OutcomeGroundingError } from "./outcome-spec";
 import {
   TurnSchema,
@@ -7,7 +11,7 @@ import {
   type Task,
   type Turn,
 } from "./contracts";
-import type { z } from "zod";
+import { z } from "zod";
 import type { ModelProvider } from "../tools/interfaces";
 import type { Trace } from "../capabilities/contract";
 import { ExecutionBudget, withToolDeadline } from "./execution";
@@ -46,7 +50,21 @@ export async function interpretMessage(
   const interpretationStarted = Date.now();
   const callsBefore = model.calls ?? 0;
   let parsed: z.infer<typeof InterpretationSchema>;
+  // The failed turn was already saved in SQLite before the user clicked
+  // Try again. Reinterpret it without copying the same user message twice.
+  // Only a matching *last* failed interpretation is eligible; a new message
+  // or a different failure type must always create a fresh turn.
+  const replayingFailedTurn =
+    task.status === "error" &&
+    task.trace.at(-1)?.action === "model.interpret.error" &&
+    task.messages.at(-1)?.role === "user" &&
+    task.messages.at(-1)?.text === input.text;
   const context = structuredClone(task);
+
+  if (replayingFailedTurn) {
+    context.messages.pop();
+  }
+
   const initialRequestText = [
     input.text,
     ...context.messages
@@ -54,15 +72,124 @@ export async function interpretMessage(
       .map((message) => message.text)
       .reverse(),
   ].join("\n");
-  task.messages.push({ role: "user", text: input.text, at: at() });
+
+  if (!replayingFailedTurn) {
+    task.messages.push({ role: "user", text: input.text, at: at() });
+  }
 
   try {
-    parsed = InterpretationSchema.parse(
-      await withToolDeadline(
-        model.interpret(input.text, context),
-        model.timeoutMs ?? 5000,
-      ),
-    );
+    // Every natural message gets a small, read-only route before the expensive
+    // cultural/work decision protocol. The route can never commit an edit or
+    // claim an external action. Actionable requests delegate to the full path.
+    // Submitted canvas answers are a continuation of executable work, not
+    // an independent conversational request. Keep them on the full interpreter.
+    let routed: Awaited<
+      ReturnType<NonNullable<ModelProvider["routeConversation"]>>
+    > = null;
+
+    if (!formAnswer && model.routeConversation) {
+      try {
+        routed = await withToolDeadline(
+          model.routeConversation(input.text, context),
+          model.timeoutMs ?? 5000,
+        );
+      } catch (error) {
+        // A malformed read-only route must not poison the whole conversation.
+        // A different, existing interpreter schema can recover it once.
+        // Do not replay auth, rate-limit, network or provider outage failures:
+        // another request to the same backend would waste time and credits.
+        const malformed =
+          error instanceof z.ZodError ||
+          error instanceof SyntaxError ||
+          (error instanceof ProviderHttpError &&
+            [400, 422].includes(error.status) &&
+            error.schemaKeywords.length > 0) ||
+          (error instanceof Error &&
+            /Unauthorized model tool|Exactly one allowed tool|Model decision could not be validated/.test(
+              error.message,
+            ));
+
+        if (!malformed) {
+          throw error;
+        }
+
+        trace(
+          "model.route.recovered",
+          `Read-only routing rejected (${interpretationFailure(error)}); trying the independent interpreter once.`,
+          (model.calls ?? 0) - callsBefore,
+        );
+      }
+    }
+
+    const opportunity = !formAnswer
+      ? practicalDiscoveryOpportunity(task, input.text)
+      : null;
+    const researchQuery =
+      opportunity?.query ??
+      (routed?.intent === "research" ? routed.query : undefined);
+
+    if (
+      researchQuery &&
+      (routed?.intent === "research" ||
+        (opportunity &&
+          (!routed ||
+            routed.intent === "conversation" ||
+            routed.intent === "clarification")))
+    ) {
+      trace(
+        "research.route",
+        opportunity
+          ? "Planning context is actionable; execute bounded real-world source research rather than asking another question or promising a plan."
+          : "Selected a bounded read-only public-web research task.",
+        (model.calls ?? 0) - callsBefore,
+      );
+
+      return {
+        ...update,
+        task,
+        researchQuery,
+        ...(opportunity ? { practicalLocation: opportunity.city } : {}),
+      };
+    }
+
+    if (routed?.intent === "draft") {
+      if (!model.composeDraft) {
+        throw new Error("Draft model is not configured.");
+      }
+
+      const draft = await withToolDeadline(
+        model.composeDraft(input.text, context),
+        model.timeoutMs ?? 30000,
+      );
+      // A small authoring schema produces real persistent work without the
+      // heavyweight planning protocol. Existing artifacts/approvals are untouched.
+      parsed = InterpretationSchema.parse({
+        intent: "conversation",
+        reply: `Here is a first draft of ${draft.title}. You can edit it below.`,
+        presentation: {
+          id: `draft-${task.brief.version + 1}`,
+          title: draft.title,
+          basis: "draft",
+          root: "document",
+          nodes: [
+            {
+              id: "document",
+              type: "document",
+              title: draft.title,
+              content: draft.content,
+            },
+          ],
+        },
+      });
+    } else {
+      parsed = InterpretationSchema.parse(
+        routed ??
+          (await withToolDeadline(
+            model.interpret(input.text, context),
+            model.timeoutMs ?? 5000,
+          )),
+      );
+    }
 
     // An actual answer to Igor's outstanding taste question may be a short
     // artist or film name. Do not misinterpret continuation commands or
@@ -158,12 +285,82 @@ export async function interpretMessage(
       return { ...update, task, conversationOnly: true };
     }
 
+    // The large update_brief schema can fail independently of a healthy
+    // conversational model. Rescue once through a separate READ-ONLY route:
+    // no Qloo, external calls, state edits or invented execution receipts.
+    // This is not a retry of the rejected planning action.
+    const recoverableDecision =
+      error instanceof z.ZodError ||
+      error instanceof SyntaxError ||
+      (error instanceof ProviderHttpError &&
+        [400, 422].includes(error.status) &&
+        error.schemaKeywords.length > 0) ||
+      (error instanceof Error &&
+        /Unauthorized model tool|Exactly one allowed tool|Model decision could not be validated|Invalid interpreted patch/.test(
+          error.message,
+        ));
+
+    if (!formAnswer && recoverableDecision && model.recoverConversation) {
+      try {
+        const rescue = await withToolDeadline(
+          model.recoverConversation(input.text, context),
+          model.timeoutMs ?? 5000,
+        );
+
+        if (
+          rescue &&
+          (rescue.intent === "conversation" ||
+            rescue.intent === "clarification") &&
+          (rescue.replyEvidenceIds ?? []).every((id) =>
+            task.evidence.some((item) => item.id === id),
+          )
+        ) {
+          task.messages.push({
+            role: "assistant",
+            kind: "conversation",
+            text: rescue.reply,
+            evidenceIds: rescue.replyEvidenceIds ?? [],
+            at: at(),
+          });
+          trace(
+            "model.interpret.recovered",
+            `Complex interpretation failed (${interpretationFailure(error)}). Provided a read-only conversational answer; no planning action executed.`,
+            (model.calls ?? 0) - callsBefore,
+          );
+
+          return { ...update, task, conversationOnly: true };
+        }
+      } catch (recoveryError) {
+        trace(
+          "model.recovery.unavailable",
+          `Read-only recovery was also unavailable (${interpretationFailure(recoveryError)}).`,
+          (model.calls ?? 0) - callsBefore,
+        );
+      }
+    }
+
     task.status = "error";
-    task.error =
-      "I couldn’t complete that reply just now. Your conversation and saved work are still here. Please try again.";
+    const diagnostic = interpretationFailure(error);
+    const reason =
+      diagnostic === "provider timeout"
+        ? "The model timed out"
+        : /^provider HTTP 429/.test(diagnostic)
+          ? "The model provider is temporarily rate-limited"
+          : /^provider HTTP 5\d\d/.test(diagnostic)
+            ? "The model provider is temporarily unavailable"
+            : /^provider HTTP 4\d\d/.test(diagnostic)
+              ? "The model provider rejected the request"
+              : diagnostic.startsWith("invalid schema") ||
+                  diagnostic === "invalid JSON" ||
+                  diagnostic === "invalid tool call"
+                ? "The model returned an invalid decision"
+                : diagnostic === "model not configured"
+                  ? "No model provider is configured"
+                  : "The model could not finish this response";
+    task.error = `${reason}. Your message and previous work are saved. No new external action was completed. You can retry this turn.`;
     trace(
       "model.interpret.error",
-      `${task.error} Diagnostic: ${interpretationFailure(error)}.`,
+      `${task.error} Diagnostic: ${diagnostic}.`,
       (model.calls ?? 0) - callsBefore,
       [],
       Date.now() - interpretationStarted,
@@ -274,6 +471,11 @@ export async function interpretMessage(
   // including legacy top-level fields. Avoid duplicating equivalent artifact edits.
   const proposals = [...(parsed.actions ?? [])];
   const explicitDocumentEdit =
+    // An explicitly addressed document with verbatim supplied replacement
+    // wording is a direct edit, even without the redundant verb "edit".
+    /^(?:edit\s+)?(?:invitation|invite|wording)\s*:\s*\S/i.test(
+      input.text.trim(),
+    ) ||
     /\b(?:edit|rewrite|replace|update|change|revise|set)\b[\s\S]{0,160}\b(?:document|invitation|invite|wording|copy|draft|text)\b/i.test(
       input.text,
     ) ||

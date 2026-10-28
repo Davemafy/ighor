@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { readResponseText, ResponseBodyError } from "./response-body";
 import { createHash } from "node:crypto";
 import type {
@@ -7,7 +8,7 @@ import type {
   Participant,
   ToolResult,
 } from "../core/contracts";
-import type { CulturalProvider, DiscoveryInput } from "./interfaces";
+import type { CulturalProvider, DiscoveryInput, LocalPlaceResult } from "./interfaces";
 import { MemoryResponseCache, type ResponseCache } from "./qloo-cache";
 import {
   QLOO_API_ORIGIN,
@@ -168,6 +169,127 @@ export class LiveQlooProvider implements CulturalProvider {
       retry: "manual",
       requestCount: this.calls - start,
     };
+  }
+
+  /**
+   * Geography/category place exploration can start without an artist/movie
+   * seed. Qloo's documented locality and restaurant-tag filters are genuine
+   * lookup signals; they are NOT personalized affinity or proof that a
+   * particular game, price or reservation is available.
+   */
+  async exploreLocality(
+    location: string,
+    interests: string,
+  ): Promise<ToolResult<LocalPlaceResult>> {
+    const start = this.calls;
+    const empty: LocalPlaceResult = { places: [], evidence: [] };
+    if (
+      !location.trim() ||
+      location.length > 100 ||
+      !/\b(?:dining|dinning|restaurant|cafe|food|dinner|lunch|brunch|eat)\b/i.test(
+        interests,
+      )
+    ) {
+      return {
+        status: "blocked",
+        data: empty,
+        warnings: ["No grounded local dining category for a Qloo place query."],
+        evidenceIds: [],
+        retry: "never",
+        requestCount: 0,
+      };
+    }
+
+    try {
+      const response = await this.request("/v2/insights", {
+        "filter.type": "urn:entity:place",
+        "filter.location.query": location.trim(),
+        "filter.location.radius": "0",
+        // This is a category filter, not a claim of preference affinity.
+        "filter.tags": "urn:tag:genre:place:restaurant",
+        take: "8",
+      });
+      const localities = z
+        .object({
+          localities: z.object({
+            filter: z.array(
+              z.object({
+                entity_id: z.string().uuid(),
+                name: z.string(),
+              }),
+            ),
+          }),
+        })
+        .safeParse(response.body.query);
+      // Locality filtering must be confirmed from the returned query, not
+      // merely assumed from request parameters.
+      if (!localities.success || localities.data.localities.filter.length !== 1) {
+        return {
+          status: "partial",
+          data: empty,
+          warnings: ["Qloo did not confirm one unambiguous requested locality."],
+          evidenceIds: [],
+          retry: "manual",
+          requestCount: this.calls - start,
+        };
+      }
+      const matched = localities.data.localities.filter[0];
+      const rows = qlooRows(response.body)
+        .filter((row) => rowTypes(row).includes("place"))
+        .slice(0, 8);
+      const places = rows.map((row) => {
+        const website = z.string().url().safeParse(row.properties?.website);
+        const address =
+          typeof row.properties?.address === "string"
+            ? row.properties.address.slice(0, 300)
+            : "";
+        return {
+          providerId: row.entity_id,
+          name: row.name.slice(0, 120),
+          description: String(
+            row.properties?.short_description ??
+              row.properties?.description ??
+              "",
+          ).slice(0, 320),
+          website:
+            website.success && website.data.startsWith("https://")
+              ? website.data
+              : null,
+          address,
+          latitude: row.location?.lat ?? null,
+          longitude: row.location?.lon ?? null,
+        };
+      });
+      const evidence = places.map((place, index) => ({
+        id: `qloo:local:${response.id}:${place.providerId}`,
+        kind: "cultural" as const,
+        source: "provider-returned" as const,
+        delivery: response.delivery,
+        at: response.at,
+        reference: `${QLOO_API_ORIGIN}/v2/insights · query ${response.id}`,
+        entityIds: [place.providerId],
+        summary: `Qloo locality/category result ${index + 1}: ${place.name}; matched ${matched.name}. ${place.address}`.slice(0, 450),
+        limitations: [
+          "Location and restaurant-category match only; not personalized taste affinity.",
+          "Board games, Saturday hours, group seating, prices and reservations have not been verified.",
+        ],
+        explanation: null,
+        dependencies: ["location", "category:restaurant"],
+        freshness: "current" as const,
+      }));
+      return {
+        status: places.length ? "ok" : "empty",
+        data: { places, evidence },
+        evidenceIds: evidence.map((entry) => entry.id),
+        warnings: places.length
+          ? []
+          : ["Qloo returned no matching restaurant places in this locality."],
+        retry: "manual",
+        requestCount: this.calls - start,
+      };
+    } catch (error) {
+      return this.failure(error, start, empty);
+    }
   }
 
   async resolve(

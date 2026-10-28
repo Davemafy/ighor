@@ -1,34 +1,44 @@
 import { test, expect } from "@playwright/test";
 import { freshLiveExample } from "../../src/data/live-task";
 
-test("default production path has no catalogue and reports blocked retrieval honestly", async ({
+test("unconfigured production tools preserve the user turn without inventing Qloo results", async ({
   page,
-  request,
 }) => {
-  const created = await request.post("/api/tasks");
+  // Keep API creation and page access in the same browser session. An
+  // isolated Playwright request context correctly cannot read its tasks.
+  const created = await page.request.post("/api/tasks");
+  expect(created.ok()).toBe(true);
   const task = await created.json();
   expect(task.mode).toBe("qloo-live");
   expect(task.catalogue).toEqual([]);
-  await page.goto("/workspace");
-  await expect(
-    page.getByText("Qloo connection", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "A shorter evening" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "A smaller budget" }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Try the six-person evening" })
-    .click();
-  await expect(page.getByRole("status")).toContainText("0 external requests");
-  await page.getByRole("tab", { name: /Options/ }).click();
-  await expect(
-    page.getByRole("button", { name: "Compare with LLM-only" }),
-  ).toBeDisabled();
-  await expect(page.locator(".options-table tbody tr")).toHaveCount(0);
-  await expect(page.getByLabel("Fixture provider behavior")).toHaveCount(0);
+  expect(task.candidates).toEqual([]);
+  expect(task.evidence).toEqual([]);
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
+  await page.goto("/app");
+  const composer = page.getByRole("textbox", { name: "Message Igor" });
+  await composer.fill("Find a cultural experience for my friends.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.locator(".iw-message.iw-user")).toContainText(
+    "Find a cultural experience for my friends.",
+  );
+  await expect(page.locator(".iw-error")).toBeVisible();
+  const read = await page.request.get(`/api/tasks/${task.id}`);
+  expect(read.ok()).toBe(true);
+  const stored = await read.json();
+  expect(Array.isArray(stored.messages)).toBe(true);
+  expect(stored.messages.at(-1)?.role).toBe("user");
+  expect(stored.catalogue).toEqual([]);
+  expect(stored.candidates).toEqual([]);
+  expect(stored.evidence).toEqual([]);
+  expect(stored.error).toBeTruthy();
+
+  await page.reload();
+  await expect(page.locator(".iw-message.iw-user")).toContainText(
+    "Find a cultural experience for my friends.",
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -36,106 +46,56 @@ test("default production path has no catalogue and reports blocked retrieval hon
   ).toBe(true);
 });
 
-test("cached evidence, practical-fact entry and blocked baseline render through mocked workspace HTTP", async ({
+test("cached Qloo evidence is disclosed without inventing practical availability", async ({
   page,
 }) => {
-  const task = freshLiveExample("mock", "owner");
-  task.brief.goal = "Synthetic UI test only";
-  const at = "2026-10-24T00:00:00Z";
-  const candidate = {
-    id: "22222222-2222-4222-8222-222222222222",
-    providerId: "22222222-2222-4222-8222-222222222222",
-    name: "Mock film",
-    type: "movie" as const,
-    tags: [],
-    description: "Synthetic UI test response, not a live Qloo result.",
-    cost: {
-      value: null as number | null,
-      source: "user-supplied" as const,
-      reference: "Not supplied",
-      at,
-    },
-    duration: {
-      value: null as number | null,
-      source: "user-supplied" as const,
-      reference: "Not supplied",
-      at,
-    },
-    available: null as boolean | null,
-    availabilitySource: "user-supplied" as const,
-    location: null,
-    sample: false,
-    cultural: {
-      amara: {
-        affinity: 0.72,
-        rank: 1,
-        queryId: "mock-query",
-        seedIds: [],
-        explanationEntities: [],
-        delivery: "CACHED" as const,
-        retrievedAt: at,
-      },
-    },
-  };
-  task.catalogue = [candidate];
-  task.candidates = [
+  const task = freshLiveExample("mock-provider", "owner");
+  task.brief.goal = "Inspect a cached cultural reference";
+  task.status = "partial";
+  task.messages = [
     {
-      ...candidate,
-      eligibility: "needs-review",
-      dependencies: [],
-      freshness: "current",
-      missing: ["Cost unknown"],
-      violations: [],
-      evidenceIds: [],
-      fit: { amara: 1 },
-      fitReason: "Synthetic transport fixture.",
+      role: "user",
+      text: "Can I book the screening?",
+      at: "2026-10-24T00:00:00Z",
+    },
+    {
+      role: "assistant",
+      kind: "conversation",
+      text: "The cultural association was cached. Screening availability and bookings have not been verified.",
+      evidenceIds: ["mock-cached-qloo"],
+      at: "2026-10-24T00:00:01Z",
     },
   ];
-  task.status = "partial";
-  await page.route("**/api/tasks", async (route) =>
-    route.fulfill({ json: task }),
+  task.evidence = [
+    {
+      id: "mock-cached-qloo",
+      source: "provider-returned",
+      delivery: "CACHED",
+      kind: "cultural",
+      at: "2026-10-24T00:00:00Z",
+      reference: "mock-recording-only",
+      entityIds: [],
+      summary: "Recorded Qloo association for offline browser test",
+      limitations: [
+        "CACHED recording; no live request.",
+        "No screening availability or booking is verified.",
+      ],
+      explanation: null,
+      dependencies: [],
+      freshness: "current",
+    },
+  ];
+  await page.route("**/api/tasks", (route) => route.fulfill({ json: task }));
+  await page.goto("/app");
+  await expect(page.locator(".iw-message.iw-assistant")).toContainText(
+    "bookings have not been verified.",
   );
-  await page.route("**/api/tasks/mock/turn", async (route) => {
-    const input = route.request().postDataJSON();
-
-    if (input.type === "catalogue") {
-      expect(input.options[0].cost.value).toBe(7);
-      expect(input.options[0].duration.value).toBe(80);
-      expect(input.options[0].available).toBe(true);
-      task.catalogue = input.options;
-      task.candidates[0] = { ...task.candidates[0], ...input.options[0] };
-    } else if (input.type === "baseline") {
-      task.evaluation = {
-        version: task.brief.version + 1,
-        status: "blocked",
-        baseline: [],
-        assisted: [],
-        warnings: ["Model is not configured."],
-        model: "unconfigured",
-        at,
-      };
-    }
-
-    task.brief.version++;
-    await route.fulfill({
-      contentType: "text/event-stream",
-      body: `data: ${JSON.stringify({ type: "done", task })}\n\n`,
-    });
-  });
-  await page.goto("/workspace");
-  await page.getByRole("tab", { name: /Options/ }).click();
-  await page.getByText("Mock film", { exact: true }).first().click();
-  await expect(page.getByText(/affinity 0.72/)).toBeVisible();
-  await page.getByLabel("Cost for Mock film", { exact: true }).fill("7");
-  await page.getByLabel("Minutes for Mock film", { exact: true }).fill("80");
-  await page
-    .getByLabel("Access for Mock film", { exact: true })
-    .selectOption("yes");
-  await page.getByRole("button", { name: "Save practical facts" }).click();
-  await page.getByRole("button", { name: "Compare with LLM-only" }).click();
-  await expect(page.getByText(/Model is not configured/)).toBeVisible();
-  await page.screenshot({
-    path: "test-results/live-options-mocked.png",
-    fullPage: true,
-  });
+  const sources = page.locator(".iw-message-sources");
+  await sources.locator("summary").click();
+  await expect(sources).toContainText("Qloo");
+  await expect(sources).toContainText("CACHED recording; no live request.");
+  await expect(sources).toContainText(
+    "No screening availability or booking is verified.",
+  );
+  await expect(sources.getByRole("link")).toHaveCount(0);
 });

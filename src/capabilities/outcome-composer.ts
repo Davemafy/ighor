@@ -162,7 +162,7 @@ export function composeOutcome(input: Input) {
       [
         "Concept direction for review",
         `Build an intimate experience around the cultural references ${culturalLine}.`,
-        `Proposed location: ${input.brief.constraints.location} (working brief value; confirm before using; suitability not verified).`,
+        `Location proposed: ${input.brief.constraints.location} (working brief value; confirm before using; suitability not verified).`,
         "Explore a cohesive visual and listening atmosphere, then validate real venues, budget, rights and guest preferences before publishing.",
       ].join("\n\n"),
       ["location"],

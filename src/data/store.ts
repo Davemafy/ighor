@@ -245,6 +245,23 @@ function readStoredState(text: string): Task {
   }
 
   const task = TaskSchema.parse(raw);
+
+  // A crashed server cannot resume a timed-out Bright Data HTTP request.
+  // Show an honest recoverable state on reload instead of leaving the
+  // workspace indefinitely "running". Do not mutate the stored version:
+  // an in-flight worker can still commit if its optimistic CAS succeeds.
+  const lastTrace = task.trace.at(-1);
+  if (
+    task.status === "running" &&
+    lastTrace?.action === "tool.invoke:search_web" &&
+    Number.isFinite(Date.parse(lastTrace.at)) &&
+    Date.now() - Date.parse(lastTrace.at) > 120000
+  ) {
+    task.status = "partial";
+    task.error =
+      "Live research was interrupted before an answer was confirmed. Your request and earlier work are saved; retry research to continue.";
+  }
+
   messageIds(task);
 
   return task;

@@ -379,11 +379,13 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
 
       return result(
         name,
-        name === "update_brief"
-          ? interpretation
-          : name === "inspect_candidates"
-            ? {}
-            : { ids: [ids.movie] },
+        name === "route_conversation"
+          ? { intent: "delegate" }
+          : name === "update_brief"
+            ? interpretation
+            : name === "inspect_candidates"
+              ? {}
+              : { ids: [ids.movie] },
       );
     }) as typeof fetch;
     const model = new GeminiModel(key, "gemini-3.5-flash-lite", modelHttp);
@@ -398,7 +400,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     );
     expect(task.modelMode).toBe("tool-calling");
     expect(task.status).toBe("partial");
-    expect(task.receipts?.at(-1)?.modelRequests).toBe(1);
+    expect(task.receipts?.at(-1)?.modelRequests).toBe(2);
     expect(task.receipts?.at(-1)?.culturalRequests).toBe(
       qloo.mock.calls.length,
     );
@@ -504,7 +506,7 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     );
     expect(task.evaluation?.status).toBe("ok");
     expect(task.evaluation?.model).toBe("gemini-3.5-flash-lite");
-    expect(model.calls).toBe(5);
+    expect(model.calls).toBe(6);
     expect(qloo.mock.calls.length - qlooBefore).toBe(1);
   });
 });

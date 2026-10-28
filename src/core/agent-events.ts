@@ -105,7 +105,11 @@ export function agentEmitter(initial: Task, send: (event: Event) => void) {
           message.role === "user"
             ? "User message saved."
             : "Assistant message saved.",
-          { messageId: message.id, rendererType: "conversation" },
+          {
+            messageId: message.id,
+            rendererType: "conversation",
+            evidenceIds: message.evidenceIds,
+          },
         );
       }
 

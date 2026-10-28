@@ -16,7 +16,7 @@ export function EvidenceView({
       <h2 className="small-serif">What this result rests on.</h2>
       <p className="helper muted">
         {task.mode === "qloo-live"
-          ? "Provider evidence preserves retrieval time and IDs. Query-level contributors are not per-item explanations. Practical facts remain user-supplied."
+          ? "Cultural evidence preserves Qloo source and delivery metadata. Web research is separately labelled, with source links and retrieval times; snippets are not verified page contents."
           : "Every cultural association in this test mode is synthetic. Reasoning is application-generated; there is no Qloo explanation payload."}
       </p>
       <div className="evidence-summary">
@@ -70,14 +70,36 @@ export function EvidenceView({
                     ? evidence.delivery
                     : evidence.source === "illustrative-example"
                       ? "Illustrative"
-                      : "Supplied"}
+                      : evidence.source === "provider-returned"
+                      ? evidence.kind === "practical"
+                        ? "Web source"
+                        : "Provider"
+                      : evidence.source === "user-supplied"
+                        ? "Supplied"
+                        : evidence.source === "recorded-fixture"
+                          ? "Recorded"
+                          : "Unverified"}
               </span>
               {evidence.summary.split(":")[0]}
             </summary>
             <p>{evidence.summary}</p>
             <dl>
               <dt>Reference</dt>
-              <dd>{evidence.reference}</dd>
+              <dd>
+                {evidence.kind === "practical" &&
+                evidence.source === "provider-returned" &&
+                evidence.reference.startsWith("https://") ? (
+                  <a
+                    href={evidence.reference}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open public source
+                  </a>
+                ) : (
+                  evidence.reference
+                )}
+              </dd>
               <dt>Recorded</dt>
               <dd>{new Date(evidence.at).toLocaleString()}</dd>
               <dt>Provider explanation</dt>

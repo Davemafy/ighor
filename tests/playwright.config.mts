@@ -69,6 +69,11 @@ export default defineConfig({
       use: { baseURL: "http://127.0.0.1:3100" },
     },
     {
+      name: "editorial-research",
+      testMatch: "editorial-research.e2e.ts",
+      use: { baseURL: "http://127.0.0.1:3100" },
+    },
+    {
       name: "workspace",
       testMatch: "workspace.e2e.ts",
       use: { baseURL: "http://127.0.0.1:3100" },

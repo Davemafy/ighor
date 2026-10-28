@@ -81,6 +81,19 @@ const model = (presentation = surface()): ModelProvider => ({
 it("agent composes mixed interfaces via the existing provider transport without framework migration", async () => {
   const transport: typeof fetch = async (_url, init) => {
     const body = JSON.parse(String(init?.body));
+    if (body.tools[0].name === "route_conversation") {
+      return Response.json({
+        status: "completed",
+        output: [
+          {
+            type: "function_call",
+            name: "route_conversation",
+            call_id: "route-1",
+            arguments: JSON.stringify({ intent: "delegate" }),
+          },
+        ],
+      });
+    }
     expect(body.tools[0].parameters.properties.decision.description).toContain(
       '"presentation"',
     );
@@ -125,7 +138,7 @@ it("agent composes mixed interfaces via the existing provider transport without 
   ]);
   expect(result.trace.some((t) => t.action === "ui.present")).toBe(true);
   expect(result.trace.some((t) => t.action.startsWith("discover"))).toBe(false);
-  expect(provider.calls).toBe(1);
+  expect(provider.calls).toBe(2);
 });
 
 it("only accepts numeric chart criteria and persists them into later model context", async () => {
