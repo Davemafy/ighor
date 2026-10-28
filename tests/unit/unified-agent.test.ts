@@ -133,4 +133,29 @@ describe("unified tool orchestration", () => {
       expect(store.load(task.id, "owner").brief.goal).toBe("User's newer correction");
     } finally { release(); store.close(); }
   });
+  it("marks stale persisted agent steps interrupted without erasing results or replaying calls", () => {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask("interrupted", "owner");
+    task.status = "running";
+    task.agentRun = {
+      id: "11111111-1111-4111-8111-111111111111",
+      goal: "Find real sources",
+      status: "executing_tool",
+      startedAt: "2026-10-20T00:00:00.000Z",
+      updatedAt: "2026-10-20T00:00:00.000Z",
+      maxSteps: 4, maxRequests: 8, requests: 1,
+      modelSteps: 1, steps: [],
+      sources: [source()],
+      warnings: [],
+    };
+    try {
+      store.create(task);
+      const loaded = store.load(task.id, "owner");
+      expect(loaded.agentRun?.status).toBe("interrupted");
+      expect(loaded.agentRun?.sources).toHaveLength(1);
+      expect(loaded.status).toBe("partial");
+    } finally { store.close(); }
+  });
+
+
 });
