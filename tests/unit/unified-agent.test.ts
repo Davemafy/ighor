@@ -85,6 +85,43 @@ describe("unified tool orchestration", () => {
     } finally { store.close(); }
   });
 
+  it("preserves partial status when a run found sources but exhausted its steps before producing a deliverable", async () => {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask("partial-discovery", "owner");
+    store.create(task);
+    const prior = process.env.IGOR_AGENT_MAX_STEPS;
+    process.env.IGOR_AGENT_MAX_STEPS = "1";
+    try {
+      const result = await runUnifiedAgent({
+        task, store, owner: "owner", goal: "Find and compare a venue, then save a plan",
+        research: {
+          research: vi.fn(),
+          searchOnce: vi.fn(async () => ({
+            status: "ok" as const, sources: [source()], requests: 1,
+          })),
+        },
+        model: {
+          chooseAgentAction: vi.fn(async () => ({
+            name: "web.search", arguments: { query: "official venue Berlin" },
+          })),
+          async interpret() { throw new Error("unused"); },
+        },
+        trace() {},
+      });
+      expect(result.sources).toHaveLength(1);
+      expect(task.agentRun?.status).toBe("partially_completed");
+      expect(task.agentRun?.warnings.join(" ")).toContain(
+        "before a verified completion decision",
+      );
+      expect(task.artifacts).toHaveLength(0);
+      expect(store.load(task.id, "owner").agentRun?.status).toBe("partially_completed");
+    } finally {
+      if (prior === undefined) delete process.env.IGOR_AGENT_MAX_STEPS;
+      else process.env.IGOR_AGENT_MAX_STEPS = prior;
+      store.close();
+    }
+  });
+
   it("does not execute unobserved page reads, duplicate actions, or unknown tools", async () => {
     const store = new SqliteTaskStore(":memory:");
     const task = freshTask("reject", "owner");
