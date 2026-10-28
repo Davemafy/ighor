@@ -37,6 +37,11 @@ export interface PracticalFactsProvider {
 }
 
 export interface ModelProvider {
+  readonly failures?: readonly {
+    provider: string;
+    status: number;
+    category: string | null;
+  }[];
   readonly executionMode?: "scripted" | "tool-calling";
   readonly model?: string;
   readonly calls?: number;

@@ -172,6 +172,13 @@ export async function interpretMessage(
     return { ...update, task, interpretationFailed: true };
   }
 
+  for (const failure of model.failures ?? []) {
+    trace(
+      "model.fallback",
+      `${failure.provider} returned HTTP ${failure.status}${failure.category ? ` (${failure.category})` : ""}; continued with the separately configured backup provider.`,
+    );
+  }
+
   trace(
     "model.interpret",
     parsed.intent === "conversation" || parsed.intent === "clarification"

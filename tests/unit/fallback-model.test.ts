@@ -28,19 +28,22 @@ it("uses a single configured backup for a transient interpretation failure", asy
   expect(model.calls).toBe(2);
   expect(model.timeoutMs).toBeGreaterThan(100);
 });
-it("does not hide configuration errors or call a backup after success", async () => {
+it("records a credential failure and never calls a backup after primary success", async () => {
   const backup = { interpret: vi.fn(async () => reply) };
-  await expect(
-    new FallbackModel(
-      {
-        interpret: async () => {
-          throw new ProviderHttpError("Gemini", 401, "");
-        },
+  const model = new FallbackModel(
+    {
+      interpret: async () => {
+        throw new ProviderHttpError("Gemini", 401, "");
       },
-      backup,
-    ).interpret("hey"),
-  ).rejects.toThrow("401");
-  expect(backup.interpret).not.toHaveBeenCalled();
+    },
+    backup,
+  );
+  expect(await model.interpret("hey")).toEqual(reply);
+  expect(model.failures).toEqual([
+    { provider: "Gemini", status: 401, category: null },
+  ]);
+  expect(backup.interpret).toHaveBeenCalledOnce();
+  backup.interpret.mockClear();
   expect(
     await new FallbackModel({ interpret: async () => reply }, backup).interpret(
       "hey",
@@ -63,4 +66,23 @@ it("does not keep retry available for an already completed saved turn", () => {
   expect(completedTurnAfter(task, 2, 0)).toBe(false);
   task.status = "error";
   expect(completedTurnAfter(task, 1, 0)).toBe(false);
+});
+
+it("uses a separately configured backup for the observed Grok credential rejection", async () => {
+  const primary = {
+    interpret: vi.fn(async () => {
+      throw new ProviderHttpError("Grok", 400, "Incorrect API key supplied");
+    }),
+  };
+  const backup = { interpret: vi.fn(async () => reply) };
+  const model = new FallbackModel(primary, backup);
+  expect(await model.interpret("Hello")).toEqual(reply);
+  expect(model.failures).toContainEqual({
+    provider: "Grok",
+    status: 400,
+    category: "credentials",
+  });
+  expect(await model.interpret("Continue")).toEqual(reply);
+  expect(primary.interpret).toHaveBeenCalledOnce();
+  expect(backup.interpret).toHaveBeenCalledTimes(2);
 });
