@@ -82,6 +82,16 @@ export type ResearchStep =
   | { action: "search"; query: string }
   | { action: "read"; sourceId: string };
 
+export interface AgentToolBrief {
+  name: string;
+  description: string;
+  permission: "read" | "internal";
+}
+export interface AgentToolChoice {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface ModelProvider {
   readonly failures?: readonly {
     provider: string;
@@ -110,6 +120,13 @@ export interface ModelProvider {
     context: Task,
     remainingActions: number,
   ): Promise<ResearchStep>;
+  /** One model-selected action, validated independently by the server registry. */
+  chooseAgentAction?(
+    goal: string,
+    tools: AgentToolBrief[],
+    observations: {tool: string; status: string; summary: string}[],
+    context: Task,
+  ): Promise<AgentToolChoice>;
   synthesizeResearch?(
     question: string,
     sources: ResearchSource[],
