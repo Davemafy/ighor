@@ -98,7 +98,7 @@ export async function POST(
       const saved = store.readTurn(id, owner, turnId);
       const replay = saved.events
         .map(({ sequence, event }) =>
-          `id: ${sequence}\\ndata: ${JSON.stringify(event)}\\n\\n`)
+          `id: ${sequence}\ndata: ${JSON.stringify(event)}\n\n`)
         .join("");
       const terminal = saved.status === "completed" ||
         saved.status === "failed" || saved.status === "superseded";
@@ -108,7 +108,7 @@ export async function POST(
             type: "error",
             code: "already-running",
             message: "Your request was already accepted. Your saved work is safe; refresh to check its progress.",
-          })}\\n\\n`;
+          })}\n\n`;
 
       return new Response(replay + continuation, {
         headers: {
