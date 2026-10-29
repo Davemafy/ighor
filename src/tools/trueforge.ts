@@ -147,7 +147,7 @@ export async function readTrueForgeTurn(response: Response): Promise<string> {
   let buffer = "";
   let bytes = 0;
   let partial = "";
-  let final: TrueForgeEvent | null = null;
+  const terminalEvents: TrueForgeEvent[] = [];
 
   const consume = (frame: string) => {
     const event = parseTurnFrame(frame);
@@ -159,7 +159,7 @@ export async function readTrueForgeTurn(response: Response): Promise<string> {
     if (event.type === "model.message.delta" && event.thread_id === "main") {
       partial = (partial + (event.content ?? "")).slice(0, MAX_RESPONSE_TEXT);
     } else if (event.type === "turn.done") {
-      final = event;
+      terminalEvents.push(event);
     }
   };
 
@@ -195,6 +195,8 @@ export async function readTrueForgeTurn(response: Response): Promise<string> {
   } finally {
     reader.releaseLock();
   }
+
+  const final = terminalEvents.at(-1);
 
   if (final?.state?.status !== "done") {
     throw new Error("TrueForge turn did not complete");
