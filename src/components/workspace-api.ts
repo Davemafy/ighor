@@ -89,7 +89,7 @@ export async function fetchTurnJournal(
   turnId: string,
   after = 0,
 ): Promise<{
-  status: "accepted" | "running" | "completed" | "failed" | "superseded";
+  status: "accepted" | "running" | "completed" | "failed" | "superseded" | "interrupted";
   events: Array<{ sequence: number; event: Event }>;
 }> {
   const res = await fetch(
