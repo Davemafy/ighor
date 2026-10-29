@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import fs from "node:fs/promises";
-const root = "http://127.0.0.1:3570";
+const root = process.env.IGOR_VERIFY_BASE || "http://127.0.0.1:3570";
 await fs.mkdir("test-results/live-flagship", { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
@@ -67,6 +67,31 @@ try {
     return structuredClone(task);
   }
 
+  const documents = (t) => [
+    ...t.artifacts,
+    ...(t.work?.documents ?? []).map((d) => ({ ...d, id: `document:${d.id}` })),
+  ];
+  const diagnostic = (t) => ({
+    status: t.agentRun?.status ?? t.status,
+    acceptance: t.agentRun?.acceptance?.status ?? null,
+    usage: t.agentRun?.usage ?? null,
+    steps: (t.agentRun?.steps ?? []).map(({ tool, status, requests }) => ({
+      tool,
+      status,
+      requests,
+    })),
+    failureCategories: t.trace
+      .filter((e) => /error|rejected/.test(e.action))
+      .map((e) => ({
+        action: e.action,
+        category:
+          e.outcome
+            .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
+            ?.slice(1)
+            .filter(Boolean)
+            .join(";") || "unclassified",
+      })),
+  });
   let first = await turn(
     "I run a 100-capacity space in Brooklyn. Our community loves Sade, Radiohead and Wong Kar-wai films. Design an unexpected Saturday experience, keep the proposed production budget under $3,000 and give me something I can pitch to partners. Save an editable proposal, provisional budget and schedule, and partner pitch. Label unverified practical facts.",
   );
@@ -74,6 +99,9 @@ try {
     path: "test-results/live-flagship/01-proposal.png",
     fullPage: true,
   });
+  report.initial = diagnostic(first);
+  if (first.agentRun?.acceptance?.status !== "satisfied")
+    throw Error("initial_acceptance_unsatisfied");
   // A real owner-authored independent constraint, explicitly saved and approved.
   // This is not model output or Qloo evidence.
   await turn({
@@ -127,24 +155,30 @@ try {
         b.id === a.id && b.content === a.content && b.status === "approved",
     ),
   );
-  const revised = loaded.artifacts.filter(
+  report.revision = diagnostic(second);
+  const revised = documents(loaded).filter(
     (artifact) =>
       second.agentRun?.outputArtifactIds?.includes(artifact.id) &&
-      first.artifacts.some(
+      documents(first).some(
         (old) => old.id === artifact.id && old.content !== artifact.content,
       ),
   );
   const historyRetained =
     revised.length > 0 &&
     revised.every((artifact) =>
-      first.artifacts.some(
+      documents(first).some(
         (old) =>
           old.id === artifact.id &&
-          loaded.artifactHistory?.some(
+          (loaded.artifactHistory?.some(
             (entry) =>
               entry.artifact.id === old.id &&
               entry.artifact.content === old.content,
-          ),
+          ) ||
+            loaded.work?.documents.some(
+              (d) =>
+                `document:${d.id}` === old.id &&
+                d.history.some((h) => h.content === old.content),
+            )),
       ),
     );
   await fs.writeFile(
@@ -221,11 +255,11 @@ try {
     newCachedCulturalEvidence: newEvidence.filter(
       (e) => e.delivery === "CACHED",
     ).length,
-    firstArtifacts: first.artifacts.length,
-    revisionArtifacts: second.artifacts.length,
+    firstArtifacts: documents(first).length,
+    revisionArtifacts: documents(second).length,
     budgetRetained: loaded.brief.constraints.budget === 3000,
     reloadStable:
-      JSON.stringify(loaded.artifacts) === JSON.stringify(second.artifacts),
+      JSON.stringify(documents(loaded)) === JSON.stringify(documents(second)),
     approvedCount: approved.length,
     approvedPreserved,
   };

@@ -1,3 +1,4 @@
+import { turnEventFrame } from "@/core/turn-event-frame";
 import { isActiveTurn } from "@/core/turn-lifecycle";
 import { cookies } from "next/headers";
 import { z, ZodError } from "zod";
@@ -127,9 +128,13 @@ export async function POST(
     if (admitted.duplicate) {
       const saved = store.readTurn(id, owner, turnId);
       const replay = saved.events
-        .map(
-          ({ sequence, event }) =>
-            `id: ${sequence}\ndata: ${JSON.stringify(event.type === "state" || event.type === "done" ? { ...event, task: saved.task } : event)}\n\n`,
+        .map(({ sequence, event }) =>
+          turnEventFrame(
+            event.type === "state" || event.type === "done"
+              ? { ...event, task: saved.task }
+              : event,
+            sequence,
+          ),
         )
         .join("");
       const terminal = !isActiveTurn(saved.status);
@@ -166,7 +171,10 @@ export async function POST(
           try {
             controller.enqueue(
               encoder.encode(
-                `id: ${sequence}\ndata: ${JSON.stringify(event)}\n\n`,
+                turnEventFrame(
+                  event,
+                  raw.clientTurnId === undefined ? undefined : sequence,
+                ),
               ),
             );
           } catch {
@@ -180,7 +188,10 @@ export async function POST(
           try {
             controller.enqueue(
               encoder.encode(
-                `id: ${saved.sequence}\ndata: ${JSON.stringify(saved.event)}\n\n`,
+                turnEventFrame(
+                  saved.event,
+                  raw.clientTurnId === undefined ? undefined : saved.sequence,
+                ),
               ),
             );
           } catch {
@@ -203,7 +214,12 @@ export async function POST(
               for (const saved of terminal.events) {
                 controller.enqueue(
                   encoder.encode(
-                    `id: ${saved.sequence}\ndata: ${JSON.stringify(saved.event)}\n\n`,
+                    turnEventFrame(
+                      saved.event,
+                      raw.clientTurnId === undefined
+                        ? undefined
+                        : saved.sequence,
+                    ),
                   ),
                 );
               }
