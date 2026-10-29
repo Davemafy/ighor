@@ -44,7 +44,11 @@ for (const viewport of [
     expect(
       await page.locator(".iw-workgrid").evaluate((element) => {
         const style = getComputedStyle(element);
-        return style.display !== "grid" || style.gridTemplateColumns.split(" ").length === 1;
+
+        return (
+          style.display !== "grid" ||
+          style.gridTemplateColumns.split(" ").length === 1
+        );
       }),
     ).toBe(true);
     expect(
