@@ -147,6 +147,23 @@ export function modelContext(task: Task, message: string) {
           externalActions: task.work.externalActions.slice(-5),
         }
       : undefined,
+    conversationFocus: task.conversationFocus
+      ? {
+          ...task.conversationFocus,
+          orderedCandidates: task.conversationFocus.activeCandidateIds.map(
+            (id, index) => {
+              const candidate = task.candidates.find((item) => item.id === id) ??
+                task.catalogue.find((item) => item.id === id);
+
+              return {
+                position: index + 1,
+                id,
+                name: candidate?.name ?? "Unresolved",
+              };
+            },
+          ),
+        }
+      : undefined,
     goal: task.brief.goal,
     kind: task.brief.kind,
     targetType: task.brief.targetType,
