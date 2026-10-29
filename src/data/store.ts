@@ -21,7 +21,7 @@ export class TurnIdReuseError extends Error {
 
 export type JournalTurn = {
   turnId: string;
-  status: "accepted" | "running" | "completed" | "failed" | "superseded";
+  status: "accepted" | "running" | "completed" | "failed" | "superseded" | "interrupted";
   acceptedVersion: number;
   updatedAt: string;
   events: Array<{ sequence: number; event: Event }>;
@@ -245,7 +245,7 @@ export class SqliteTaskStore implements TaskStore {
 
       const status =
         event.type === "done"
-          ? "completed"
+          ? event.task.status === "error" ? "failed" : "completed"
           : event.type === "error"
             ? event.code === "conflict" ? "superseded" : "failed"
             : "running";
@@ -292,7 +292,11 @@ export class SqliteTaskStore implements TaskStore {
 
     return {
       turnId,
-      status: row.status,
+      status:
+        ["accepted", "running"].includes(row.status) &&
+        Date.now() - Date.parse(row.updated_at) > 120000
+          ? "interrupted"
+          : row.status,
       acceptedVersion: row.accepted_version,
       updatedAt: row.updated_at,
       events,
