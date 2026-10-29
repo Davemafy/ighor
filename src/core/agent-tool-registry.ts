@@ -1,5 +1,6 @@
 import { evaluateCandidates } from "../capabilities/evaluate";
 import { z } from "zod";
+import { consultTrueForge, trueForgeConfig } from "../tools/trueforge";
 import type { Task } from "./contracts";
 import type { CulturalProvider } from "../tools/interfaces";
 import type { ResearchProvider, ResearchSource } from "../tools/live-research";
@@ -105,6 +106,9 @@ const documentArguments = z.strictObject({
 const reviseArguments = documentArguments.extend({
   artifactId: z.string().min(1).max(200),
 });
+const trueForgeArguments = z.strictObject({
+  objective: z.string().trim().min(8).max(1200),
+});
 const empty = z.strictObject({});
 
 /** Bounded verified capability set. No model-supplied URL or privileged write. */
@@ -131,7 +135,38 @@ export function createAgentToolRegistry(
     execute,
   });
 
+  // The harness is opt-in. It adds a delegated research/planning capability,
+  // not a second Qloo source or a replacement for Igor's approved artifacts.
+  const trueforge = trueForgeConfig();
+
   return [
+    tool(
+      "trueforge.consult",
+      "Delegate a bounded independent analysis to a persistent TrueForge session. Output is UNVERIFIED working context, never Qloo evidence, a booking, or a saved artifact. Use only when an independent second analysis helps.",
+      trueForgeArguments,
+      "read",
+      Boolean(trueforge),
+      async (args, ctx) => {
+        if (!trueforge) {
+          return { status: "blocked", requests: 0, summary: "TrueForge is not configured." };
+        }
+
+        const { objective } = trueForgeArguments.parse(args);
+        const result = await consultTrueForge(
+          trueforge,
+          objective,
+          ctx.task.trueforgeSessionId,
+        );
+        // The enclosing agent checkpoints this only on successful outcomes.
+        ctx.task.trueforgeSessionId = result.sessionId;
+
+        return {
+          status: "ok",
+          requests: result.requests,
+          summary: "UNVERIFIED TrueForge analysis (not source evidence): " + result.text,
+        };
+      },
+    ),
     tool(
       "web.search",
       "Search current public webpages; use a targeted query with explicit location when relevant.",
