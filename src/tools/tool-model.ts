@@ -360,7 +360,7 @@ export class ToolCallingModel implements ModelProvider {
         { role: "user", content: text },
       ],
       [tool],
-      14000,
+      Math.max(1000, this.timeoutMs - 5000),
     );
 
     if (result.call.name !== "route_conversation") {
@@ -826,7 +826,7 @@ export class ToolCallingModel implements ModelProvider {
           },
         },
       ],
-      14000,
+      Math.max(1000, this.timeoutMs - 5000),
     );
 
     if (result.call.name !== "choose_research_step") {
@@ -930,7 +930,7 @@ export class ToolCallingModel implements ModelProvider {
         },
       ],
       [responseTool],
-      14000,
+      Math.max(1000, this.timeoutMs - 5000),
     );
 
     if (result.call.name !== "submit_research_answer") {

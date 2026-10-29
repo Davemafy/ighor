@@ -194,3 +194,47 @@ describe("read-only conversation routing across the entire thread", () => {
     ).toBeNull();
   });
 });
+
+it("honors Gemini's configured deadline for a route that returns after the old 14-second cutoff", async () => {
+  vi.useFakeTimers();
+  const transport = vi.fn(
+    async (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(
+          () =>
+            resolve(
+              result("route_conversation", {
+                intent: "agent",
+                query: "Create a source-backed experience",
+              }),
+            ),
+          15000,
+        );
+        init?.signal?.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(timer);
+            reject(new Error("transport timeout"));
+          },
+          { once: true },
+        );
+      }),
+  );
+
+  try {
+    const model = new ResponsiveGeminiModel("key", "gemini-test", transport);
+    const pending = model.routeConversation(
+      "Create an experience",
+      freshTask("slow-route", "owner"),
+    );
+    const expected = expect(pending).resolves.toMatchObject({
+      intent: "research",
+      query: "Create a source-backed experience",
+    });
+    await vi.advanceTimersByTimeAsync(15001);
+    await expected;
+    expect(transport).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});
