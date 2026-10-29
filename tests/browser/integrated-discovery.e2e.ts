@@ -326,6 +326,8 @@ test("original Codrops gallery switches real candidate layout without losing ins
   });
   await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
   await page.goto("/app");
+  await page.getByRole("button", { name: "Expand canvas" }).click();
+  await expect(page.getByRole("complementary", { name: "Task canvas" })).toHaveClass(/ic-fullscreen/);
   const gallery = page.locator(".iw-liquid-grid.grid_gallery_container");
   await expect(gallery).toHaveAttribute("data-size-grid", "150%");
   await expect(gallery.locator('[data-gallery="true"]')).toHaveCount(3);
@@ -337,10 +339,11 @@ test("original Codrops gallery switches real candidate layout without losing ins
   await page.getByRole("group", { name: "Discovery layout" }).getByRole("button", { name: "Detailed" }).click();
   await expect(gallery).toHaveAttribute("data-size-grid", "75%");
   await expect(first.getByRole("button", { name: "Choose" })).toBeVisible();
-  const detailed = await first.boundingBox();
   expect(initial).not.toBeNull();
-  expect(detailed).not.toBeNull();
-  expect(Math.abs((initial?.width ?? 0) - (detailed?.width ?? 0))).toBeGreaterThan(20);
+  await expect.poll(async () => {
+    const detailed = await first.boundingBox();
+    return Math.abs((initial?.width ?? 0) - (detailed?.width ?? 0));
+  }).toBeGreaterThan(20);
   await page.screenshot({ path: info.outputPath("original-detailed.png") });
 
   await page.getByRole("group", { name: "Discovery layout" }).getByRole("button", { name: "Gallery" }).click();
