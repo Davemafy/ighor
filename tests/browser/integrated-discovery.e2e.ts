@@ -307,7 +307,7 @@ test("original Codrops gallery switches real candidate layout without losing ins
   );
   db.close();
   await page.route("https://images.qloo.com/igor-sample-*.webp", async (route) => {
-    const match = route.request().url().match(/igor-sample-c0([1-3])\\.webp$/);
+    const match = route.request().url().match(/igor-sample-c0([1-3])[.]webp$/);
     if (!match) {
       await route.abort();
       return;
