@@ -1,100 +1,138 @@
-/* Image first when a source supplies one; quiet link cards otherwise. */
+/* Igor research is a source-backed editorial surface, not a grid of document icons.
+   The first item is first in the existing evidence order, NOT a scored recommendation.
+   Every image comes from the evidence record; absent images become numbered typography. */
 .ird-experience {
   width: 100%;
   min-width: 0;
-  color: #20211e;
+  color: #252923;
 }
 .ird-intro {
-  padding: 12px 0 26px;
+  padding: 14px 0 36px;
+}
+.ird-masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 18px;
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid #cfd4c9;
+  color: #596452;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ird-masthead span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ird-masthead span:last-child {
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .iw-app .ird-intro h2 {
+  max-width: 19ch;
   margin: 0;
-  font-size: clamp(24px, 2.4vw, 34px);
-  line-height: 1.12;
-  font-weight: 650;
-  letter-spacing: -0.045em;
+  font-family: Archivo, Arial, sans-serif;
+  font-size: clamp(32px, 3.5vw, 52px);
+  font-weight: 620;
+  font-stretch: 90%;
+  line-height: 1.02;
+  letter-spacing: -0.057em;
   text-wrap: balance;
 }
 .iw-app .ird-intro p {
-  margin: 12px 0 0;
-  max-width: 470px;
-  color: #696b62;
+  margin: 17px 0 0;
+  max-width: 46ch;
+  color: #626a5e;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 .ird-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 22px;
+  gap: 8px;
+  margin: 0 0 22px;
 }
 .iw-app .ird-filters button {
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
-  padding: 8px 15px;
-  border: 1px solid #d7d9cf;
-  border-radius: 99px;
-  color: #606259;
-  background: #ffffffa8;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid #cdd4c7;
+  border-radius: 2px;
+  color: #505c49;
+  background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
 }
 .iw-app .ird-filters button[aria-pressed="true"] {
+  border-color: #273224;
+  background: #273224;
   color: #fff;
-  border-color: #262923;
-  background: #262923;
 }
 .iw-app .ird-filters button span {
-  opacity: 0.65;
+  opacity: 0.7;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 .ird-gallery {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  border-bottom: 1px solid #cbd2c4;
 }
 .ird-card {
   min-width: 0;
-  border-radius: 18px;
-  background: #fffefa;
-  border: 1px solid #e2e2d8;
+  border: 0;
+  border-top: 1px solid #cbd2c4;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+  transition: background-color 160ms ease;
 }
-.ird-card:hover {
-  transform: translateY(-3px);
-  border-color: #bfc6b3;
-  box-shadow: 0 8px 24px #333b2010;
+.iw-app .ird-card:hover {
+  background: #ecf0e7;
+  box-shadow: none;
+  transform: none;
 }
 .iw-app .ird-card-open {
-  display: block;
   width: 100%;
   height: 100%;
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
   padding: 0;
   background: transparent;
   border: 0;
-  text-align: left;
   color: inherit;
   font: inherit;
+  text-align: left;
   cursor: pointer;
 }
-.ird-card-open:focus-visible {
-  outline: 3px solid #73834c;
-  outline-offset: -4px;
-  border-radius: 18px;
+.iw-app .ird-card-open:focus-visible {
+  outline: 2px solid #314529;
+  outline-offset: -3px;
+  border-radius: 0;
 }
 .ird-cover {
-  display: block;
-  aspect-ratio: 4/3;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 108px;
+  aspect-ratio: auto;
   overflow: hidden;
-  background: #eceee4;
+  background: transparent;
+  border-radius: 0;
 }
 .ird-cover img,
 .ird-detail-cover img {
@@ -103,144 +141,174 @@
   height: 100%;
   object-fit: cover;
 }
+.ird-cover img {
+  position: absolute;
+  inset: 0;
+}
+.ird-reference-number {
+  display: block;
+  font-size: 30px;
+  font-stretch: 80%;
+  font-weight: 550;
+  letter-spacing: -0.07em;
+  line-height: 1;
+  color: #7d8974;
+  font-variant-numeric: tabular-nums;
+}
 .ird-source-placeholder {
   display: flex;
-  height: 100%;
-  min-height: 80px;
-  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 20px;
-  color: #727b66;
-  background: #edf0e5;
-  font-size: 12px;
+  padding: 18px;
+  background: #e1e8dc;
+  color: #566650;
+  font-size: 13px;
   overflow-wrap: anywhere;
-}
-.ird-source-placeholder svg {
-  width: 30px;
-  height: 30px;
-  stroke-width: 1.2;
 }
 .ird-card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 19px 24px 20px 4px;
 }
 .ird-card-index {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  color: #75796c;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 7px 14px;
+  color: #5e6857;
   font-size: 11px;
   overflow-wrap: anywhere;
 }
-.ird-card-index svg {
-  width: 15px;
-  height: 15px;
-  flex: none;
+.ird-source-tag {
+  color: #848c7e;
+  font-size: 10px;
 }
 .iw-app .ird-card-body h3 {
   margin: 0;
   font: inherit;
-  font-size: 19px;
+  font-size: clamp(17px, 1.6vw, 22px);
   font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.25;
+  font-stretch: 95%;
+  letter-spacing: -0.039em;
+  line-height: 1.18;
+  text-wrap: balance;
   overflow-wrap: anywhere;
 }
 .ird-description {
-  color: #73756d;
-  font-size: 13px;
-  line-height: 1.55;
   display: -webkit-box;
+  color: #647060;
+  font-size: 12px;
+  line-height: 1.58;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   overflow-wrap: anywhere;
 }
 .ird-card-action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #4e5d3a;
-  margin-top: 8px;
-  font-size: 12px;
+  gap: 7px;
+  margin-top: 6px;
+  color: #354c2b;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.4;
 }
 .ird-card-action svg {
   width: 14px;
   height: 14px;
 }
-/* A webpage without a photograph is a reference, never a made-up event poster. */
-.ird-link-card {
-  grid-column: 1 / -1;
+.ird-card:first-child {
+  background: #f8f9f3;
+  border: 1px solid #cbd2c4;
+  margin-bottom: 12px;
 }
-.iw-app .ird-link-card .ird-card-open {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  align-items: center;
-  gap: 0;
+.iw-app .ird-card:first-child .ird-card-open {
+  grid-template-columns: minmax(146px, 0.88fr) minmax(0, 1.12fr);
+  min-height: 268px;
 }
-.ird-link-card .ird-cover {
-  aspect-ratio: 1;
-  margin-left: 16px;
-  border-radius: 12px;
-  width: 66px;
+.ird-card:first-child .ird-cover {
+  min-height: 268px;
+  background: #dce6d5;
+  place-items: end start;
+  padding: 22px;
 }
-.ird-link-card .ird-source-placeholder {
-  min-height: 0;
-  padding: 15px;
+.ird-card:first-child .ird-reference-number {
+  font-size: clamp(76px, 8.8vw, 136px);
+  line-height: 0.8;
+  font-stretch: 76%;
+  font-weight: 680;
+  letter-spacing: -0.1em;
+  color: #4a5c41;
 }
-.ird-link-card .ird-source-placeholder > span {
-  display: none;
+.ird-card:first-child .ird-card-body {
+  gap: 16px;
+  padding: 32px clamp(20px, 2.8vw, 38px);
 }
-.ird-link-card .ird-card-body {
-  padding: 18px;
-  gap: 7px;
+.iw-app .ird-card:first-child .ird-card-body h3 {
+  font-size: clamp(24px, 2.55vw, 38px);
+  font-stretch: 90%;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
 }
-.ird-link-card .ird-card-body h3 {
-  font-size: 17px;
+.ird-card:first-child .ird-description {
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-line-clamp: 4;
 }
-.ird-link-card .ird-card-action {
-  display: none;
+.ird-card:first-child .ird-card-action {
+  margin-top: 5px;
+  font-size: 12px;
 }
-.ird-link-card .ird-description {
-  -webkit-line-clamp: 2;
+.ird-card:first-child:has(.ird-cover img) .ird-cover {
+  padding: 0;
+}
+.ird-card:not(:first-child).ird-has-image .ird-cover {
+  margin: 14px 18px 14px 0;
+  min-height: 84px;
+  border: 1px solid #d1d7c9;
 }
 .iw-app .ird-show-more {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
   width: 100%;
   min-height: 44px;
-  margin-top: 18px;
-  border: 1px solid #d5d9cc;
-  border-radius: 99px;
+  margin: 0;
+  padding: 16px 0;
+  border: 0;
+  border-bottom: 1px solid #cbd2c4;
+  border-radius: 0;
   font: inherit;
-  font-size: 13px;
-  background: #fffdf8;
-  color: #30352a;
+  font-size: 12px;
+  background: transparent;
+  color: #273b25;
   cursor: pointer;
 }
 .ird-show-more svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 .ird-quality {
-  margin: 26px 0 8px;
-  border-top: 1px solid #daddd1;
-  color: #777b6e;
+  margin: 34px 0 8px;
+  border-top: 1px solid #cbd2c4;
+  color: #687264;
   font-size: 12px;
 }
 .ird-quality summary {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 0;
+  min-height: 44px;
+  align-items: center;
+  padding: 16px 0;
   cursor: pointer;
   list-style: none;
 }
@@ -248,34 +316,34 @@
   display: none;
 }
 .ird-quality summary span {
-  color: #4a5441;
+  color: #374d32;
 }
 .iw-app .ird-quality p {
+  margin: 0 0 16px;
   font-size: 12px;
   line-height: 1.65;
-  margin: 0 0 16px;
 }
 .ird-empty {
-  padding: 44px 24px;
-  text-align: center;
-  border: 1px dashed #cdd3c0;
-  border-radius: 18px;
-  background: #fffdf8;
+  padding: 40px 24px;
+  text-align: left;
+  border-block: 1px solid #cbd2c4;
+  background: transparent;
 }
 .ird-empty > svg {
-  width: 28px;
-  margin-bottom: 14px;
-  color: #808970;
+  width: 24px;
+  margin-bottom: 18px;
+  color: #6a795e;
 }
 .iw-app .ird-empty h3 {
-  font-size: 19px;
+  font-size: 22px;
   margin: 0 0 10px;
 }
 .iw-app .ird-empty p {
-  color: #73776a;
+  color: #626b60;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
+
 .ird-detail {
   color: #292d24;
 }
@@ -431,11 +499,73 @@
     font-size: 25px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ird-card {
-    transition: none;
+
+
+/* The inspector remains a source document, not a rounded marketing card. */
+.iw-app .ig-dialog:has(.ird-detail) {
+  border-radius: 3px;
+}
+.iw-app .ird-detail-cover {
+  border-radius: 2px;
+}
+@media (max-width: 760px) {
+  .ird-intro {
+    padding-top: 8px;
+    padding-bottom: 26px;
+  }
+  .ird-masthead {
+    margin-bottom: 22px;
+    gap: 14px;
+    font-size: 9px;
+  }
+  .iw-app .ird-intro h2 {
+    font-size: clamp(28px, 6vw, 40px);
+  }
+  .iw-app .ird-card:first-child .ird-card-open {
+    grid-template-columns: minmax(116px, 0.75fr) minmax(0, 1.25fr);
+    min-height: 220px;
+  }
+  .ird-card:first-child .ird-cover {
+    min-height: 220px;
+    padding: 14px;
+  }
+  .ird-card:first-child .ird-reference-number {
+    font-size: clamp(62px, 12vw, 96px);
+  }
+  .ird-card:first-child .ird-card-body {
+    padding: 20px 18px;
+    gap: 10px;
+  }
+  .iw-app .ird-card:first-child .ird-card-body h3 {
+    font-size: clamp(21px, 4vw, 29px);
   }
 }
-.iw-app[data-motion="off"] .ird-card {
-  transition: none;
+@media (max-width: 430px) {
+  .iw-app .ird-card:first-child .ird-card-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ird-card:first-child .ird-cover {
+    min-height: 128px;
+    max-height: 170px;
+    place-items: end start;
+  }
+  .ird-card:first-child .ird-reference-number {
+    font-size: 90px;
+  }
+  .ird-card:first-child .ird-card-body {
+    padding: 22px 18px 25px;
+  }
+  .iw-app .ird-card-open {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+  .ird-reference-number {
+    font-size: 21px;
+  }
+  .ird-card-body {
+    padding-right: 6px;
+  }
 }
+@media (prefers-reduced-motion: reduce) {
+  .ird-card { transition: none; }
+}
+.iw-app[data-motion="off"] .ird-card { transition: none; }
