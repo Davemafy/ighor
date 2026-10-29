@@ -208,6 +208,7 @@ export function LiquidDiscovery({
     if (!inspectedId || !dialog.current || dialog.current.open) {
       return;
     }
+
     dialog.current.showModal();
     detail.current?.focus();
   }, [inspectedId]);
