@@ -185,9 +185,10 @@ export function ReviewWorkspace({ token }: { token: string }) {
                         onChange={(e) => setValue(e.target.value)}
                       />
                     </label>
-                    <label>
-                      Preference
-                      <select
+                    <label htmlFor="review-preference">Preference</label>
+                    <select
+                        id="review-preference"
+                        aria-label="Preference"
                         value={polarity}
                         onChange={(e) => setPolarity(e.target.value)}
                       >
@@ -197,8 +198,7 @@ export function ReviewWorkspace({ token }: { token: string }) {
                         <option value="not-now">
                           Not interested right now
                         </option>
-                      </select>
-                    </label>
+                    </select>
                     <button
                       className="pp-solid"
                       disabled={busy || !value.trim()}
