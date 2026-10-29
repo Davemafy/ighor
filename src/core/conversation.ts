@@ -341,7 +341,7 @@ function applyPreferenceCorrection(
         )),
   );
   const groundedMusicReference =
-    /\\b(?:that|this)\\s+(?:music|artist|song|track)\\b/i.test(text) &&
+    /\b(?:that|this)\s+(?:music|artist|song|track)\b/i.test(text) &&
     selectedArtists.length === 1 &&
     normalize(selectedArtists[0].name) === normalize(action.value);
 
