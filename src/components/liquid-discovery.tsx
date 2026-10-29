@@ -205,7 +205,9 @@ export function LiquidDiscovery({
   const [galleryLayout, setGalleryLayout] = useState(true);
   // Native modal owns Escape and focus containment.
   useEffect(() => {
-    if (!inspectedId || !dialog.current || dialog.current.open) return;
+    if (!inspectedId || !dialog.current || dialog.current.open) {
+      return;
+    }
     dialog.current.showModal();
     detail.current?.focus();
   }, [inspectedId]);
