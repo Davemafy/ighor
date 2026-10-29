@@ -120,6 +120,7 @@ describe("Durable accepted turn journal", () => {
           modelCalls++;
           expect(text).toBe("hey");
           expect(context?.messages).toHaveLength(0);
+
           return { intent: "conversation", reply: "Hello. What are we planning?" };
         },
       },
