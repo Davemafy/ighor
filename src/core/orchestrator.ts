@@ -56,6 +56,7 @@ export async function runTurn(
   model?: ModelProvider,
   factsProvider: PracticalFactsProvider = new SuppliedFactsProvider(),
   researchProvider?: ResearchProvider,
+  acceptedUserMessage = false,
 ): Promise<Task> {
   let input = TurnSchema.parse(raw);
   let formAnswer: FormAnswerGrounding | undefined;
@@ -226,7 +227,7 @@ export async function runTurn(
 
   const update =
     input.type === "message"
-      ? await interpretMessage(task, input, model, budget, trace, formAnswer)
+      ? await interpretMessage(task, input, model, budget, trace, formAnswer, acceptedUserMessage)
       : applyStructuredTurn(task, input, {
           taskId: id,
           owner,
