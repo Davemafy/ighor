@@ -97,6 +97,8 @@ export function AgentWorkspace({
   const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
+  const outputRef = useRef<HTMLElement>(null);
+  const presentedResult = useRef("");
   const scrolledTask = useRef<string | null>(null);
   const task = w.task;
   const hasResult = !task
@@ -116,6 +118,9 @@ export function AgentWorkspace({
   const started = task
     ? !!(task.messages.length || w.feedback)
     : initialConversation;
+  const resultIdentity = task
+    ? `${task.id}:${task.canvas?.surface.id ?? ""}:${task.work?.documents.length ?? 0}:${task.artifacts.length}`
+    : "";
   const questions =
     task?.canvas?.surface.nodes.filter((node) => node.type === "question") ??
     [];
@@ -158,6 +163,33 @@ export function AgentWorkspace({
       scrolledTask.current = task?.id ?? null;
     }
   }, [task?.id, task?.messages.length, w.isBusy, w.isLoadingWorkspace]);
+  // Show newly produced work once, rather than leaving it hidden below
+  // the fold. Subsequent conversation turns do not steal scrolling focus.
+  useEffect(() => {
+    if (
+      !hasResult ||
+      !resultIdentity ||
+      w.isBusy ||
+      w.isLoadingWorkspace ||
+      presentedResult.current === resultIdentity
+    ) {
+      return;
+    }
+
+    presentedResult.current = resultIdentity;
+    const frame = requestAnimationFrame(() => {
+      outputRef.current?.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [hasResult, resultIdentity, w.isBusy, w.isLoadingWorkspace]);
+
   useEffect(() => {
     const area = input.current;
 
@@ -572,6 +604,7 @@ export function AgentWorkspace({
                   </div>
                   {hasResult && (
                     <section
+                      ref={outputRef}
                       className="iw-inline-output"
                       aria-label="Your work"
                       aria-busy={w.isBusy || w.isLoadingWorkspace}
