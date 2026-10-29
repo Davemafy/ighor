@@ -90,7 +90,6 @@ export function AgentWorkspace({
   initialPage = "work",
   initialConversation = false,
   initialHasResult = false,
-  initialPane = "thread",
 }: {
   initialPage?: Page;
   initialConversation?: boolean;
@@ -102,13 +101,14 @@ export function AgentWorkspace({
   const [page, setPage] = useState<Page>(initialPage);
   const [prompt, setPrompt] = useState("");
   const [menu, setMenu] = useState(false);
-  const [pane, setPane] = useState<"thread" | "work">(initialPane);
   const [historyError, setHistoryError] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const end = useRef<HTMLDivElement>(null);
+  const outputRef = useRef<HTMLElement>(null);
+  const presentedResult = useRef("");
   const scrolledTask = useRef<string | null>(null);
   const task = w.task;
   const hasResult = !task
@@ -128,6 +128,9 @@ export function AgentWorkspace({
   const started = task
     ? !!(task.messages.length || w.feedback)
     : initialConversation;
+  const resultIdentity = task
+    ? `${task.id}:${task.canvas?.surface.id ?? ""}:${task.work?.documents.length ?? 0}:${task.artifacts.length}`
+    : "";
   const questions =
     task?.canvas?.surface.nodes.filter((node) => node.type === "question") ??
     [];
@@ -170,6 +173,32 @@ export function AgentWorkspace({
       scrolledTask.current = task?.id ?? null;
     }
   }, [task?.id, task?.messages.length, w.isBusy, w.isLoadingWorkspace]);
+  // Show newly produced work once, rather than leaving it hidden below
+  // the fold. Subsequent conversation turns do not steal scrolling focus.
+  useEffect(() => {
+    if (
+      !hasResult ||
+      !resultIdentity ||
+      w.isBusy ||
+      w.isLoadingWorkspace ||
+      presentedResult.current === resultIdentity
+    ) {
+      return;
+    }
+
+    presentedResult.current = resultIdentity;
+    const frame = requestAnimationFrame(() => {
+      outputRef.current?.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [hasResult, resultIdentity, w.isBusy, w.isLoadingWorkspace]);
+
   useEffect(() => {
     const area = input.current;
 
@@ -245,7 +274,6 @@ export function AgentWorkspace({
     try {
       if (await w.openWorkspace(id)) {
         navigate("work");
-        setPane("thread");
         const url = new URL(location.href);
         url.searchParams.set("task", id);
         history.replaceState({}, "", url);
@@ -267,7 +295,6 @@ export function AgentWorkspace({
     }
 
     setPrompt("");
-    setPane("thread");
     navigate("work");
     const url = new URL(location.href);
     url.searchParams.delete("task");
@@ -283,8 +310,6 @@ export function AgentWorkspace({
     if (action.type === "message") {
       setPrompt("");
       navigate("work");
-
-      setPane("thread");
     }
 
     await w.sendTurn(action);
@@ -468,7 +493,6 @@ export function AgentWorkspace({
         {page === "work" && started && (
           <section
             className={`iw-workspace iw-inline-workspace ${hasResult ? "iw-with-result" : ""}`}
-            data-pane={pane}
             aria-busy={w.isLoadingWorkspace}
           >
             <header className="iw-workbar">
@@ -499,31 +523,6 @@ export function AgentWorkspace({
                 )}
               </span>
             </header>
-            {hasResult && (
-              <nav
-                className="iw-pane-switch"
-                aria-label="Conversation and work"
-              >
-                <button
-                  type="button"
-                  aria-pressed={pane === "thread"}
-                  aria-controls="iw-thread"
-                  onClick={() => morphLayout(() => setPane("thread"))}
-                >
-                  <MessageCircle />
-                  Conversation
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={pane === "work"}
-                  aria-controls="iw-work-stage"
-                  onClick={() => morphLayout(() => setPane("work"))}
-                >
-                  <FileText />
-                  Your work
-                </button>
-              </nav>
-            )}
             <div className="iw-workgrid">
               <section
                 className="iw-thread"
@@ -693,31 +692,31 @@ export function AgentWorkspace({
                             />
                           ))}
                     </AdaptiveStage>
-                    <div ref={end} />
                   </div>
+                  {hasResult && (
+                    <section
+                      ref={outputRef}
+                      className="iw-inline-output"
+                      aria-label="Your work"
+                      aria-busy={w.isBusy || w.isLoadingWorkspace}
+                    >
+                      {task ? (
+                        <Work
+                          key={task.id}
+                          task={task}
+                          busy={w.isBusy || w.isLoadingWorkspace}
+                          onTurn={turn}
+                          onTask={w.acceptTask}
+                          onLoad={open}
+                        />
+                      ) : (
+                        <LoadingSurface mode="output" />
+                      )}
+                    </section>
+                  )}
+                  <div ref={end} />
                 </div>
               </section>
-              {hasResult && (
-                <section
-                  className="iw-work-stage"
-                  id="iw-work-stage"
-                  aria-label="Your work"
-                  aria-busy={w.isBusy}
-                >
-                  {task ? (
-                    <Work
-                      key={task.id}
-                      task={task}
-                      busy={w.isBusy || w.isLoadingWorkspace}
-                      onTurn={turn}
-                      onTask={w.acceptTask}
-                      onLoad={open}
-                    />
-                  ) : (
-                    <LoadingSurface mode="output" />
-                  )}
-                </section>
-              )}
             </div>
             <footer className="iw-workspace-footer">
               <div className="iw-dock">
@@ -819,7 +818,6 @@ export function AgentWorkspace({
         {page === "saved" && task && (
           <Saved
             onDiscover={async (request) => {
-              setPane("thread");
               await turn({ type: "message", text: request });
             }}
             busy={w.isBusy || w.isLoadingWorkspace}
@@ -906,9 +904,10 @@ function Work({
   ];
   // Follow actual available work on first render, instead of pinning every
   // gathering to the invitation tab. Retain explicit user tab selection.
-  const active = resource && resources.some((item) => item.id === resource)
-    ? resource
-    : resources[0]?.id;
+  const active =
+    resource && resources.some((item) => item.id === resource)
+      ? resource
+      : resources[0]?.id;
   const saved = useSavedOutcomes(task, onTask, onTurn);
   const kept = new Set(
     saved.data.collections.flatMap((collection) =>

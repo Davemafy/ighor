@@ -209,7 +209,11 @@ function CanvasTree({
       );
     }
 
-    const heading = node.title && <h3>{node.title}</h3>;
+    const heading = node.title &&
+      !(
+        node.type === "document" &&
+        node.title.trim().toLowerCase() === surface.title.trim().toLowerCase()
+      ) && <h3>{node.title}</h3>;
     let body: ReactNode;
 
     switch (node.type) {

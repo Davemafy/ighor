@@ -2271,7 +2271,6 @@
   transform: none;
 }
 
-
 /* Workspace composition pass: user conversation remains quiet; the output owns
    the visual hierarchy. The welcome page still retains its chosen atmosphere. */
 .iw-app.iw-active::before {
@@ -2345,21 +2344,42 @@
   scrollbar-width: thin;
   scrollbar-color: #c6cdc1 transparent;
 }
-.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar {
+.iw-app
+  :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
-.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-track {
+.iw-app
+  :is(
+    .iw-messages,
+    .iw-work-stage,
+    .iw-composer textarea
+  )::-webkit-scrollbar-track {
   background: transparent;
 }
-.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-thumb {
+.iw-app
+  :is(
+    .iw-messages,
+    .iw-work-stage,
+    .iw-composer textarea
+  )::-webkit-scrollbar-thumb {
   border-radius: 2px;
   background: #c1c9ba;
 }
-.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-thumb:hover {
+.iw-app
+  :is(
+    .iw-messages,
+    .iw-work-stage,
+    .iw-composer textarea
+  )::-webkit-scrollbar-thumb:hover {
   background: #899985;
 }
-.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-button {
+.iw-app
+  :is(
+    .iw-messages,
+    .iw-work-stage,
+    .iw-composer textarea
+  )::-webkit-scrollbar-button {
   display: none;
 }
 @media (min-width: 961px) {
@@ -2401,5 +2421,132 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .iw-app.iw-active::before { animation: none; }
+  .iw-app.iw-active::before {
+    animation: none;
+  }
+}
+
+.iw-app[data-motion="off"] .ird-card {
+  transition: none;
+  transform: none;
+}
+
+/* One continuous workspace: conversation and its result share the same scroll.
+   No right-hand work panel, separate scrolling region, or pane-switching state. */
+.iw-app .iw-inline-workspace .iw-workgrid,
+.iw-app .iw-inline-workspace.iw-with-result .iw-workgrid {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+.iw-app .iw-inline-workspace .iw-thread,
+.iw-app .iw-inline-workspace.iw-with-result .iw-thread {
+  display: flex !important;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+.iw-app .iw-inline-workspace .iw-messages {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px clamp(18px, 5vw, 60px) 38px;
+}
+.iw-app .iw-inline-workspace .iw-message-stream {
+  width: 100%;
+  max-width: 780px;
+  margin-inline: auto;
+}
+.iw-app .iw-inline-workspace .iw-inline-output {
+  width: 100%;
+  max-width: 920px;
+  margin: 28px auto 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .iw-result-content {
+  width: 100%;
+  max-width: none;
+  gap: 20px;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-canvas:not(.ic-fullscreen) {
+  color: #262a23;
+  background: #fffefa;
+  border: 1px solid #e5e6dc;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px #252d2007;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-canvas-header {
+  padding: 26px clamp(20px, 3.5vw, 38px) 10px;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-canvas-meta {
+  padding-inline: clamp(20px, 3.5vw, 38px);
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-composition {
+  padding: 12px clamp(20px, 3.5vw, 38px) 34px;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-document {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-paper {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 18px 0;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-document-toolbar {
+  padding-inline: 0;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-paper .pp-message-text {
+  max-width: 72ch;
+  font-size: 15px;
+  line-height: 1.75;
+}
+.iw-app .iw-inline-workspace .iw-inline-output .ic-paper .pp-message-text hr {
+  height: 1px;
+  border: 0;
+  background: #e2e2d9;
+  margin: 24px 0;
+}
+.iw-app .iw-inline-workspace .iw-workspace-footer,
+.iw-app .iw-inline-workspace.iw-with-result .iw-workspace-footer {
+  display: flex;
+  justify-content: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+.iw-app .iw-inline-workspace .iw-workspace-footer > .iw-dock {
+  width: 100%;
+  max-width: 780px;
+  padding-inline: clamp(14px, 3vw, 24px);
+}
+.iw-app .iw-inline-workspace .iw-workspace-footer::after {
+  content: none !important;
+}
+@media (max-width: 760px) {
+  .iw-app .iw-inline-workspace .iw-messages {
+    padding: 18px 16px 26px;
+  }
+  .iw-app .iw-inline-workspace .iw-inline-output {
+    margin: 24px auto 34px;
+  }
+  .iw-app .iw-inline-workspace .iw-inline-output .ic-canvas-header {
+    padding: 22px 18px 10px;
+  }
+  .iw-app .iw-inline-workspace .iw-inline-output .ic-composition {
+    padding: 12px 18px 26px;
+  }
+  .iw-app .iw-inline-workspace .iw-inline-output .ic-canvas-meta {
+    padding-inline: 18px;
+  }
 }
