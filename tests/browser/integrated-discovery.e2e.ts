@@ -325,7 +325,12 @@ test("original Codrops gallery switches real candidate layout without losing ins
     });
   });
   await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
-  await page.goto("/app");
+  // Explicit task URL ensures the browser opens the fixture-backed task,
+  // not a newly created empty workspace from a previous session.
+  await page.goto(`/app?task=${task.id}`);
+  const work = page.getByRole("button", { name: "Your work", exact: true });
+  if (await work.isVisible()) await work.click();
+  await expect(page.getByRole("button", { name: "Expand canvas" })).toBeVisible();
   await page.getByRole("button", { name: "Expand canvas" }).click();
   await expect(page.getByRole("complementary", { name: "Task canvas" })).toHaveClass(/ic-fullscreen/);
   const gallery = page.locator(".iw-liquid-grid.grid_gallery_container");
@@ -349,8 +354,9 @@ test("original Codrops gallery switches real candidate layout without losing ins
 
   await page.getByRole("group", { name: "Discovery layout" }).getByRole("button", { name: "Gallery" }).click();
   await first.getByRole("button", { name: "Inspect Moonrise Kingdom" }).click();
-  await expect(page.getByRole("region", { name: "Details for Moonrise Kingdom" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Details for Moonrise Kingdom" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Details for Moonrise Kingdom" })).toBeFocused();
   await expect(page.getByText("SAMPLE only; no cultural association inferred")).toBeVisible();
-  await page.getByRole("button", { name: "All references" }).click();
+  await page.getByRole("button", { name: "Close details" }).click();
   await expect(gallery).toHaveAttribute("data-size-grid", "150%");
 });
