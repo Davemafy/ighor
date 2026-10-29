@@ -113,7 +113,7 @@ describe("TrueForge opt-in safety boundary", () => {
   });
 
   it("reuses the existing session instead of creating a new conversation", async () => {
-    const http = vi.fn(async () => turn());
+    const http = vi.fn(async (_url: string) => turn());
     const result = await consultTrueForge(
       config,
       "Review a follow-up",
