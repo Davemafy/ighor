@@ -356,6 +356,8 @@ export const AgentRunHistorySchema = z.object({
 });
 
 export const TaskSchema = z.object({
+  // Optional TrueForge delegation context, owned by this single Igor task.
+  trueforgeSessionId: z.string().regex(/^[a-zA-Z0-9_-]{1,160}$/).optional(),
   agentRun: AgentRunSchema.optional(),
   agentRunHistory: z.array(AgentRunHistorySchema).max(12).optional(),
   canvas: CanvasStateSchema.optional(),
