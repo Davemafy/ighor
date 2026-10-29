@@ -96,7 +96,7 @@ function OptionCard({
   // Exactly one card with this name is mounted in each view.
   return (
     <motion.article
-      layoutId={task.id + ":candidate:" + candidate.id}
+      layoutId={task.id + ":candidate:" + candidate.id + (onInspect ? "" : ":detail")}
       layout={gallery ? true : "position"}
       transition={{ type: "spring", stiffness: 340, damping: 34 }}
       data-candidate-id={candidate.id}
@@ -190,31 +190,24 @@ export function LiquidDiscovery({
   };
 
   const detail = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
 
   const closeInspector = () => {
-    setInspectedId(null);
-    requestAnimationFrame(() => restoreFocus());
+    if (dialog.current?.open) {
+      dialog.current.close();
+    } else {
+      setInspectedId(null);
+      requestAnimationFrame(() => restoreFocus());
+    }
   };
 
   const [inspectedId, setInspectedId] = useState<string | null>(null);
   const [galleryLayout, setGalleryLayout] = useState(true);
+  // Native modal owns Escape and focus containment.
   useEffect(() => {
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setInspectedId(null);
-        requestAnimationFrame(() => restoreFocus());
-      }
-    };
-
-    window.addEventListener("keydown", close);
-
-    return () => window.removeEventListener("keydown", close);
-  }, []);
-
-  useEffect(() => {
-    if (inspectedId) {
-      detail.current?.focus();
-    }
+    if (!inspectedId || !dialog.current || dialog.current.open) return;
+    dialog.current.showModal();
+    detail.current?.focus();
   }, [inspectedId]);
   const canvas = task.canvas;
   const available = node.candidateIds
@@ -322,7 +315,7 @@ export function LiquidDiscovery({
           </div>
           <div className="iw-liquid-intro" aria-live="polite">
             <div className="iw-liquid-kicker">
-              <span>IGOR / DISCOVERY</span>
+              <span>DISCOVERY</span>
               <span>
                 {available.length}{" "}
                 {available.length === 1 ? "reference" : "references"}
@@ -332,7 +325,7 @@ export function LiquidDiscovery({
               {mode === "explore"
                 ? inspected
                   ? inspected.name
-                  : "Consider these."
+                  : node.title || "Your discoveries."
                 : mode === "connections"
                   ? "Behind the connections."
                   : mode === "compare"
@@ -368,7 +361,16 @@ export function LiquidDiscovery({
             </div>
           )}
           {mode === "explore" && inspected ? (
-            <div
+            <dialog
+              ref={dialog}
+              className="iw-liquid-dialog"
+              aria-label={"Details for " + inspected.name}
+              onClose={() => {
+                setInspectedId(null);
+                requestAnimationFrame(() => restoreFocus());
+              }}
+            >
+              <div
               ref={detail}
               tabIndex={-1}
               role="region"
@@ -380,7 +382,7 @@ export function LiquidDiscovery({
                 className="iw-liquid-back"
                 onClick={() => closeInspector()}
               >
-                <ArrowLeft aria-hidden="true" /> All references
+                <X aria-hidden="true" /> Close details
               </button>
               <OptionCard
                 candidate={inspected}
@@ -435,7 +437,8 @@ export function LiquidDiscovery({
                   </>
                 }
               />
-            </div>
+              </div>
+            </dialog>
           ) : (
             mode === "explore" && (
               <div
