@@ -342,6 +342,7 @@ test("original Codrops gallery switches real candidate layout without losing ins
   expect(initial).not.toBeNull();
   await expect.poll(async () => {
     const detailed = await first.boundingBox();
+
     return Math.abs((initial?.width ?? 0) - (detailed?.width ?? 0));
   }).toBeGreaterThan(20);
   await page.screenshot({ path: info.outputPath("original-detailed.png") });
