@@ -700,25 +700,25 @@ export function AgentWorkspace({
                 </div>
               </section>
               {hasResult && (
-                    <section
-                      ref={outputRef}
-                      className="iw-inline-output"
-                      aria-label="Your work"
-                      aria-busy={w.isBusy || w.isLoadingWorkspace}
-                    >
-                      {task ? (
-                        <Work
-                          key={task.id}
-                          task={task}
-                          busy={w.isBusy || w.isLoadingWorkspace}
-                          onTurn={turn}
-                          onTask={w.acceptTask}
-                          onLoad={open}
-                        />
-                      ) : (
-                        <LoadingSurface mode="output" />
-                      )}
-                    </section>
+                <section
+                  ref={outputRef}
+                  className="iw-inline-output"
+                  aria-label="Your work"
+                  aria-busy={w.isBusy || w.isLoadingWorkspace}
+                >
+                  {task ? (
+                    <Work
+                      key={task.id}
+                      task={task}
+                      busy={w.isBusy || w.isLoadingWorkspace}
+                      onTurn={turn}
+                      onTask={w.acceptTask}
+                      onLoad={open}
+                    />
+                  ) : (
+                    <LoadingSurface mode="output" />
+                  )}
+                </section>
               )}
             </div>
             <footer className="iw-workspace-footer">
