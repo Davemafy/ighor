@@ -51,6 +51,7 @@ import "../app/revision-impact.css";
 import "../app/spatial-morph.css";
 import "../app/workbench.css";
 import "../app/native-workspace.css";
+import "../app/mockup-native.css";
 import "../app/research-discovery.css";
 
 const assets = "/marketing/assets/";
@@ -188,6 +189,8 @@ export function AgentWorkspace({
 
     presentedResult.current = resultIdentity;
     const frame = requestAnimationFrame(() => {
+      // The work is already visible beside conversation on desktop.
+      if (window.matchMedia("(min-width: 1024px)").matches) return;
       outputRef.current?.scrollIntoView({
         block: "start",
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -365,7 +368,7 @@ export function AgentWorkspace({
   );
 
   return (
-    <div className={`iw-app ${started && page === "work" ? "iw-active" : ""}`}>
+    <div className={`iw-app igor-mockup ${started && page === "work" ? "iw-active" : ""}`}>
       <AppearanceControl />
       {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} />}
       <a className="iw-skip" href="#iw-main">
@@ -455,9 +458,9 @@ export function AgentWorkspace({
           <section className="iw-welcome">
             <div className="iw-intro">
               <h1>
-                What’s on
+                Your agent.
                 <br />
-                your mind?
+                With taste.
               </h1>
               <p>
                 Discover, decide and create.
@@ -692,8 +695,11 @@ export function AgentWorkspace({
                             />
                           ))}
                     </AdaptiveStage>
+                    <div ref={end} />
                   </div>
-                  {hasResult && (
+                </div>
+              </section>
+              {hasResult && (
                     <section
                       ref={outputRef}
                       className="iw-inline-output"
@@ -713,10 +719,7 @@ export function AgentWorkspace({
                         <LoadingSurface mode="output" />
                       )}
                     </section>
-                  )}
-                  <div ref={end} />
-                </div>
-              </section>
+              )}
             </div>
             <footer className="iw-workspace-footer">
               <div className="iw-dock">
