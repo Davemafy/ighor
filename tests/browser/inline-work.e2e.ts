@@ -41,6 +41,7 @@ for (const viewport of [
       page.getByRole("textbox", { name: "Message Igor" }),
     ).toBeVisible();
     await expect(page.locator(".iw-inline-output .ic-canvas")).toBeVisible();
+    await expect(result).toBeInViewport({ ratio: 0.05 });
     expect(
       await page.locator(".iw-workgrid").evaluate((element) => {
         const style = getComputedStyle(element);
@@ -58,6 +59,7 @@ for (const viewport of [
     ).toBe(true);
     await page.screenshot({
       path: `test-results/inline-work-${viewport.width}.png`,
+      animations: "disabled",
     });
   });
 }
