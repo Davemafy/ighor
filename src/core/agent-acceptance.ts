@@ -5,6 +5,13 @@ import type { Task } from "./contracts";
  * Missing interpretation is unknown, never inferred from provider keywords. */
 export const AgentRequirementsSchema = z
   .object({
+    location: z
+      .object({
+        value: z.string().trim().min(1).max(100),
+        sourceText: z.string().trim().min(1).max(1000),
+      })
+      .nullable()
+      .optional(),
     budget: z
       .object({
         amount: z.number().min(0).max(1000000),
@@ -64,6 +71,13 @@ export function verifyAgentOutcome(
     "Current turn requirements have been interpreted",
     Boolean(requirements),
   );
+
+  if (requirements?.location) {
+    check(
+      "Interpreted location is retained",
+      task.brief.constraints.location === requirements.location.value,
+    );
+  }
 
   if (requirements?.budget) {
     check(

@@ -24,16 +24,16 @@ export function RevisionImpact({
       <header>
         <p>YOUR WORK / WHAT CHANGED</p>
         <h3>Version {impact.version}, with the context intact.</h3>
-        <span>Read from the saved document, approvals and evidence ledger.</span>
+        <span>
+          Read from the saved document, approvals and evidence ledger.
+        </span>
       </header>
       <div className="ig-revision-impact-grid">
         <article>
           <h4>Changed</h4>
           {impact.changed && impact.difference ? (
             <>
-              <p>
-                Saved text differs from version {impact.previousVersion}.
-              </p>
+              <p>Saved text differs from version {impact.previousVersion}.</p>
               <small>PREVIOUS EXCERPT</small>
               <blockquote>{impact.difference.before}</blockquote>
               <small>NOW SAVED</small>
@@ -95,7 +95,8 @@ export function RevisionImpact({
           ) : (
             <p>
               No blocker appears in the latest saved checks. Real-world
-              feasibility and licensing are not established by cultural affinity.
+              feasibility and licensing are not established by cultural
+              affinity.
             </p>
           )}
         </article>
@@ -103,10 +104,10 @@ export function RevisionImpact({
       <footer>
         {sourceCount ? (
           <span>
-            Cultural evidence linked to this document: {impact.cultural.live} LIVE ·{" "}
-            {impact.cultural.cached} CACHED ·{" "}
-            {impact.cultural.unclassified} unspecified delivery.
-            Inspect individual sources before using their claims.
+            Cultural evidence linked to this document: {impact.cultural.live}{" "}
+            LIVE · {impact.cultural.cached} CACHED ·{" "}
+            {impact.cultural.unclassified} unspecified delivery. Inspect
+            individual sources before using their claims.
           </span>
         ) : (
           <span>No current cultural evidence is stored in this task.</span>

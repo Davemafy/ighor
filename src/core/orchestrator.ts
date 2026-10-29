@@ -470,6 +470,15 @@ export async function runTurn(
           task.agentRun?.outputArtifactIds?.includes(artifact.id),
         )
       : undefined;
+
+    if (savedOutcome) {
+      allEvidenceIds.push(
+        ...savedOutcome.evidenceIds.filter(
+          (id) => !allEvidenceIds.includes(id),
+        ),
+      );
+    }
+
     const recoveryMessage = research.sources.length
       ? "I found useful sources, but couldn't finish the requested work. Your saved work is preserved. Ask me to continue from these findings."
       : "I couldn't finish this step. Your saved work is preserved. Ask me to retry the unfinished step.";
@@ -580,14 +589,17 @@ export async function runTurn(
       );
     }
 
-    if (research.status === "ok" && answer) {
+    if (research.status === "ok" && (answer || savedOutcome)) {
       // A read-only answer does not invalidate previously ready cultural work.
       // Recover an earlier interpretation error only after this turn succeeds.
       task.status =
-        precedingStatus === "error" || precedingStatus === "running"
-          ? "partial"
-          : precedingStatus;
-      task.error = precedingStatus === "error" ? null : precedingError;
+        task.agentRun?.status === "completed" && savedOutcome
+          ? "ready"
+          : precedingStatus === "error" || precedingStatus === "running"
+            ? "partial"
+            : precedingStatus;
+      task.error =
+        savedOutcome || precedingStatus === "error" ? null : precedingError;
     } else {
       // Report this research failure in the reply/trace without turning a
       // previously completed cultural project into an unfinished project.
@@ -595,10 +607,14 @@ export async function runTurn(
       task.error =
         precedingStatus === "ready"
           ? precedingError
-          : (research.warning ?? "Research was not fully verified.");
+          : autonomousAgent
+            ? savedOutcome
+              ? "This draft is saved, but some requirements remain unverified. Continue from the saved work."
+              : "This step is unfinished. Your previous work is preserved; ask Igor to continue."
+            : (research.warning ?? "Research was not fully verified.");
     }
 
-    if (research.sources.length || qlooPlaces.length) {
+    if (research.sources.length || qlooPlaces.length || savedOutcome) {
       ensureBoundPresentation(task);
 
       if (task.status === "draft") {

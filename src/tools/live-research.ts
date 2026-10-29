@@ -36,6 +36,8 @@ export interface ResearchPageResult {
 }
 
 export interface ResearchProvider {
+  readonly available?: boolean;
+  readonly pageReadAvailable?: boolean;
   research(query: string): Promise<ResearchResult>;
   /** One bounded follow-up SERP search selected after observing evidence. */
   searchOnce?(query: string): Promise<ResearchResult>;
@@ -147,6 +149,12 @@ export function publicResearchUrl(raw: string): string | null {
  * model-provided URL is ever sent without validating an organic search result.
  */
 export class BrightDataResearchProvider implements ResearchProvider {
+  get available() {
+    return Boolean(this.key && this.serpZone);
+  }
+  get pageReadAvailable() {
+    return Boolean(this.key && this.unlockerZone);
+  }
   constructor(
     private readonly key: string,
     private readonly serpZone: string,

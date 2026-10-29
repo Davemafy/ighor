@@ -57,6 +57,9 @@ test("recorded cultural outcome → collection → export → independent review
   page,
   browser,
 }) => {
+  // This journey includes editing, export and an independent review context.
+  // Individual UI assertions retain their normal bounded timeouts.
+  test.setTimeout(120000);
   const task = await gathering(page);
   await page.getByRole("button", { name: "Connections", exact: true }).click();
   await expect(

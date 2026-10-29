@@ -28,12 +28,18 @@ function savedTask() {
       },
     ],
   };
+
   return {
     work: {
       budget: { amount: 3000, confirmed: true, currency: "USD" },
       documents: [
         current,
-        { ...oldDocument, id: "access", title: "Access principle", status: "approved" },
+        {
+          ...oldDocument,
+          id: "access",
+          title: "Access principle",
+          status: "approved",
+        },
       ],
       decisions: [],
     },
@@ -48,7 +54,9 @@ function savedTask() {
       },
     ],
     agentRun: {
-      requirements: { culturalReferences: ["Bad Bunny", "Sade", "Wong Kar-wai"] },
+      requirements: {
+        culturalReferences: ["Bad Bunny", "Sade", "Wong Kar-wai"],
+      },
       acceptance: {
         checks: [
           { requirement: "Cultural revision grounded", status: "unknown" },
@@ -68,9 +76,7 @@ describe("judge-facing persisted revision impact", () => {
     expect(impact.confirmedBudget).toBe(3000);
     expect(impact.approvedElsewhere).toEqual(["Access principle"]);
     expect(impact.retainedReferences).toEqual(["Sade", "Wong Kar-wai"]);
-    expect(impact.unresolved).toContain(
-      "Cultural revision grounded (unknown)",
-    );
+    expect(impact.unresolved).toContain("Cultural revision grounded (unknown)");
     expect(impact.cultural.live).toBe(1);
   });
 

@@ -137,7 +137,7 @@ export function createAgentToolRegistry(
       "Search current public webpages; use a targeted query with explicit location when relevant.",
       searchArguments,
       "read",
-      true,
+      context.research.available !== false,
       async (args, ctx) => {
         const { query } = searchArguments.parse(args);
         const result = ctx.research.searchOnce
@@ -166,7 +166,8 @@ export function createAgentToolRegistry(
       "Read the actual page behind a previously observed web source ID; requires a page reader.",
       readArguments,
       "read",
-      Boolean(context.research.readSource),
+      Boolean(context.research.readSource) &&
+        context.research.pageReadAvailable !== false,
       async (args, ctx) => {
         const { sourceId } = readArguments.parse(args);
         const source = ctx.sources.find((s) => s.id === sourceId);
@@ -324,7 +325,7 @@ export function createAgentToolRegistry(
     ),
     tool(
       "qloo.discover",
-      "Discover Qloo cultural relationships from an already resolved entity, with a specified supported output domain.",
+      "Retrieve actual Qloo affinities: {entityId,targetType}. entityId is the internal id from knownEntities (not provider UUID). targetType is movie, tv_show, artist or place. Resolve alone is NOT discovery. Use this for each cultural seed before making a culturally grounded decision; locality/category leads do not replace affinity evidence.",
       discoverArguments,
       "read",
       Boolean(context.cultural),
@@ -357,14 +358,74 @@ export function createAgentToolRegistry(
           mode: ctx.task.mode,
         });
 
-        if (result.data.options.length) {
-          const seen = new Set(ctx.task.catalogue.map((c) => c.id));
+        const protectedIds = new Set([
+          ...ctx.task.brief.selected,
+          ...(ctx.task.brief.pinned ?? []),
+          ...(ctx.task.canvas?.comparisonIds ?? []),
+          ...ctx.task.artifacts
+            .filter((a) => a.locked || a.edited)
+            .flatMap((a) => a.candidateIds ?? []),
+          ...result.data.options.map((c) => c.id),
+        ]);
+        const activeReferences = ctx.task.agentRun?.requirements
+          ?.culturalReferences ?? [entity.name];
+        const activeSeeds = new Set(
+          ctx.task.entities
+            .filter((e) =>
+              activeReferences.some(
+                (name) =>
+                  name.toLocaleLowerCase() === e.name.toLocaleLowerCase(),
+              ),
+            )
+            .map((e) => e.providerId)
+            .filter(Boolean),
+        );
+        const observed = [];
 
-          for (const candidate of result.data.options) {
-            if (!seen.has(candidate.id) && ctx.task.catalogue.length < 30) {
-              ctx.task.catalogue.push(candidate);
-              seen.add(candidate.id);
+        for (const candidate of result.data.options) {
+          const scoped = {
+            ...candidate,
+            cultural: Object.fromEntries(
+              Object.entries(candidate.cultural ?? {}).map(([key, signal]) => [
+                key === "context" ? `context:${signal.queryId}` : key,
+                signal,
+              ]),
+            ),
+          };
+          const existing = ctx.task.catalogue.find(
+            (c) => c.id === candidate.id,
+          );
+
+          if (existing) {
+            existing.cultural = { ...existing.cultural, ...scoped.cultural };
+            observed.push(existing);
+            continue;
+          }
+
+          if (ctx.task.catalogue.length >= 30) {
+            const retired = ctx.task.catalogue.findIndex(
+              (c) =>
+                !protectedIds.has(c.id) &&
+                !Object.values(c.cultural ?? {}).some((signal) =>
+                  signal.seedIds.some((seed) => activeSeeds.has(seed)),
+                ),
+            );
+
+            if (retired >= 0) {
+              const [old] = ctx.task.catalogue.splice(retired, 1);
+              const historical = ctx.task.candidates.find(
+                (c) => c.id === old.id,
+              );
+
+              if (historical) {
+                historical.freshness = "stale";
+              }
             }
+          }
+
+          if (ctx.task.catalogue.length < 30) {
+            ctx.task.catalogue.push(scoped);
+            observed.push(scoped);
           }
         }
 
@@ -376,10 +437,7 @@ export function createAgentToolRegistry(
           }
         }
 
-        for (const candidate of evaluateCandidates(
-          result.data.options,
-          ctx.task,
-        )) {
+        for (const candidate of evaluateCandidates(observed, ctx.task)) {
           const index = ctx.task.candidates.findIndex(
             (c) => c.id === candidate.id,
           );
@@ -401,7 +459,7 @@ export function createAgentToolRegistry(
           requests: result.requestCount,
           culturalSeedIds: [entity.providerId!],
           summary:
-            `Qloo ${targetType} discovery returned ${result.data.options.length} actual candidates: ${result.data.options
+            `Qloo ${targetType} discovery returned ${result.data.options.length} actual candidates (${observed.length} retained in the active catalogue): ${result.data.options
               .slice(0, 5)
               .map((x) => x.name)
               .join(", ")}. ${result.warnings.join(" ")}`.slice(0, 580),
@@ -453,13 +511,22 @@ export function createAgentToolRegistry(
         );
 
         return {
-          status: result.status === "ok" ? "ok" : "partial",
+          status:
+            result.status === "blocked"
+              ? "blocked"
+              : result.status === "error"
+                ? "error"
+                : result.status === "ok"
+                  ? "ok"
+                  : "partial",
           requests: result.requestCount,
           summary:
             `Qloo returned ${result.data.places.length} category/location leads: ${result.data.places
               .slice(0, 5)
               .map((p) => p.name)
-              .join(", ")}. This is not verified personal affinity.`.slice(
+              .join(
+                ", ",
+              )}. This is not verified personal affinity. ${result.warnings.join(" ")}`.slice(
               0,
               580,
             ),
@@ -511,7 +578,8 @@ export function createAgentToolRegistry(
           return {
             status: "blocked",
             requests: 0,
-            summary: "Document selected an unobserved cultural candidate.",
+            summary:
+              "Document selected an unobserved cultural candidate. Seed IDs are not candidate IDs. Call qloo.discover to observe actual choices first; never invent candidateIds.",
           };
         }
 
@@ -577,6 +645,7 @@ export function createAgentToolRegistry(
           status: "ok",
           requests: 0,
           summary: `Saved editable document ${title} with ${sourceIds.length} observed source IDs.`,
+          artifactIds: [`agent-doc-${ctx.runId}-${count + 1}`],
         };
       },
     ),

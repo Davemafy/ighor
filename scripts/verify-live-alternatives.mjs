@@ -2,9 +2,10 @@ import { chromium } from "playwright";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-const root = (
-  process.env.IGOR_BASE_URL || "http://127.0.0.1:3570"
-).replace(/\/$/, "");
+const root = (process.env.IGOR_BASE_URL || "http://127.0.0.1:3570").replace(
+  /\/$/,
+  "",
+);
 const alternative = (process.env.IGOR_UNSCRIPTED_PROMPT || "").trim();
 const output = "test-results/live-alternatives";
 await fs.mkdir(output, { recursive: true });
@@ -27,6 +28,7 @@ if (
 }
 
 let browser;
+
 try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -48,11 +50,16 @@ try {
       passed: false,
     };
     report.cases.push(result);
+
     try {
       const created = await page.request.post(root + "/api/tasks", {
         headers: { Origin: root },
       });
-      if (!created.ok()) throw Error("task_creation_http_" + created.status());
+
+      if (!created.ok()) {
+        throw Error("task_creation_http_" + created.status());
+      }
+
       let task = await created.json();
       const initialVersion = task.brief.version;
       const response = await page.request.post(
@@ -67,19 +74,31 @@ try {
           timeout: 600000,
         },
       );
-      if (!response.ok()) throw Error("turn_http_" + response.status());
+
+      if (!response.ok()) {
+        throw Error("turn_http_" + response.status());
+      }
+
       const events = (await response.text())
         .split("\n\n")
         .filter((event) => event.startsWith("data: "))
         .map((event) => JSON.parse(event.slice(6)));
       const done = events.findLast((event) => event.type === "done");
-      if (!done?.task) throw Error("turn_missing_done_event");
+
+      if (!done?.task) {
+        throw Error("turn_missing_done_event");
+      }
+
       task = done.task;
 
       const read = await page.request.get(
         root + "/api/tasks/" + encodeURIComponent(task.id),
       );
-      if (!read.ok()) throw Error("reload_http_" + read.status());
+
+      if (!read.ok()) {
+        throw Error("reload_http_" + read.status());
+      }
+
       const persisted = await read.json();
       const replies = persisted.messages.filter((m) => m.role === "assistant");
       const latestReply = replies.at(-1)?.text ?? "";
@@ -124,7 +143,12 @@ try {
 } finally {
   await fs.writeFile(output + "/report.json", JSON.stringify(report, null, 2));
   console.log("LIVE_ALTERNATIVE_REPORT", JSON.stringify(report));
-  if (browser) await browser.close();
+
+  if (browser) {
+    await browser.close();
+  }
 }
 
-if (!report.passed) process.exitCode = 1;
+if (!report.passed) {
+  process.exitCode = 1;
+}

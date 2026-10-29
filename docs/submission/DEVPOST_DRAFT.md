@@ -9,7 +9,7 @@
 
 People don't think in filters. They say things like: “Make a Brooklyn gathering feel like Sade, Radiohead and Wong Kar-wai — for under $3,000.” Igor is a conversational workspace that can turn that unfinished thought into an editable proposal, with Qloo cultural evidence connected to the choices. Change Radiohead to Bad Bunny and Igor is designed to revise the affected direction without forgetting the budget, the other influences or work you already approved. The difference isn't another recommendation list. It's a result you can keep working on.
 
-*Publication gate: the paragraph above describes the implemented workflow and intended product behavior. Do not present it as a successful live demonstration until the real Qloo/model-provider walkthrough passes and the captured result supports every clause.*
+_Publication gate: the paragraph above describes the implemented workflow and intended product behavior. Do not present it as a successful live demonstration until the real Qloo/model-provider walkthrough passes and the captured result supports every clause._
 
 ## Why it matters
 
@@ -35,9 +35,9 @@ Next.js 16, React 19, TypeScript 6, SQLite-backed task state, bounded model-dire
 
 ## Three screenshots (all must be real captures)
 
-1. **A result worth keeping.** Actual saved Brooklyn proposal, readable title, editable content and budget. *Pending live capture.*
-2. **Why this direction.** Actual Qloo cultural results with delivery labels and inspectable sources; practical unknowns separate. *Pending live capture.*
-3. **Change only what changed.** Bad Bunny revision, true before/after document text, retained $3,000 constraint and approved independent access requirement, captured after reload. *Pending live capture.*
+1. **A result worth keeping.** Actual saved Brooklyn proposal, readable title, editable content and budget. _Pending live capture._
+2. **Why this direction.** Actual Qloo cultural results with delivery labels and inspectable sources; practical unknowns separate. _Pending live capture._
+3. **Change only what changed.** Bad Bunny revision, true before/after document text, retained $3,000 constraint and approved independent access requirement, captured after reload. _Pending live capture._
 
 Existing docs/evidence/one-chat images are genuine **SAMPLE** UI evidence, not substitutes for these three flagship screenshots.
 

@@ -170,11 +170,17 @@ try {
       })),
     revisionStatus: second.agentRun?.status ?? second.status,
     firstCulturalEvidence: cultural(first).length,
-    liveCulturalEvidence: cultural(first).filter((e) => e.delivery === "LIVE").length,
-    cachedCulturalEvidence: cultural(first).filter((e) => e.delivery === "CACHED").length,
+    liveCulturalEvidence: cultural(first).filter((e) => e.delivery === "LIVE")
+      .length,
+    cachedCulturalEvidence: cultural(first).filter(
+      (e) => e.delivery === "CACHED",
+    ).length,
     newCulturalEvidence: newEvidence.length,
-    newLiveCulturalEvidence: newEvidence.filter((e) => e.delivery === "LIVE").length,
-    newCachedCulturalEvidence: newEvidence.filter((e) => e.delivery === "CACHED").length,
+    newLiveCulturalEvidence: newEvidence.filter((e) => e.delivery === "LIVE")
+      .length,
+    newCachedCulturalEvidence: newEvidence.filter(
+      (e) => e.delivery === "CACHED",
+    ).length,
     firstArtifacts: first.artifacts.length,
     revisionArtifacts: second.artifacts.length,
     budgetRetained: loaded.brief.constraints.budget === 3000,

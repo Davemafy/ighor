@@ -1,3 +1,5 @@
+import { applyConversationActions } from "./conversation";
+import { invalidate } from "./revision";
 import { z } from "zod";
 import { applyWorkActions } from "./connected-work";
 import { agentStepLimit } from "../tools/model-budget";
@@ -214,6 +216,35 @@ export async function runUnifiedAgent(
       }
     }
 
+    const location = task.agentRun.requirements?.location;
+
+    if (location) {
+      const userTexts = [
+        input.goal,
+        ...task.messages.filter((m) => m.role === "user").map((m) => m.text),
+      ];
+
+      if (!userTexts.some((text) => text.includes(location.sourceText))) {
+        throw new Error("Unbound location source");
+      }
+
+      const correction = applyConversationActions(
+        task,
+        [{ kind: "constraints", location: location.value }],
+        location.sourceText,
+      );
+
+      if (!correction.ok) {
+        throw new Error("Ungrounded location");
+      }
+
+      task.brief.constraints = correction.task.brief.constraints;
+
+      if (correction.changed.length) {
+        invalidate(task, correction.changed);
+      }
+    }
+
     if (!task.brief.goal) {
       task.brief.goal = input.goal;
     }
@@ -238,9 +269,40 @@ export async function runUnifiedAgent(
       break;
     }
 
+    const references = run.requirements?.culturalReferences ?? [];
+    const observedSeeds = new Set(
+      task.catalogue.flatMap((candidate) =>
+        Object.values(candidate.cultural ?? {}).flatMap(
+          (signal) => signal.seedIds,
+        ),
+      ),
+    );
+    const culturalReady = references.length
+      ? references.every((name) => {
+          const entity = task.entities.find(
+            (entity) =>
+              entity.status === "resolved" &&
+              entity.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+          );
+
+          return Boolean(
+            entity?.providerId && observedSeeds.has(entity.providerId),
+          );
+        })
+      : observedSeeds.size > 0;
+    const discoveryFailed = run.steps.some(
+      (step) =>
+        step.tool === "qloo.discover" &&
+        (step.status === "blocked" || step.status === "error"),
+    );
+    const waitingForCulture =
+      run.requirements?.culturalDecision && !culturalReady && !discoveryFailed;
+
     const available = tools.filter(
       (t) =>
-        t.available && (t.permission === "read" || t.permission === "internal"),
+        t.available &&
+        (t.permission === "read" || t.permission === "internal") &&
+        !(waitingForCulture && t.name === "document.create"),
     );
     let selection: Awaited<
       ReturnType<NonNullable<ModelProvider["chooseAgentAction"]>>
@@ -274,7 +336,7 @@ export async function runUnifiedAgent(
       break;
     }
 
-    const selected = tools.find(
+    const selected = available.find(
       (t) => t.name === selection.name && t.available,
     );
 

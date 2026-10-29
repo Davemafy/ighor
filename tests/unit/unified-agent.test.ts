@@ -912,3 +912,106 @@ it("supplies real tool schemas and permits one pre-execution argument repair", a
     store.close();
   }
 });
+
+it("grounds the requested locality before discovery and rejects an invented location quote", async () => {
+  for (const supplied of [true, false]) {
+    const store = new SqliteTaskStore(":memory:");
+    const task = freshTask(`location-${supplied}`, "owner");
+    const original = task.brief.constraints.location;
+    store.create(task);
+
+    try {
+      await runUnifiedAgent({
+        task,
+        store,
+        owner: "owner",
+        goal: supplied ? "Find a venue in Brooklyn." : "Find a venue.",
+        requirements: {
+          culturalDecision: false,
+          culturalReferences: [],
+          deliverables: [],
+          location: {
+            value: "Brooklyn",
+            sourceText: "Find a venue in Brooklyn.",
+          },
+        },
+        model: {
+          interpret: vi.fn(),
+          chooseAgentAction: async () => ({
+            name: "agent.finish",
+            arguments: {},
+          }),
+        },
+        research: { research: vi.fn() },
+        trace: vi.fn(),
+      });
+      const saved = store.load(task.id, "owner");
+      expect(saved.brief.constraints.location).toBe(
+        supplied ? "Brooklyn" : original,
+      );
+
+      if (!supplied) {
+        expect(saved.agentRun?.requirements).toBeUndefined();
+      }
+    } finally {
+      store.close();
+    }
+  }
+});
+
+it("reports a verified saved document as ready without requiring a redundant web synthesis", async () => {
+  const { runTurn } = await import("../../src/core/orchestrator");
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("saved-outcome", "owner");
+  store.create(task);
+  let chosen = 0;
+
+  try {
+    const result = await runTurn(
+      store,
+      task.id,
+      "owner",
+      {
+        type: "message",
+        text: "Create and save an editable proposal from the supplied brief.",
+        version: task.brief.version,
+      },
+      undefined,
+      undefined,
+      {
+        interpret: vi.fn(),
+        routeConversation: async () => ({
+          intent: "research",
+          query: "Create an editable proposal",
+        }),
+        interpretAgentRequirements: async () => ({
+          culturalDecision: false,
+          culturalReferences: [],
+          deliverables: ["proposal"],
+        }),
+        chooseAgentAction: async () =>
+          ++chosen === 1
+            ? {
+                name: "document.create",
+                arguments: {
+                  title: "A useful proposal",
+                  content:
+                    "An editable, provisional concept using the supplied brief. Practical details remain unverified.",
+                  sourceIds: [],
+                  fulfills: ["proposal"],
+                },
+              }
+            : { name: "agent.finish", arguments: {} },
+      },
+      undefined,
+      { available: false, research: vi.fn() },
+    );
+    expect(result.agentRun?.status).toBe("completed");
+    expect(result.status).toBe("ready");
+    expect(result.error).toBeNull();
+    expect(result.messages.at(-1)?.text).toContain("Saved: A useful proposal");
+    expect(store.load(task.id, "owner").status).toBe("ready");
+  } finally {
+    store.close();
+  }
+});
