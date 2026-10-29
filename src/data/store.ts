@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { messageIds } from "../core/agent-events";
+import { updateConversationFocus } from "../core/conversation-focus";
 import { TaskSchema, PreferenceSchema, type Task, type Turn, type Event } from "../core/contracts";
 
 export class AccessError extends Error {
@@ -187,6 +188,7 @@ export class SqliteTaskStore implements TaskStore {
       }
 
       task.brief.version = next;
+      updateConversationFocus(task);
       messageIds(task);
       TaskSchema.parse(task);
       this.db.prepare(
@@ -298,6 +300,7 @@ export class SqliteTaskStore implements TaskStore {
   }
 
   create(task: Task) {
+    updateConversationFocus(task);
     messageIds(task);
     TaskSchema.parse(task);
     this.db
@@ -328,6 +331,7 @@ export class SqliteTaskStore implements TaskStore {
   }
 
   save(task: Task, expected: number, owner: string, change?: MemoryChange) {
+    updateConversationFocus(task);
     messageIds(task);
     TaskSchema.parse(task);
 
