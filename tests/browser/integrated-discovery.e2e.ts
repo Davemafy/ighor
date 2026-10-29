@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { DatabaseSync } from "node:sqlite";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { sampleCatalogue } from "../../src/data/fixtures";
 import {
   installPresentation,
@@ -269,7 +271,7 @@ test("original Codrops gallery switches real candidate layout without losing ins
     .slice(0, 3)
     .map((candidate, index) => ({
       ...candidate,
-      imageUrl: `/marketing/assets/covers/c0${index + 1}.webp`,
+      imageUrl: `https://images.qloo.com/igor-sample-c0${index + 1}.webp`,
       eligibility: "eligible",
       dependencies: [],
       freshness: "current",
@@ -304,6 +306,21 @@ test("original Codrops gallery switches real candidate layout without losing ins
     task.id,
   );
   db.close();
+  await page.route("https://images.qloo.com/igor-sample-*.webp", async (route) => {
+    const match = route.request().url().match(/igor-sample-c0([1-3])\\.webp$/);
+    if (!match) {
+      await route.abort();
+      return;
+    }
+    const media = await readFile(
+      resolve(process.cwd(), "public/marketing/assets/covers", `c0${match[1]}.webp`),
+    );
+    await route.fulfill({
+      status: 200,
+      contentType: "image/webp",
+      body: media,
+    });
+  });
   await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
   await page.goto("/app");
   const gallery = page.locator(".iw-liquid-grid.grid_gallery_container");
