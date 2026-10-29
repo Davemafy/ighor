@@ -88,7 +88,7 @@
   align-items: stretch;
   border-bottom: 1px solid #cbd2c4;
 }
-.ird-card {
+.iw-app .ird-experience .ird-card {
   min-width: 0;
   border: 0;
   border-top: 1px solid #cbd2c4;
@@ -97,7 +97,7 @@
   overflow: hidden;
   transition: background-color 160ms ease;
 }
-.iw-app .ird-card:hover {
+.iw-app .ird-experience .ird-card:hover {
   background: #ecf0e7;
   box-shadow: none;
   transform: none;
@@ -224,7 +224,7 @@
   width: 14px;
   height: 14px;
 }
-.ird-card:first-child {
+.iw-app .ird-experience .ird-card:first-child {
   background: #f8f9f3;
   border: 1px solid #cbd2c4;
   margin-bottom: 12px;
