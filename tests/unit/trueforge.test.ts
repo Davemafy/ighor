@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createAgentToolRegistry, type AgentToolContext } from "../../src/core/agent-tool-registry";
+import { freshTask } from "../../src/data/fixtures";
 import {
   consultTrueForge,
   readTrueForgeTurn,
@@ -29,6 +31,7 @@ function turn(body = successfulStream) {
 describe("TrueForge opt-in safety boundary", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("is unavailable unless explicitly enabled with an agent and safe origin", () => {
@@ -154,5 +157,47 @@ describe("TrueForge opt-in safety boundary", () => {
     );
 
     expect(answer).toBe("Validated placeholder");
+  });
+  it("registers only when configured and preserves Qloo evidence independently", async () => {
+    const task = freshTask("igor-task", "owner");
+
+    const context = {
+      task,
+      sources: [],
+      runId: "run-1",
+      research: { available: false },
+    } as unknown as AgentToolContext;
+
+    expect(
+      createAgentToolRegistry(context).find((tool) => tool.name === "trueforge.consult")?.available,
+    ).toBe(false);
+
+    vi.stubEnv("IGOR_TRUEFORGE_ENABLED", "1");
+    vi.stubEnv("TRUEFORGE_BASE_URL", "http://localhost:8790");
+    vi.stubEnv("TRUEFORGE_AGENT_NAME", "igor-delegate");
+
+    const mock = vi.fn(async (input: string) =>
+      input.endsWith("/sessions")
+        ? Response.json({ data: { id: "sess_123" } })
+        : turn(),
+    );
+    vi.stubGlobal("fetch", mock);
+
+    const delegate = createAgentToolRegistry(context).find(
+      (tool) => tool.name === "trueforge.consult",
+    );
+
+    expect(delegate?.available).toBe(true);
+    const result = await delegate!.execute(
+      { objective: "Find a second perspective" },
+      context,
+    );
+
+    expect(result.status).toBe("ok");
+    expect(result.summary).toContain("UNVERIFIED");
+    expect(result.sources).toBeUndefined();
+    expect(task.trueforgeSessionId).toBe("sess_123");
+    expect(task.evidence).toHaveLength(0);
+    expect(task.artifacts).toHaveLength(0);
   });
 });
