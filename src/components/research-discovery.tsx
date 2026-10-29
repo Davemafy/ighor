@@ -2,7 +2,7 @@
 
 import type { Task, TaskAction } from "@/core/contracts";
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, FileText, Search } from "./workspace-icons";
+import { ArrowRight, ArrowUpRight, Search } from "./workspace-icons";
 import { DiscoveryDialog } from "./discovery/dialog";
 
 const genericHosts = new Set([
@@ -107,8 +107,7 @@ function SourceImage({ finding }: { finding: Finding }) {
     />
   ) : (
     <span className="ird-source-placeholder" aria-hidden="true">
-      <FileText />
-      <span>{finding.domain}</span>
+      {finding.domain}
     </span>
   );
 }
@@ -142,10 +141,14 @@ export function ResearchDiscovery({
   return (
     <section className="ird-experience" aria-label="Visual research findings">
       <header className="ird-intro">
+        <div className="ird-masthead">
+          <span>Explore / {task.brief.goal || "Your conversation"}</span>
+          <span>{String(findings.length).padStart(2, "0")} references</span>
+        </div>
         <h2>{report.title}</h2>
         <p>
-          {findings.length} references to explore. Open one to see what caught
-          our eye.
+          Sources collected for this request. Inspect a reference to see its
+          context and what still needs checking.
         </p>
       </header>
       {webCount > 0 && qlooCount > 0 && (
@@ -174,7 +177,7 @@ export function ResearchDiscovery({
       )}
       {filtered.length ? (
         <div className="ird-gallery">
-          {(expanded ? filtered : filtered.slice(0, 6)).map((finding) => (
+          {(expanded ? filtered : filtered.slice(0, 6)).map((finding, index) => (
             <article
               className={
                 "ird-card" +
@@ -189,12 +192,18 @@ export function ResearchDiscovery({
                 aria-label={`Open ${finding.title}`}
               >
                 <span className="ird-cover">
-                  <SourceImage key={finding.imageUrl} finding={finding} />
+                  {finding.imageUrl ? (
+                    <SourceImage key={finding.imageUrl} finding={finding} />
+                  ) : (
+                    <span className="ird-reference-number" aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  )}
                 </span>
                 <span className="ird-card-body">
                   <span className="ird-card-index">
-                    {finding.domain}
-                    <ArrowUpRight />
+                    <span>{finding.domain}</span>
+                    <span className="ird-source-tag">{finding.verification}</span>
                   </span>
                   <h3>{finding.title}</h3>
                   {finding.description && (
@@ -203,7 +212,7 @@ export function ResearchDiscovery({
                     </span>
                   )}
                   <span className="ird-card-action">
-                    View details <ArrowRight />
+                    Inspect reference <ArrowUpRight />
                   </span>
                 </span>
               </button>
