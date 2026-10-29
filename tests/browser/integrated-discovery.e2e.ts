@@ -241,3 +241,92 @@ for (const { mobile, reduced } of [
     });
   });
 }
+
+test("original Codrops gallery switches real candidate layout without losing inspection", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const created = await page.request.post("/api/tasks", {
+    headers: { Origin: "http://127.0.0.1:3560" },
+  });
+  expect(created.ok()).toBe(true);
+  const task = (await created.json()) as Task;
+  task.status = "ready";
+  task.messages = [
+    {
+      role: "user",
+      text: "Explore cultural directions",
+      at: new Date().toISOString(),
+    },
+    {
+      role: "assistant",
+      kind: "conversation",
+      text: "SAMPLE fixture with existing local media; not a Qloo live result.",
+      at: new Date().toISOString(),
+    },
+  ];
+  task.candidates = sampleCatalogue()
+    .slice(0, 3)
+    .map((candidate, index) => ({
+      ...candidate,
+      imageUrl: `/marketing/assets/covers/c0${index + 1}.webp`,
+      eligibility: "eligible",
+      dependencies: [],
+      freshness: "current",
+      missing: [],
+      violations: [],
+      evidenceIds: [],
+      fit: {},
+      fitReason: "SAMPLE only; no cultural association inferred",
+    }));
+  task.canvas = installPresentation(
+    undefined,
+    PresentationSchema.parse({
+      id: "original-codrops-layout",
+      title: "Recorded layout experiment",
+      basis: "draft",
+      root: "choices",
+      nodes: [
+        {
+          id: "choices",
+          type: "discovery",
+          title: "References",
+          candidateIds: task.candidates.map((candidate) => candidate.id),
+        },
+      ],
+    }),
+  );
+  const db = new DatabaseSync(
+    `${process.env.IGOR_BROWSER_RUN_DIR ?? ".igor/integration-browser"}/tasks.sqlite`,
+  );
+  db.prepare("UPDATE tasks SET state=? WHERE id=?").run(
+    JSON.stringify(task),
+    task.id,
+  );
+  db.close();
+  await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
+  await page.goto("/app");
+  const gallery = page.locator(".iw-liquid-grid.grid_gallery_container");
+  await expect(gallery).toHaveAttribute("data-size-grid", "150%");
+  await expect(gallery.locator('[data-gallery="true"]')).toHaveCount(3);
+  const first = gallery.locator('[data-candidate-id="moonrise"]');
+  await expect(first.getByRole("button", { name: "Inspect Moonrise Kingdom" })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("original-gallery.png") });
+  const initial = await first.boundingBox();
+
+  await page.getByRole("group", { name: "Discovery layout" }).getByRole("button", { name: "Detailed" }).click();
+  await expect(gallery).toHaveAttribute("data-size-grid", "75%");
+  await expect(first.getByRole("button", { name: "Choose" })).toBeVisible();
+  const detailed = await first.boundingBox();
+  expect(initial).not.toBeNull();
+  expect(detailed).not.toBeNull();
+  expect(Math.abs((initial?.width ?? 0) - (detailed?.width ?? 0))).toBeGreaterThan(20);
+  await page.screenshot({ path: info.outputPath("original-detailed.png") });
+
+  await page.getByRole("group", { name: "Discovery layout" }).getByRole("button", { name: "Gallery" }).click();
+  await first.getByRole("button", { name: "Inspect Moonrise Kingdom" }).click();
+  await expect(page.getByRole("region", { name: "Details for Moonrise Kingdom" })).toBeVisible();
+  await expect(page.getByText("SAMPLE only; no cultural association inferred")).toBeVisible();
+  await page.getByRole("button", { name: "All references" }).click();
+  await expect(gallery).toHaveAttribute("data-size-grid", "150%");
+});
