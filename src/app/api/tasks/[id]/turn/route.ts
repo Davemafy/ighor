@@ -1,12 +1,42 @@
 import { cookies } from "next/headers";
-import { ZodError } from "zod";
-import { getStore } from "@/data/store";
+import { z, ZodError } from "zod";
+import { randomUUID } from "node:crypto";
+import { AccessError, ConflictError, TurnIdReuseError, getStore } from "@/data/store";
 import { runTurn } from "@/core/orchestrator";
 import { checkOrigin, ownerFromToken, sessionCookie } from "@/core/security";
 import { readBoundedJson } from "@/core/server-input";
-import { TurnSchema } from "@/core/contracts";
+import { TurnSchema, type Event } from "@/core/contracts";
 
 export const runtime = "nodejs";
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const token = (await cookies()).get(sessionCookie)?.value;
+
+    if (!token) {
+      return Response.json({ error: "Session required." }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const turnId = z.string().uuid().parse(url.searchParams.get("turnId"));
+    const afterRaw = Number(url.searchParams.get("after") ?? "0");
+    const after = z.number().int().min(0).max(100000).parse(afterRaw);
+    const owner = ownerFromToken(token);
+    const { id } = await context.params;
+
+    return Response.json(getStore().readTurn(id, owner, turnId, after), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    return Response.json(
+      { error: "Turn not found or request invalid." },
+      { status: error instanceof AccessError ? 404 : 400 },
+    );
+  }
+}
 
 export async function POST(
   request: Request,
@@ -26,32 +56,77 @@ export async function POST(
       return Response.json({ error: "Request is too large." }, { status: 413 });
     }
 
-    const input = TurnSchema.parse(await readBoundedJson(request));
+    // Accept a stable client turn ID without changing the old TurnSchema.
+    // Legacy clients are compatible but cannot safely dedupe their retries.
+    const raw = z.record(z.string(), z.unknown()).parse(await readBoundedJson(request));
+    const turnId = raw.clientTurnId === undefined
+      ? randomUUID()
+      : z.string().uuid().parse(raw.clientTurnId);
+    const { clientTurnId: _clientTurnId, ...payload } = raw;
+    void _clientTurnId;
+    const input = TurnSchema.parse(payload);
     const owner = ownerFromToken(token);
     const { id } = await context.params;
     const store = getStore();
-    let task;
+    let admitted;
 
     try {
-      task = store.load(id, owner);
-    } catch {
-      return Response.json({ error: "Workspace not found." }, { status: 404 });
+      admitted = store.acceptTurn(id, owner, turnId, input);
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        return Response.json(
+          { error: "A newer edit exists. Reload the workspace.", code: "conflict" },
+          { status: 409 },
+        );
+      }
+
+      if (error instanceof TurnIdReuseError) {
+        return Response.json(
+          { error: "This turn ID belongs to a different request.", code: "turn-id-reuse" },
+          { status: 409 },
+        );
+      }
+
+      if (error instanceof AccessError) {
+        return Response.json({ error: "Workspace not found." }, { status: 404 });
+      }
+
+      throw error;
     }
 
-    if (task.brief.version !== input.version) {
-      return Response.json(
-        {
-          error: "A newer edit exists. Reload the workspace.",
-          code: "conflict",
+    if (admitted.duplicate) {
+      const saved = store.readTurn(id, owner, turnId);
+      const replay = saved.events
+        .map(({ sequence, event }) =>
+          `id: ${sequence}\\ndata: ${JSON.stringify(event)}\\n\\n`)
+        .join("");
+      const terminal = saved.status === "completed" ||
+        saved.status === "failed" || saved.status === "superseded";
+      const continuation = terminal
+        ? ""
+        : `data: ${JSON.stringify({
+            type: "error",
+            code: "already-running",
+            message: "Your request was already accepted. Your saved work is safe; refresh to check its progress.",
+          })}\\n\\n`;
+
+      return new Response(replay + continuation, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-store",
+          "X-Igor-Turn-Id": turnId,
         },
-        { status: 409 },
-      );
+      });
     }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (event: unknown) => {
+        const send = (event: Event) => {
+          // Store server-generated progress BEFORE attempting network delivery.
+          // A disconnected client cannot suppress event persistence.
+          store.recordTurnEvent(id, owner, turnId, event);
+
           try {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
@@ -80,7 +155,22 @@ export async function POST(
                   ? "Saving your changes"
                   : "Working on your request",
           });
-          await runTurn(store, id, owner, input, send);
+          const acceptedInput = {
+            ...input,
+            version: admitted.acceptedVersion,
+          };
+          await runTurn(
+            store,
+            id,
+            owner,
+            acceptedInput,
+            send,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            input.type === "message",
+          );
         } catch (error) {
           const conflict =
             error instanceof Error &&
@@ -106,6 +196,7 @@ export async function POST(
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
         "X-Accel-Buffering": "no",
+        "X-Igor-Turn-Id": turnId,
       },
     });
   } catch (error) {
