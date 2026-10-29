@@ -1,6 +1,8 @@
 # Igor — system architecture map
 **Version:** 2026-10-29 · **Target:** the single Igor development branch · **Authority:** inspected code at commit d4afa937d726385d23ed24e3447ad28eb21a03bb
 
+**Reliability design input:** user-provided *IGOR — System Architecture v2*, an October 26 proposal based on an older `main` tree and informed by `Enoch208/parallel`. This document folds its turn-gateway, durable journal, reference binding, action safety, proof and error semantics into the October 29 active-branch architecture. v2 was **not** an implemented migration; source-specific claims below were rechecked against the newer branch. Do not treat any proposed table or event as live.
+
 This document distinguishes **implemented (I)**, **implemented but not proven live (V)**, **proposed (P)**, and **not supported (N)**. It is an executable architecture plan, not a claim that all services are connected or that the listening-bar workflow exists end to end.
 
 ## 0. The product invariant
@@ -44,7 +46,99 @@ flowchart TB
 
 **Design boundary (I).** No separate TrueForge UI, no new dashboard. Igor's own editor, provenance badges, document, invitation, and discovery views render the work. Refer to **docs/design-system.md**.
 
-## 2. Source code ownership
+
+## 2. Durable conversation contract — inherited from Architecture v2 (P0)
+
+The most important correction to the architecture is **persistence at ingress**, not merely at the beginning of a slow provider call. Current Igor saves complete Task blobs with optimistic concurrency; the message is appended by \`interpretMessage\` before a model call **in memory**, while some paths checkpoint before research. There is **no dedicated durable turn journal or stable clientTurnId idempotency** in the inspected implementation. Therefore, "persist before executing" is **a required migration, not an existing guarantee for every inference path**.
+
+~~~mermaid
+flowchart TD
+    CLIENT["Client sends message + clientTurnId + expectedRevision"] --> GW["Turn gateway: auth / version / idempotency"]
+    GW --> JOURNAL[("SQLite transaction: immutable user message + turn accepted")]
+    JOURNAL --> WORKER["Lease run, build bounded context, route"]
+    WORKER --> MODEL["LLM proposes reply / plan / correction / action"]
+    MODEL --> GATE["Typed schema + reference grounding + permission check"]
+    GATE -->|"Read or compose"| TOOL["Bounded Qloo / research / TrueForge / capabilities"]
+    TOOL --> VALIDATE["Evidence + feasibility + decision evaluator"]
+    VALIDATE --> COMMIT["Conditional versioned commit"]
+    GATE -->|"Chat only"| COMMIT
+    GATE -->|"External write"| APPROVE["Preview + user approval + idempotent outbound ledger"]
+    APPROVE --> COMMIT
+    COMMIT --> EVENTS[("Stored events + replayable client progress")]
+    EVENTS --> UI["Igor renders message, cards, document and next actions"]
+~~~
+
+### External turn input and lifecycle
+
+\`\`\`ts
+// Proposed v3 gateway envelope. Existing TurnSchema remains supported via
+// compatibility parsing and must not be silently changed without migration.
+type TurnEnvelope = {
+  workspaceId: string;
+  clientTurnId: string;        // UUID generated once client-side, reused on retry
+  expectedRevision: number;
+  message: string;
+  actionContext?: {
+    activeArtifactId?: string;
+    visibleCandidateIds?: string[];
+    visibleResultRevision?: number;
+  };
+};
+
+type TurnPhase =
+  | "accepted" | "understanding" | "responding" | "awaiting_input"
+  | "retrieving" | "evaluating" | "awaiting_approval" | "composing"
+  | "completed" | "partial" | "failed" | "superseded";
+\`\`\`
+
+- **Uniqueness:** \`UNIQUE(workspaceId, clientTurnId)\`. Matching duplicate: return saved turn/stream and **never** append the message or execute a second paid call. Same key with changed payload: reject. A newer conflicting edit marks late work superseded without replacing valid state.
+- **Ordering:** in one SQLite transaction, validate owner + expected version, reserve turn and append message **before** any model call. Keep the existing Task materialized read model compatible during incremental migration.
+- **State machine:** \`accepted → understanding → responding|awaiting_input|retrieving|evaluating|awaiting_approval|composing → completed|partial|failed|superseded\`. Persist phase and progress with a monotonically increasing per-turn event sequence.
+- **Stream:** extend current \`state/action/done/error\` packets without breaking existing clients: \`turn_accepted\`, \`phase\`, \`message_delta\`, \`artifact_ready\`, \`needs_input\`, \`needs_approval\`, \`partial\`, \`failed\`. Client reconnects using saved turn ID/event cursor to recover the authoritative state; SSE delivery itself is **not** the persistent record.
+- **Crash semantics:** a read call may be safely retried within a budget; a write action must have a reserved idempotency record and provider receipt/unknown-outcome reconciliation. A phase checkpoint without a lease/scanner does **not** imply automatic restart recovery.
+- **Model fallback:** arbitrary natural language is always a valid conversational **input**, even if no matching tool or output kind exists. If the model is unavailable, save the message and communicate a visible provider failure; never fabricate a successful model reply. The existing interpreter still records a whole-turn \`error\` on unrecoverable model failures, so this remains a real P0 gap.
+
+### Conversation reference registry — important for agent intelligence
+
+Persist a \`ConversationFocus\` with \`activeArtifactId\`, \`activeCandidateIds\`, \`ordinalMap\`, \`lastQuestionId\`, \`referencedParticipants\` and \`lastResultRevision\`. Ground “the second one,” “that place,” “Maya's pick,” “why that one?” against **the exact visible result revision**. If the reference is stale or ambiguous, ask one question rather than guessing. Current conversation handlers resolve named/ID matches; this explicit ordinal/focus contract is not yet present.
+
+Three distinct memories: (1) immutable thread history, (2) working goal/current focus and source-linked decisions, (3) **opt-in** long-term preferences with confirmation, scope and deletion. Prompt context must be rebuilt from these server records on every turn; neither Gemini nor TrueForge is the canonical conversation memory.
+
+### Proposed backward-compatible SQLite tables
+
+Add \`turns\` (workspace, clientTurnId, payloadHash, revision, phase), \`messages\` (turn, role, order, text), \`run_steps\` (run, phase, lease, checkpoint, budget), and \`stream_events\` (turn, sequence, type, JSON). Index evidence/artifact/dependency nodes as needed, **without migrating every existing Task blob first**. Use \`TaskStore\` compatibility methods and one Node 24 + Railway persistent volume until tested scaling constraints justify changing storage.
+
+### v2 concerns verified against October 29 code
+
+| v2 claim or proposed change | Rechecked on the active branch | Decision |
+| --- | --- | --- |
+| No clientTurnId, dedicated journal or replayable SSE event IDs | Still absent in current \`TurnSchema\`, \`SqliteTaskStore\` and streaming route | **P0 build** |
+| Whole-turn interpretation failure affects conversational reliability | \`interpret-message.ts\` still records \`task.status = "error"\` after recovery failure; a read-only conversation route exists | **P0 decouple**; preserve existing recovery logic |
+| “the second one” must bind to current visible result | Named/ID reference resolution exists; no persistent ordinal map or focus revision | **P0 implement** |
+| Goal/output enums are limited | \`goals.ts\` has gathering/discovery/creative; \`outcome-spec.ts\` has four specific outcome types | Keep typed executable outcomes; **allow general chat** independently |
+| \`count.some(saved => saved.id === saved.id)\` memory-cap typo | Active branch now correctly tests \`saved.id === preference.id\` | **Already fixed**; don't reintroduce bug |
+| Missing production-model key silently falls back to scripted | Current runtime uses real adapters and a transparent no-model error outside fixture/test modes | **Improved**; retain transparent failure |
+| Late provider result cannot overwrite newer user edit | Optimistic versioned Task store and isolated agent tool work copies exist | **Partially implemented**; preserve conflict checks, add run leases for crash recovery |
+| Parallel-style universal taste score | Not appropriate for Igor's mixed tasks | **Reject**; strategy-specific constraints and sourced comparisons only |
+
+### Read/commit authorization boundary
+
+For external action flows, enforce \`action_proposed → validate target/owner/revision → preview recipient, scope and cost → explicit user approval → reserve idempotency key → execute → reconcile provider receipt → commit result\`. Model decisions are not permissions. **Current Igor intentionally blocks external writes**; this sequence is a future contract, not a live email or booking feature.
+
+### Proof criteria added from v2
+
+- “hey” and “what can you do?” → genuine contextual reply, **zero Qloo**.
+- “plan a weekend with friends” → useful goal or a single blocking question, not interpreter failure.
+- “the second one” / “why that one?” → current focus or safely asks for disambiguation, no invented reference.
+- “budget is €200” → revise only affected nodes, **no redundant Qloo calls** if source taste did not change.
+- “Maya wouldn't like jazz” → participant-scoped correction, no silent durable preference save.
+- Two identical retried \`clientTurnId\` requests → one saved turn, bounded external calls.
+- Timeout/disconnect/restart → saved message survives; progress is replayable; explicitly mark interrupted if no resumable runner.
+- Concurrent correction → stale write rejected; previously approved work intact.
+- Provider outage → exact LIVE/CACHED/RECORDED provenance, no fabricated practical facts.
+- Side-effect replay → never auto-send or claim success without approval and receipt.
+
+## 4. Source code ownership
 
 | Responsibility | Existing implementation | Current truth |
 | --- | --- | --- |
@@ -64,7 +158,7 @@ flowchart TB
 | Presentation | **src/components/invitation-studio.tsx**, **liquid-discovery.tsx** | I; current design review contract is Partiful-based |
 | Real cross-app write actions | **src/core/connected-work.ts** | N; external actions explicitly record *blocked*, nothing is sent or booked |
 
-## 3. Task state = system of record
+## 4. Task state = system of record
 
 The durable unit is a **Task** (owner-scoped), **not** a TrueForge session, a chat completion, or a browser view. Each Task carries:
 
@@ -78,7 +172,7 @@ The durable unit is a **Task** (owner-scoped), **not** a TrueForge session, a ch
 
 **Memory distinction:** confirmed preference memory exists (I); a long-lived, proactive assistant with a scheduler and cross-goal follow-up does **not** (N). Resuming a task uses Igor's saved Task, not a provider's conversation as the sole source of truth. The TrueForge session ID is a subordinate execution context.
 
-## 4. Agent's decision and execution loop
+## 5. Agent's decision and execution loop
 
 ~~~mermaid
 sequenceDiagram
@@ -115,7 +209,7 @@ sequenceDiagram
 
 **Operational gap (P):** add durable run leases/checkpoints to recover safely after container restarts or duplicated requests, correlation IDs, and shared per-owner quota for multi-instance deployment. Do not treat process-local caps as globally enforced.
 
-## 5. The composition layer we must complete
+## 6. The composition layer we must complete
 
 Gastro-Acoustic must be a **reusable experience graph** layered over existing connected work, not a one-off prompt template.
 
@@ -146,7 +240,7 @@ flowchart LR
 
 **Gap:** Igor has general-purpose work decisions, budget conflicts, evaluator and stale-dependency machinery. It does **not yet** have a fully implemented typed music ↔ food ↔ atmosphere experience graph nor a demonstrated independent cross-domain critique loop (P).
 
-## 6. Proposed hosting topology — minimum credible production
+## 7. Proposed hosting topology — minimum credible production
 
 ~~~mermaid
 flowchart TB
@@ -171,7 +265,7 @@ flowchart TB
 
 **CI (I):** qloo-test's single-branch workflow reads Igor's current active development SHA and runs static checks, unit suite, build, and recorded Chromium journeys. It executes on qloo-test push, manual workflow dispatch or periodic schedule; Igor push does **not** automatically invoke qloo-test as an ordinary same-repository push trigger. Repo-wide formatting remains nonblocking debt. Igor's own Actions runners were failing before job steps. Do not conflate this with a failing application build.
 
-## 7. The two required acceptance journeys
+## 8. The two required acceptance journeys
 
 | Gate | Six-person gathering | Listening bar |
 | --- | --- | --- |
@@ -186,9 +280,9 @@ flowchart TB
 
 For every gate: verify **actual** provider calls separately from CACHED/recorded demo mode. Do not call a cached screenshot proof of live execution. Where no live data is available, render explicit unknowns.
 
-## 8. Implementation sequence and release gate
+## 9. Implementation sequence and release gate
 
-1. **Make the existing P0 loop reliable:** one owner-scoped task, unscripted messages, live Qloo and model call, source-backed candidate, work draft, browser reload, correction and preserved edits; report failures in trace and UI.
+1. **P0 durable turn gateway first:** add clientTurnId + transactional accepted-turn/message journal, replayable phase/event stream, version guard, reference focus and safe arbitrary-chat fallback. Then verify owner-scoped unscripted messages, live Qloo and model calls, source-backed drafts, reload, correction and preserved edits. Model/provider failures must retain the saved input.
 2. **Establish durable deployment:** Railway volume, four paths, backups and restored test task; server-only secrets; single replica; deny unwanted external writes.
 3. **Implement the experience graph within existing Task / WorkState:** typed domain nodes and dependency links, per-edge evidence/interpretation, independent fit/feasibility critique, selective invalidation with approval protection. Avoid a new app or DB for Gastro-Acoustic.
 4. **Run both demonstrations on identical engine and product surface:** live and recorded paths explicitly distinct; manual user verdict and screenshots on desktop/mobile.
