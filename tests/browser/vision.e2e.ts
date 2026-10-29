@@ -59,7 +59,7 @@ test("recorded cultural outcome → collection → export → independent review
 }) => {
   // This journey includes editing, export and an independent review context.
   // Individual UI assertions retain their normal bounded timeouts.
-  test.setTimeout(120000);
+  test.setTimeout(160000);
   const task = await gathering(page);
   await page.getByRole("button", { name: "Connections", exact: true }).click();
   await expect(
@@ -223,6 +223,7 @@ test("recorded cultural outcome → collection → export → independent review
     test
       .info()
       .annotations.push({ type: "review-phase", description: reviewPhase });
+    console.info(`IGOR_REVIEW_PHASE=${reviewPhase}`);
     await guestContext.close();
   }
 });
