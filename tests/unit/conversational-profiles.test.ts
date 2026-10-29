@@ -271,3 +271,43 @@ it("completes an initial request from earlier user facts after a clarifying answ
     "Radiohead",
   );
 });
+
+it("grounds 'Maya doesn't like that music' to only one explicitly selected artist", () => {
+  const task = freshTask("deictic-music", "owner");
+  task.brief.participants = [
+    { id: "maya", name: "Maya", preferences: [], sample: false },
+    { id: "alex", name: "Alex", preferences: [], sample: false },
+  ];
+  const artist = task.catalogue.find((candidate) => candidate.type === "artist");
+
+  expect(artist).toBeDefined();
+  task.brief.selected = [artist!.id];
+  const result = applyConversationActions(
+    task,
+    [{ kind: "preference", participant: "Maya", value: artist!.name, polarity: "dislike" }],
+    "Maya doesn't like that music",
+  );
+
+  expect(result.ok).toBe(true);
+
+  if (result.ok) {
+    expect(result.task.brief.participants[0].preferences).toMatchObject([
+      { value: artist!.name, polarity: "dislike", source: "user-supplied" },
+    ]);
+    expect(result.task.brief.participants[1].preferences).toEqual([]);
+    expect(result.task.preferences).toEqual([]);
+    expect(result.changed).toContain("preferences:maya");
+    expect(result.discover).toBe(true);
+  }
+
+  // The same phrase MUST NOT guess a preference without one known choice.
+  task.brief.selected = [];
+  expect(
+    applyConversationActions(
+      task,
+      [{ kind: "preference", participant: "Maya", value: artist!.name, polarity: "dislike" }],
+      "Maya doesn't like that music",
+    ).ok,
+  ).toBe(false);
+});
+
