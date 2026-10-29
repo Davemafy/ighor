@@ -49,7 +49,7 @@ flowchart TB
 
 ## 2. Durable conversation contract — inherited from Architecture v2 (P0)
 
-The most important correction to the architecture is **persistence at ingress**, not merely at the beginning of a slow provider call. Current Igor saves complete Task blobs with optimistic concurrency; the message is appended by \`interpretMessage\` before a model call **in memory**, while some paths checkpoint before research. There is **no dedicated durable turn journal or stable clientTurnId idempotency** in the inspected implementation. Therefore, "persist before executing" is **a required migration, not an existing guarantee for every inference path**.
+The most important correction to the architecture is **persistence at ingress**, not merely at the beginning of a slow provider call. Current Igor saves complete Task blobs with optimistic concurrency; the message is appended by `interpretMessage` before a model call **in memory**, while some paths checkpoint before research. There is **no dedicated durable turn journal or stable clientTurnId idempotency** in the inspected implementation. Therefore, "persist before executing" is **a required migration, not an existing guarantee for every inference path**.
 
 ~~~mermaid
 flowchart TD
@@ -70,7 +70,7 @@ flowchart TD
 
 ### External turn input and lifecycle
 
-\`\`\`ts
+```ts
 // Proposed v3 gateway envelope. Existing TurnSchema remains supported via
 // compatibility parsing and must not be silently changed without migration.
 type TurnEnvelope = {
@@ -89,41 +89,41 @@ type TurnPhase =
   | "accepted" | "understanding" | "responding" | "awaiting_input"
   | "retrieving" | "evaluating" | "awaiting_approval" | "composing"
   | "completed" | "partial" | "failed" | "superseded";
-\`\`\`
+```
 
-- **Uniqueness:** \`UNIQUE(workspaceId, clientTurnId)\`. Matching duplicate: return saved turn/stream and **never** append the message or execute a second paid call. Same key with changed payload: reject. A newer conflicting edit marks late work superseded without replacing valid state.
+- **Uniqueness:** `UNIQUE(workspaceId, clientTurnId)`. Matching duplicate: return saved turn/stream and **never** append the message or execute a second paid call. Same key with changed payload: reject. A newer conflicting edit marks late work superseded without replacing valid state.
 - **Ordering:** in one SQLite transaction, validate owner + expected version, reserve turn and append message **before** any model call. Keep the existing Task materialized read model compatible during incremental migration.
-- **State machine:** \`accepted → understanding → responding|awaiting_input|retrieving|evaluating|awaiting_approval|composing → completed|partial|failed|superseded\`. Persist phase and progress with a monotonically increasing per-turn event sequence.
-- **Stream:** extend current \`state/action/done/error\` packets without breaking existing clients: \`turn_accepted\`, \`phase\`, \`message_delta\`, \`artifact_ready\`, \`needs_input\`, \`needs_approval\`, \`partial\`, \`failed\`. Client reconnects using saved turn ID/event cursor to recover the authoritative state; SSE delivery itself is **not** the persistent record.
+- **State machine:** `accepted → understanding → responding|awaiting_input|retrieving|evaluating|awaiting_approval|composing → completed|partial|failed|superseded`. Persist phase and progress with a monotonically increasing per-turn event sequence.
+- **Stream:** extend current `state/action/done/error` packets without breaking existing clients: `turn_accepted`, `phase`, `message_delta`, `artifact_ready`, `needs_input`, `needs_approval`, `partial`, `failed`. Client reconnects using saved turn ID/event cursor to recover the authoritative state; SSE delivery itself is **not** the persistent record.
 - **Crash semantics:** a read call may be safely retried within a budget; a write action must have a reserved idempotency record and provider receipt/unknown-outcome reconciliation. A phase checkpoint without a lease/scanner does **not** imply automatic restart recovery.
-- **Model fallback:** arbitrary natural language is always a valid conversational **input**, even if no matching tool or output kind exists. If the model is unavailable, save the message and communicate a visible provider failure; never fabricate a successful model reply. The existing interpreter still records a whole-turn \`error\` on unrecoverable model failures, so this remains a real P0 gap.
+- **Model fallback:** arbitrary natural language is always a valid conversational **input**, even if no matching tool or output kind exists. If the model is unavailable, save the message and communicate a visible provider failure; never fabricate a successful model reply. The existing interpreter still records a whole-turn `error` on unrecoverable model failures, so this remains a real P0 gap.
 
 ### Conversation reference registry — important for agent intelligence
 
-Persist a \`ConversationFocus\` with \`activeArtifactId\`, \`activeCandidateIds\`, \`ordinalMap\`, \`lastQuestionId\`, \`referencedParticipants\` and \`lastResultRevision\`. Ground “the second one,” “that place,” “Maya's pick,” “why that one?” against **the exact visible result revision**. If the reference is stale or ambiguous, ask one question rather than guessing. Current conversation handlers resolve named/ID matches; this explicit ordinal/focus contract is not yet present.
+Persist a `ConversationFocus` with `activeArtifactId`, `activeCandidateIds`, `ordinalMap`, `lastQuestionId`, `referencedParticipants` and `lastResultRevision`. Ground “the second one,” “that place,” “Maya's pick,” “why that one?” against **the exact visible result revision**. If the reference is stale or ambiguous, ask one question rather than guessing. Current conversation handlers resolve named/ID matches; this explicit ordinal/focus contract is not yet present.
 
 Three distinct memories: (1) immutable thread history, (2) working goal/current focus and source-linked decisions, (3) **opt-in** long-term preferences with confirmation, scope and deletion. Prompt context must be rebuilt from these server records on every turn; neither Gemini nor TrueForge is the canonical conversation memory.
 
 ### Proposed backward-compatible SQLite tables
 
-Add \`turns\` (workspace, clientTurnId, payloadHash, revision, phase), \`messages\` (turn, role, order, text), \`run_steps\` (run, phase, lease, checkpoint, budget), and \`stream_events\` (turn, sequence, type, JSON). Index evidence/artifact/dependency nodes as needed, **without migrating every existing Task blob first**. Use \`TaskStore\` compatibility methods and one Node 24 + Railway persistent volume until tested scaling constraints justify changing storage.
+Add `turns` (workspace, clientTurnId, payloadHash, revision, phase), `messages` (turn, role, order, text), `run_steps` (run, phase, lease, checkpoint, budget), and `stream_events` (turn, sequence, type, JSON). Index evidence/artifact/dependency nodes as needed, **without migrating every existing Task blob first**. Use `TaskStore` compatibility methods and one Node 24 + Railway persistent volume until tested scaling constraints justify changing storage.
 
 ### v2 concerns verified against October 29 code
 
 | v2 claim or proposed change | Rechecked on the active branch | Decision |
 | --- | --- | --- |
-| No clientTurnId, dedicated journal or replayable SSE event IDs | Still absent in current \`TurnSchema\`, \`SqliteTaskStore\` and streaming route | **P0 build** |
-| Whole-turn interpretation failure affects conversational reliability | \`interpret-message.ts\` still records \`task.status = "error"\` after recovery failure; a read-only conversation route exists | **P0 decouple**; preserve existing recovery logic |
+| No clientTurnId, dedicated journal or replayable SSE event IDs | Still absent in current `TurnSchema`, `SqliteTaskStore` and streaming route | **P0 build** |
+| Whole-turn interpretation failure affects conversational reliability | `interpret-message.ts` still records `task.status = "error"` after recovery failure; a read-only conversation route exists | **P0 decouple**; preserve existing recovery logic |
 | “the second one” must bind to current visible result | Named/ID reference resolution exists; no persistent ordinal map or focus revision | **P0 implement** |
-| Goal/output enums are limited | \`goals.ts\` has gathering/discovery/creative; \`outcome-spec.ts\` has four specific outcome types | Keep typed executable outcomes; **allow general chat** independently |
-| \`count.some(saved => saved.id === saved.id)\` memory-cap typo | Active branch now correctly tests \`saved.id === preference.id\` | **Already fixed**; don't reintroduce bug |
+| Goal/output enums are limited | `goals.ts` has gathering/discovery/creative; `outcome-spec.ts` has four specific outcome types | Keep typed executable outcomes; **allow general chat** independently |
+| `count.some(saved => saved.id === saved.id)` memory-cap typo | Active branch now correctly tests `saved.id === preference.id` | **Already fixed**; don't reintroduce bug |
 | Missing production-model key silently falls back to scripted | Current runtime uses real adapters and a transparent no-model error outside fixture/test modes | **Improved**; retain transparent failure |
 | Late provider result cannot overwrite newer user edit | Optimistic versioned Task store and isolated agent tool work copies exist | **Partially implemented**; preserve conflict checks, add run leases for crash recovery |
 | Parallel-style universal taste score | Not appropriate for Igor's mixed tasks | **Reject**; strategy-specific constraints and sourced comparisons only |
 
 ### Read/commit authorization boundary
 
-For external action flows, enforce \`action_proposed → validate target/owner/revision → preview recipient, scope and cost → explicit user approval → reserve idempotency key → execute → reconcile provider receipt → commit result\`. Model decisions are not permissions. **Current Igor intentionally blocks external writes**; this sequence is a future contract, not a live email or booking feature.
+For external action flows, enforce `action_proposed → validate target/owner/revision → preview recipient, scope and cost → explicit user approval → reserve idempotency key → execute → reconcile provider receipt → commit result`. Model decisions are not permissions. **Current Igor intentionally blocks external writes**; this sequence is a future contract, not a live email or booking feature.
 
 ### Proof criteria added from v2
 
@@ -132,13 +132,13 @@ For external action flows, enforce \`action_proposed → validate target/owner/r
 - “the second one” / “why that one?” → current focus or safely asks for disambiguation, no invented reference.
 - “budget is €200” → revise only affected nodes, **no redundant Qloo calls** if source taste did not change.
 - “Maya wouldn't like jazz” → participant-scoped correction, no silent durable preference save.
-- Two identical retried \`clientTurnId\` requests → one saved turn, bounded external calls.
+- Two identical retried `clientTurnId` requests → one saved turn, bounded external calls.
 - Timeout/disconnect/restart → saved message survives; progress is replayable; explicitly mark interrupted if no resumable runner.
 - Concurrent correction → stale write rejected; previously approved work intact.
 - Provider outage → exact LIVE/CACHED/RECORDED provenance, no fabricated practical facts.
 - Side-effect replay → never auto-send or claim success without approval and receipt.
 
-## 4. Source code ownership
+## 3. Source code ownership
 
 | Responsibility | Existing implementation | Current truth |
 | --- | --- | --- |
