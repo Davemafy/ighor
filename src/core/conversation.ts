@@ -328,7 +328,27 @@ function applyPreferenceCorrection(
     requireExplicitText(text, participant.name);
   }
 
-  requireExplicitText(text, action.value);
+  // A deictic reference is grounded only if the current, explicitly
+  // selected experience contains exactly one artist. Do not infer a
+  // preference about one of several possible tracks or artists.
+  const selectedArtists = task.catalogue.filter(
+    (candidate) =>
+      candidate.type === "artist" &&
+      task.brief.selected.includes(candidate.id) &&
+      (!task.candidates.some((entry) => entry.id === candidate.id) ||
+        task.candidates.some(
+          (entry) => entry.id === candidate.id && entry.freshness === "current",
+        )),
+  );
+  const groundedMusicReference =
+    /\\b(?:that|this)\\s+(?:music|artist|song|track)\\b/i.test(text) &&
+    selectedArtists.length === 1 &&
+    normalize(selectedArtists[0].name) === normalize(action.value);
+
+  if (!groundedMusicReference) {
+    requireExplicitText(text, action.value);
+  }
+
   const old = participant.preferences.find(
     (preference) => normalize(preference.value) === normalize(action.value),
   );
