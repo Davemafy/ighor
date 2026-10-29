@@ -179,12 +179,23 @@ export class SqliteTaskStore implements TaskStore {
       // Preserve every accepted message in the existing read model, not only
       // in the journal, so reload immediately shows the pending user turn.
       if (input.type === "message") {
-        task.messages.push({
-          role: "user",
-          kind: "conversation",
-          text: input.text,
-          at: new Date().toISOString(),
-        });
+        const last = task.messages.at(-1);
+        const retryOfFailedInterpretation =
+          task.status === "error" &&
+          task.trace.at(-1)?.action === "model.interpret.error" &&
+          last?.role === "user" &&
+          last.text === input.text;
+
+        // A user-initiated retry of the exact failed last message is a new
+        // execution attempt, not a second copy of the same conversation turn.
+        if (!retryOfFailedInterpretation) {
+          task.messages.push({
+            role: "user",
+            kind: "conversation",
+            text: input.text,
+            at: new Date().toISOString(),
+          });
+        }
       }
 
       task.brief.version = next;
