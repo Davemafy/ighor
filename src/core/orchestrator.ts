@@ -1,3 +1,4 @@
+import { agentSavedDocuments } from "./agent-acceptance";
 import { phaseForAction } from "./turn-lifecycle";
 import { groundQuestionAnswer } from "./question-grounding";
 import type { FormAnswerGrounding } from "./conversation";
@@ -477,9 +478,7 @@ export async function runTurn(
       ...qlooEvidence.map((item) => item.id),
     ];
     const savedOutcome = autonomousAgent
-      ? task.artifacts.find((artifact) =>
-          task.agentRun?.outputArtifactIds?.includes(artifact.id),
-        )
+      ? agentSavedDocuments(task)[0]
       : undefined;
 
     if (savedOutcome) {

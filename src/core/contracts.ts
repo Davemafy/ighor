@@ -356,6 +356,11 @@ export const AgentRunHistorySchema = z.object({
 });
 
 export const ConversationFocusSchema = z.object({
+  activeGoalId: z.string().nullable().optional(),
+  openQuestions: z.array(z.string()).optional(),
+  unresolvedAssumptions: z.array(z.string()).optional(),
+  decisionIds: z.array(z.string()).optional(),
+  confirmedPreferenceIds: z.array(z.string()).optional(),
   activeArtifactId: z.string().nullable().default(null),
   activeCandidateIds: z.array(z.string()).max(30).default([]),
   ordinalMap: z.record(z.string(), z.string()).default({}),

@@ -1,4 +1,10 @@
-import { evaluateCandidates } from "../capabilities/evaluate";
+import { applyWorkActions } from "./connected-work";
+import { WorkActionSchema } from "./work-contracts";
+import { critiqueExperience } from "./experience-critique";
+import {
+  evaluateCandidates,
+  reevaluateSavedCandidates,
+} from "../capabilities/evaluate";
 import { z } from "zod";
 import { consultTrueForge, trueForgeConfig } from "../tools/trueforge";
 import type { Task } from "./contracts";
@@ -110,6 +116,9 @@ const trueForgeArguments = z.strictObject({
   objective: z.string().trim().min(8).max(1200),
 });
 const empty = z.strictObject({});
+const experienceArguments = z.strictObject({
+  actions: z.array(WorkActionSchema).min(1).max(24),
+});
 
 /** Bounded verified capability set. No model-supplied URL or privileged write. */
 export function createAgentToolRegistry(
@@ -148,7 +157,11 @@ export function createAgentToolRegistry(
       Boolean(trueforge),
       async (args, ctx) => {
         if (!trueforge) {
-          return { status: "blocked", requests: 0, summary: "TrueForge is not configured." };
+          return {
+            status: "blocked",
+            requests: 0,
+            summary: "TrueForge is not configured.",
+          };
         }
 
         const { objective } = trueForgeArguments.parse(args);
@@ -163,7 +176,9 @@ export function createAgentToolRegistry(
         return {
           status: "ok",
           requests: result.requests,
-          summary: "UNVERIFIED TrueForge analysis (not source evidence): " + result.text,
+          summary:
+            "UNVERIFIED TrueForge analysis (not source evidence): " +
+            result.text,
         };
       },
     ),
@@ -590,6 +605,93 @@ export function createAgentToolRegistry(
           evidence: ctx.task.evidence.length,
         }).slice(0, 580),
       }),
+    ),
+    tool(
+      "experience.compose",
+      "Compose or selectively revise linked experience work in the existing task. Supply actions for goal, typed decisions (domain, rationaleKind, candidateIds, evidenceIds, dependencies, alternatives, estimatedCost or null), documents (fulfills and candidateIds), grounded budget/reduce-budget or alcohol-free restriction. Connect food/atmosphere/space to audience/music decisions. Never approve, reject, edit protected work or execute external actions. Independent critique runs automatically. Reuse current Qloo observations for budget-only changes.",
+      experienceArguments,
+      "internal",
+      true,
+      async (args, ctx) => {
+        const { actions } = experienceArguments.parse(args);
+
+        if (
+          actions.some((action) =>
+            ["approve", "reject", "edit", "external"].includes(action.kind),
+          )
+        ) {
+          return {
+            status: "blocked",
+            requests: 0,
+            summary:
+              "Only the user can approve or replace protected work. No action executed.",
+          };
+        }
+
+        const userText =
+          ctx.task.messages.filter((m) => m.role === "user").at(-1)?.text ??
+          ctx.task.agentRun?.goal ??
+          "";
+        const targetBudget = ctx.task.agentRun?.requirements?.budget?.amount;
+
+        if (
+          targetBudget !== undefined &&
+          ctx.task.work?.budget?.amount === targetBudget &&
+          actions.some(
+            (action) => action.kind === "reduce-budget" && action.percent > 0,
+          )
+        ) {
+          return {
+            status: "blocked",
+            requests: 0,
+            summary: `This run already confirmed budget ${targetBudget}. Omit the repeated reduction and revise only affected decisions.`,
+          };
+        }
+
+        const summary = applyWorkActions(ctx.task, actions, userText);
+        // Re-evaluate existing observations against revised practical constraints,
+        // without another paid retrieval or resurrecting invalidated Qloo evidence.
+        reevaluateSavedCandidates(ctx.task);
+        const critique = critiqueExperience(ctx.task);
+        ctx.task.work!.critique = critique;
+
+        return {
+          status: critique.issues.some((i) => i.severity === "error")
+            ? "partial"
+            : "ok",
+          requests: 0,
+          summary: (
+            summary +
+            " Issues: " +
+            JSON.stringify(critique.issues)
+          ).slice(0, 1800),
+          artifactIds: actions
+            .filter((a) => a.kind === "document")
+            .map((a) => `document:${a.id}`),
+        };
+      },
+    ),
+    tool(
+      "experience.critique",
+      "Independently check saved experience decisions for budget/schedule/source contradictions, incoherence and unresolved practical facts. This reads saved state; it is not an external fact check.",
+      empty,
+      "internal",
+      true,
+      async (_args, ctx) => {
+        const critique = critiqueExperience(ctx.task);
+
+        if (ctx.task.work) {
+          ctx.task.work.critique = critique;
+        }
+
+        return {
+          status: critique.issues.some((i) => i.severity === "error")
+            ? "partial"
+            : "ok",
+          requests: 0,
+          summary: JSON.stringify(critique).slice(0, 2400),
+        };
+      },
     ),
     tool(
       "document.create",

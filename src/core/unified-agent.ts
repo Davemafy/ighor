@@ -304,7 +304,10 @@ export async function runUnifiedAgent(
       (t) =>
         t.available &&
         (t.permission === "read" || t.permission === "internal") &&
-        !(waitingForCulture && t.name === "document.create"),
+        !(
+          waitingForCulture &&
+          ["document.create", "experience.compose"].includes(t.name)
+        ),
     );
     let selection: Awaited<
       ReturnType<NonNullable<ModelProvider["chooseAgentAction"]>>
@@ -471,6 +474,8 @@ export async function runUnifiedAgent(
         task.evidence = workingTask.evidence;
         task.artifacts = workingTask.artifacts;
         task.trueforgeSessionId = workingTask.trueforgeSessionId;
+        task.work = workingTask.work;
+        task.brief.constraints = workingTask.brief.constraints;
         sources.splice(0, sources.length, ...workingSources);
       }
     } catch {
@@ -479,11 +484,7 @@ export async function runUnifiedAgent(
         summary:
           "Tool execution failed or timed out; no late mutation was accepted.",
         // Conservatively reserve a request for potentially in-flight paid I/O.
-        requests:
-          selected.name === "task.inspect" ||
-          selected.name === "document.create"
-            ? 0
-            : 1,
+        requests: selected.permission === "internal" ? 0 : 1,
       };
     }
 

@@ -37,9 +37,50 @@ prepared baseline. No old branch or rejected visual system is being restored.
 
 ## Verification so far
 
-- Foundation/stream/fetch unit tests: 19 passed locally.
+- Foundation/stream/fetch unit tests: 22 passed locally.
 - Local broad unit attempt: 475 passed; six suites blocked by the original
   `qloo-cultural.json.gz` being unavailable through the local connector. No
   synthetic replacement was created; qloo-test must check the original archive.
 - Typecheck passes. Final CI/browser/live results will be recorded at their exact
   source SHA. No local model, Qloo or TrueForge credential binding is available.
+
+## Integrated experience graph
+
+- Extend the existing WorkState schema with optional typed domains, rationale
+  kinds, candidate bindings, alternatives, schedules and alcohol restrictions.
+  Old saved work remains readable. No new runtime or database is introduced.
+- `experience.compose` writes actual connected decisions and editable documents;
+  `experience.critique` independently checks budgets, schedule collisions,
+  current query/candidate evidence, cultural domain misuse, alcohol constraints,
+  dependency coherence and practical unknowns. Hard issues block completion.
+- The agent acceptance boundary reads those same documents (no duplicate artifact
+  store), checks interpreted domain requirements and retains LIVE/CACHED/RECORDED
+  evidence provenance. Internal work does not consume provider request budget.
+- Budget-only correction reevaluates the saved candidate pool without Qloo calls.
+  Approved decisions and manual wording survive selective invalidation. Fixed a
+  double-invalidation bug that made newly recomputed decisions stale and a budget
+  warning that incorrectly modified zero-cost, unrelated decisions.
+- Focus no longer revives stale choices through a catalogue fallback. Current
+  replies cannot cite stale evidence. Saved focus includes goal, decisions, open
+  questions, unresolved assumptions and explicitly confirmed preference IDs.
+
+## Architecture-to-code map
+
+| Contract                                     | Implementation                                                | Regression evidence                                            |
+| -------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
+| Admission, lease, fencing, recovery          | `src/data/store.ts`, `src/core/turn-lifecycle.ts`, turn route | durable-turn, turn-recovery, turn-reconnect                    |
+| Ordered progress and reconnect               | turn route, workspace-api, use-workspace                      | workspace-stream, turn-reconnect                               |
+| Interpretation and focus                     | interpret-message, conversation-focus, model-context          | conversation-reply, conversation-focus, interpretation-failure |
+| Bounded composition and acceptance           | unified-agent, agent-tool-registry, agent-acceptance          | unified-agent, agent-acceptance, experience-graph              |
+| Connected decisions and independent critique | work-contracts, connected-work, experience-critique, revision | connected-work, experience-graph                               |
+| Existing product rendering                   | connected-work-canvas                                         | connected-work browser suites                                  |
+
+Local graph/focus/acceptance checks: 51 passed. Broad local run: 486 passed;
+six suites blocked solely by the unavailable original cultural archive. This is
+not a passing full suite. Typecheck passes; lint has 0 errors (27 existing warnings).
+The new two-goal engine tests use explicitly mocked query evidence; they are not
+live Qloo demonstrations. External exact-head checks remain pending.
+
+Live model/Qloo and TrueForge are BLOCKED locally: no authorized binding is
+present. Railway volume mounting and backup/restore are unverified because this
+session has no hosting access. No production deployment or secret change occurred.

@@ -1,3 +1,4 @@
+import { culturalEvidenceId } from "../core/cultural-evidence";
 import { assertOutcomeIntegrity } from "./outcome-integrity";
 import { candidateIdentity } from "../core/identity";
 import type { Candidate, CandidateInput, Task } from "../core/contracts";
@@ -224,4 +225,31 @@ export function assertArtifactIntegrity(task: ArtifactState) {
   } else if (task.schedule.length) {
     throw new Error("A reference goal must not inherit a gathering schedule");
   }
+}
+
+/** Practical corrections re-evaluate the same observed pool, never fetch Qloo.
+ * Invalidated cultural queries cannot be resurrected by recomputing eligibility. */
+export function reevaluateSavedCandidates(task: Task) {
+  const pool = task.catalogue.filter((candidate) => {
+    if (candidate.sample) {
+      return true;
+    }
+
+    if (candidate.cultural) {
+      return Object.entries(candidate.cultural).some(([scope, signal]) =>
+        task.evidence.some(
+          (e) =>
+            e.id === culturalEvidenceId(candidate, scope, signal) &&
+            e.freshness === "current",
+        ),
+      );
+    }
+
+    return task.evidence.some(
+      (e) =>
+        e.freshness === "current" &&
+        e.entityIds.includes(candidateIdentity(candidate)),
+    );
+  });
+  task.candidates = evaluateCandidates(pool, task);
 }

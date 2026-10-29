@@ -1,10 +1,23 @@
 import type { Task } from "./contracts";
 
 /** Small fixed-point traversal; record order and prior staleness cannot hide descendants. */
-export function invalidate(task: Task, changed: string[]): string[] {
+export function invalidate(
+  task: Task,
+  changed: string[],
+  includeWork = true,
+): string[] {
   const affected = new Set(changed);
   const marked = new Set<string>();
-  const records = [
+  const records: Array<{
+    id: string;
+    record: {
+      freshness?: "current" | "stale";
+      status?: string;
+      edited?: boolean;
+      conflict?: string | null;
+    };
+    dependencies: string[];
+  }> = [
     ...task.evidence.map((evidence) => ({
       id: evidence.id,
       record: evidence,
@@ -21,6 +34,23 @@ export function invalidate(task: Task, changed: string[]): string[] {
       dependencies: [...a.dependencies, ...a.evidenceIds],
     })),
   ];
+
+  for (const decision of (includeWork ? task.work?.decisions : []) ?? []) {
+    records.push({
+      id: `decision:${decision.id}`,
+      record: decision,
+      dependencies: [...decision.dependencies, ...decision.evidenceIds],
+    });
+  }
+
+  for (const document of (includeWork ? task.work?.documents : []) ?? []) {
+    records.push({
+      id: `document:${document.id}`,
+      record: document,
+      dependencies: [...document.dependencies, ...document.evidenceIds],
+    });
+  }
+
   let expanded = true;
 
   while (expanded) {
@@ -29,6 +59,16 @@ export function invalidate(task: Task, changed: string[]): string[] {
     for (const node of records) {
       if (node.dependencies.some((id) => affected.has(id))) {
         node.record.freshness = "stale";
+
+        if (
+          "status" in node.record &&
+          (node.record.status === "approved" ||
+            ("edited" in node.record && node.record.edited))
+        ) {
+          node.record.conflict =
+            "An input changed. Approved or edited content is preserved; review the affected decision.";
+        }
+
         marked.add(node.id);
 
         if (!affected.has(node.id)) {

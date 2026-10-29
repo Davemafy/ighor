@@ -14,7 +14,10 @@ const words: Record<string, number> = {
 };
 
 export function ordinalMention(text: string): number | null {
-  const match = /\b(?:the\s+)?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+(?:one|option|choice|pick|artist|film|movie|place)\b/i.exec(text);
+  const match =
+    /\b(?:the\s+)?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+(?:one|option|choice|pick|artist|film|movie|place)\b/i.exec(
+      text,
+    );
 
   return match ? words[match[1].toLowerCase()] : null;
 }
@@ -29,21 +32,47 @@ export function updateConversationFocus(task: Task) {
     .slice(0, 30);
   const candidateIds = current.length
     ? current
-    : task.catalogue.map((item) => item.id).slice(0, 30);
+    : task.catalogue
+        .filter(
+          (item) =>
+            item.sample &&
+            !task.candidates.some((candidate) => candidate.id === item.id),
+        )
+        .map((item) => item.id)
+        .slice(0, 30);
   const priorIds = previous?.activeCandidateIds ?? [];
   const changed =
     candidateIds.length !== priorIds.length ||
     candidateIds.some((id, index) => id !== priorIds[index]);
   const activeArtifact =
     previous?.activeArtifactId &&
-    task.artifacts.some((item) => item.id === previous.activeArtifactId)
+    task.artifacts.some(
+      (item) =>
+        item.id === previous.activeArtifactId && item.freshness === "current",
+    )
       ? previous.activeArtifactId
-      : task.artifacts.findLast((item) => item.freshness === "current")?.id ?? null;
-  const currentQuestion = task.canvas?.surface.nodes.find(
-    (node) => node.type === "question",
-  )?.id ?? null;
+      : (task.artifacts.findLast((item) => item.freshness === "current")?.id ??
+        null);
+  const currentQuestion =
+    task.canvas?.surface.nodes.find((node) => node.type === "question")?.id ??
+    null;
 
   task.conversationFocus = {
+    activeGoalId: task.work?.activeGoalId ?? null,
+    openQuestions: [...task.brief.unresolved],
+    unresolvedAssumptions: [...task.brief.assumptions],
+    decisionIds: (task.work?.decisions ?? [])
+      .filter(
+        (d) => d.goalId === task.work?.activeGoalId && d.status !== "rejected",
+      )
+      .map((d) => d.id),
+    confirmedPreferenceIds: task.brief.participants
+      .filter((p) => !p.sample)
+      .flatMap((p) =>
+        p.preferences
+          .filter((v) => v.confirmed && v.source === "user-supplied")
+          .map((v) => v.id),
+      ),
     activeArtifactId: activeArtifact,
     activeCandidateIds: candidateIds,
     ordinalMap: Object.fromEntries(
@@ -51,7 +80,7 @@ export function updateConversationFocus(task: Task) {
     ),
     lastResultRevision: changed
       ? task.brief.version
-      : previous?.lastResultRevision ?? task.brief.version,
+      : (previous?.lastResultRevision ?? task.brief.version),
     lastQuestionId: currentQuestion,
     referencedParticipants: task.brief.participants
       .filter((person) => !person.sample)
@@ -70,9 +99,16 @@ export function resolveOrdinalFocus(task: Task, text: string) {
 
   const focused = task.conversationFocus;
   const id = focused?.ordinalMap[String(ordinal)];
-  const item = task.candidates.find(
-    (candidate) => candidate.id === id && candidate.freshness === "current",
-  ) ?? task.catalogue.find((candidate) => candidate.id === id);
+  const item =
+    task.candidates.find(
+      (candidate) => candidate.id === id && candidate.freshness === "current",
+    ) ??
+    task.catalogue.find(
+      (candidate) =>
+        candidate.id === id &&
+        candidate.sample &&
+        !task.candidates.some((existing) => existing.id === id),
+    );
 
   if (!item || !focused || !focused.activeCandidateIds.includes(item.id)) {
     return { kind: "ambiguous" as const, ordinal };

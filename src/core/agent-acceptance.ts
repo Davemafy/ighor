@@ -1,4 +1,6 @@
+import { culturalEvidenceId } from "./cultural-evidence";
 import { z } from "zod";
+import { critiqueExperience } from "./experience-critique";
 import type { Task } from "./contracts";
 
 /** Model interpretation of the current turn in its conversational context.
@@ -18,6 +20,24 @@ export const AgentRequirementsSchema = z
         sourceText: z.string().trim().min(1).max(1000),
       })
       .nullable()
+      .optional(),
+    experienceDomains: z
+      .array(
+        z.enum([
+          "audience",
+          "culture",
+          "music",
+          "food",
+          "atmosphere",
+          "venue",
+          "identity",
+          "schedule",
+          "budget",
+          "constraints",
+          "risk",
+        ]),
+      )
+      .max(12)
       .optional(),
     culturalDecision: z.boolean(),
     culturalReferences: z.array(z.string().trim().min(1).max(120)).max(12),
@@ -41,19 +61,31 @@ export const AgentAcceptanceSchema = z.object({
   ),
 });
 
-/** Query-qualified map keys retain independent context signals. Evidence keeps
- * its original provider-adapter identity; qualification must not invent IDs. */
-export function culturalEvidenceId(
-  candidate: { id: string; providerId: string | null },
-  scope: string,
-  signal: { queryId: string; signalScope?: "context" | "participant" },
-) {
-  const originalScope =
-    signal.signalScope === "context" && scope === `context:${signal.queryId}`
-      ? "context"
-      : scope;
+export { culturalEvidenceId } from "./cultural-evidence";
 
-  return `qloo:${signal.queryId}:${originalScope}:${candidate.providerId ?? candidate.id}`;
+/** A read projection, not a second stored copy of a connected document. */
+export function agentSavedDocuments(task: Task) {
+  const run = task.agentRun;
+
+  if (!run) {
+    return [];
+  }
+
+  return [
+    ...task.artifacts.filter(
+      (a) =>
+        (a.id.startsWith(`agent-doc-${run.id}-`) ||
+          run.outputArtifactIds?.includes(a.id)) &&
+        a.freshness === "current",
+    ),
+    ...(task.work?.documents ?? [])
+      .filter(
+        (d) =>
+          run.outputArtifactIds?.includes(`document:${d.id}`) &&
+          d.freshness === "current",
+      )
+      .map((d) => ({ ...d, id: `document:${d.id}` })),
+  ];
 }
 
 export function verifyAgentOutcome(
@@ -63,12 +95,7 @@ export function verifyAgentOutcome(
 ) {
   const run = task.agentRun!;
   const requirements = run.requirements;
-  const documents = task.artifacts.filter(
-    (a) =>
-      (a.id.startsWith(`agent-doc-${run.id}-`) ||
-        run.outputArtifactIds?.includes(a.id)) &&
-      a.freshness === "current",
-  );
+  const documents = agentSavedDocuments(task);
   const checks: z.infer<typeof AgentAcceptanceSchema>["checks"] = [];
   const check = (
     requirement: string,
@@ -110,6 +137,33 @@ export function verifyAgentOutcome(
       matching.length > 0,
       matching.map((a) => a.id),
       matching.flatMap((a) => a.evidenceIds),
+    );
+  }
+
+  for (const domain of requirements?.experienceDomains ?? []) {
+    const matching =
+      task.work?.decisions.filter(
+        (d) =>
+          d.goalId === task.work?.activeGoalId &&
+          d.domain === domain &&
+          d.status !== "rejected" &&
+          d.freshness !== "stale",
+      ) ?? [];
+    check(
+      `Linked experience decision: ${domain}`,
+      matching.length > 0,
+      documents.map((d) => d.id),
+      matching.flatMap((d) => d.evidenceIds),
+    );
+  }
+
+  if (task.work?.decisions.some((d) => d.domain && d.domain !== "general")) {
+    check(
+      "Experience has no unresolved hard contradictions",
+      !critiqueExperience(task).issues.some(
+        (issue) => issue.severity === "error",
+      ),
+      documents.map((d) => d.id),
     );
   }
 

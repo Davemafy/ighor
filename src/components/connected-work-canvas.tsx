@@ -349,6 +349,29 @@ export function ConnectedWorkCanvas({
             <ProductText text={display} />
           </div>
         )}
+        {!editing && !historical && !!work.critique?.issues.length && (
+          <details
+            className="ig-connected-warning"
+            aria-label="Experience critique"
+          >
+            <summary>
+              Review {work.critique.issues.length} issues and unknowns
+            </summary>
+            <ul>
+              {work.critique.issues.map((issue) => (
+                <li key={issue.id}>
+                  <strong>
+                    {issue.severity === "error"
+                      ? "Needs correction"
+                      : "Unverified"}
+                    :{" "}
+                  </strong>
+                  {issue.message} {issue.action}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
         {!editing && !historical && (
           <RevisionImpact task={task} document={selected} />
         )}

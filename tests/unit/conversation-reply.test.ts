@@ -158,3 +158,31 @@ it("a conversational decision cannot smuggle state edits through extra model fie
   expect(result.brief).toEqual({ ...task.brief, version: 1 });
   expect(result.receipts?.at(-1)?.changed).toEqual([]);
 });
+
+it("rejects a superseded citation rather than presenting it as current justification", async () => {
+  const task = freshTask("stale-citation", "owner");
+  task.evidence = [
+    {
+      id: "old-source",
+      source: "provider-returned",
+      kind: "cultural",
+      delivery: "CACHED",
+      at: new Date().toISOString(),
+      reference: "Old query",
+      entityIds: [],
+      summary: "Superseded preference",
+      limitations: [],
+      explanation: null,
+      dependencies: [],
+      freshness: "stale",
+    },
+  ];
+  const result = await respond(task, "Explain the choice", {
+    intent: "conversation",
+    reply: "This fits your current taste",
+    replyEvidenceIds: ["old-source"],
+  });
+  expect(result.status).toBe("error");
+  expect(result.messages.at(-1)?.role).toBe("user");
+  expect(result.evidence[0].freshness).toBe("stale");
+});

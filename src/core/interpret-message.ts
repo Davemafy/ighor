@@ -57,7 +57,8 @@ export async function interpretMessage(
   // Only a matching *last* failed interpretation is eligible; a new message
   // or a different failure type must always create a fresh turn.
   const replayingFailedTurn =
-    !messageAccepted && task.status === "error" &&
+    !messageAccepted &&
+    task.status === "error" &&
     task.trace.at(-1)?.action === "model.interpret.error" &&
     task.messages.at(-1)?.role === "user" &&
     task.messages.at(-1)?.text === input.text;
@@ -66,8 +67,10 @@ export async function interpretMessage(
   if (messageAccepted) {
     // The API committed this user's message before the model call.
     // Exclude only that latest current-turn message from prior context.
-    if (task.messages.at(-1)?.role !== "user" ||
-        task.messages.at(-1)?.text !== input.text) {
+    if (
+      task.messages.at(-1)?.role !== "user" ||
+      task.messages.at(-1)?.text !== input.text
+    ) {
       throw new Error("Accepted turn does not match the saved user message.");
     }
 
@@ -97,7 +100,10 @@ export async function interpretMessage(
       text: "Which set of options do you mean? Open the current choices or name the one you want.",
       at: at(),
     });
-    trace("conversation.reference.ambiguous", "Ordinal has no current saved option.");
+    trace(
+      "conversation.reference.ambiguous",
+      "Ordinal has no current saved option.",
+    );
 
     return { ...update, task, conversationOnly: true };
   }
@@ -253,7 +259,12 @@ export async function interpretMessage(
 
     if (parsed.intent === "conversation" || parsed.intent === "clarification") {
       for (const id of parsed.replyEvidenceIds) {
-        if (!task.evidence.some((evidence) => evidence.id === id)) {
+        if (
+          !task.evidence.some(
+            (evidence) =>
+              evidence.id === id && evidence.freshness === "current",
+          )
+        ) {
           throw new Error("Conversation cited unavailable evidence.");
         }
       }
@@ -337,7 +348,9 @@ export async function interpretMessage(
           (rescue.intent === "conversation" ||
             rescue.intent === "clarification") &&
           (rescue.replyEvidenceIds ?? []).every((id) =>
-            task.evidence.some((item) => item.id === id),
+            task.evidence.some(
+              (item) => item.id === id && item.freshness === "current",
+            ),
           )
         ) {
           task.messages.push({

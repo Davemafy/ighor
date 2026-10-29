@@ -1,3 +1,5 @@
+import { reevaluateSavedCandidates } from "../capabilities/evaluate";
+import { critiqueExperience } from "./experience-critique";
 import type { FormAnswerGrounding } from "./conversation";
 import type { Task } from "./contracts";
 import { invalidate } from "./revision";
@@ -80,6 +82,17 @@ export function applyWorkActions(
       }
     }
 
+    for (const decision of work.decisions) {
+      if (all.has(`decision:${decision.id}`)) {
+        decision.freshness = "stale";
+
+        if (decision.status === "approved") {
+          decision.conflict =
+            "An input changed. Approved content is preserved; review its affected dependencies.";
+        }
+      }
+    }
+
     for (const doc of work.documents) {
       if (all.has(`document:${doc.id}`)) {
         doc.freshness = "stale";
@@ -148,7 +161,15 @@ export function applyWorkActions(
                 text,
               );
 
-            if (!match || Number(match[1]) !== action.percent) {
+            const half =
+              /\b(?:cut|reduce|lower|decrease)[\s\S]{0,40}\bbudget\b[\s\S]{0,20}\b(?:in|by) half\b|\bhalve\s+(?:(?:the|my|our)\s+)?budget\b/i.test(
+                text,
+              );
+
+            if (
+              (!match || Number(match[1]) !== action.percent) &&
+              !(half && action.percent === 50)
+            ) {
               throw new Error("Budget percentage must be explicitly supplied.");
             }
           } else {
@@ -157,7 +178,17 @@ export function applyWorkActions(
                 text,
               );
 
+            const half =
+              /\b(?:cut|reduce|lower|decrease)[\s\S]{0,40}\bbudget\b[\s\S]{0,20}\b(?:in|by) half\b|\bhalve\s+(?:(?:the|my|our)\s+)?budget\b/i.test(
+                text,
+              );
+            const groundedHalf =
+              half &&
+              work.budget?.confirmed &&
+              action.amount === Math.round(work.budget.amount * 50) / 100;
+
             if (
+              !groundedHalf &&
               formAnswer?.constraints?.budget !== action.amount &&
               (!match ||
                 Number(match[1].replaceAll(",", "")) !== action.amount ||
@@ -175,6 +206,11 @@ export function applyWorkActions(
             : Math.round(
                 work.budget!.amount * (1 - action.percent / 100) * 100,
               ) / 100;
+
+        if (before === amount) {
+          notes.push(`Retained confirmed budget ${amount}.`);
+          break;
+        }
 
         if (before !== undefined) {
           work.budgetHistory.push({
@@ -211,8 +247,55 @@ export function applyWorkActions(
         break;
       }
 
+      case "restriction": {
+        const source = text ?? action.sourceText;
+
+        if (
+          !source.includes(action.sourceText) ||
+          !(
+            action.enabled
+              ? /\b(?:no|without|remove|exclude|avoid)\s+alcohol\b|\balcohol[- ]free\b/i
+              : /\b(?:include|allow|serve)\s+alcohol\b/i
+          ).test(action.sourceText)
+        ) {
+          throw new Error(
+            "Restriction must be grounded in the user's explicit instruction.",
+          );
+        }
+
+        const before = work.restrictions?.alcoholFree;
+        work.restrictions = {
+          alcoholFree: action.enabled,
+          sourceText: action.sourceText,
+          at: now,
+        };
+
+        if (before !== action.enabled) {
+          dirty(["restriction:alcohol-free"]);
+        }
+
+        notes.push(
+          action.enabled
+            ? "Retained the alcohol-free requirement."
+            : "Updated the alcohol requirement.",
+        );
+        break;
+      }
+
       case "decision": {
         checkEvidence(action.evidenceIds);
+
+        if (
+          action.candidateIds?.some(
+            (id) =>
+              !task.catalogue.some((c) => c.id === id) ||
+              task.candidates.some(
+                (c) => c.id === id && c.freshness !== "current",
+              ),
+          )
+        ) {
+          throw new Error("Work selects a missing or superseded candidate.");
+        }
 
         if (!work.activeGoalId) {
           throw new Error("A goal is required for new work.");
@@ -227,7 +310,8 @@ export function applyWorkActions(
         if (
           budgetEdits.length &&
           previous &&
-          !affected.has(`decision:${action.id}`)
+          !affected.has(`decision:${action.id}`) &&
+          previous.freshness !== "stale"
         ) {
           break;
         }
@@ -267,6 +351,7 @@ export function applyWorkActions(
           ...action,
           goalId: work.activeGoalId,
           basis: "creative-proposal" as const,
+          freshness: "current" as const,
           status: "proposed" as const,
           conflict: null,
           version: previous?.version ?? version,
@@ -286,6 +371,18 @@ export function applyWorkActions(
       case "document": {
         checkEvidence(action.evidenceIds);
 
+        if (
+          action.candidateIds?.some(
+            (id) =>
+              !task.catalogue.some((c) => c.id === id) ||
+              task.candidates.some(
+                (c) => c.id === id && c.freshness !== "current",
+              ),
+          )
+        ) {
+          throw new Error("Work selects a missing or superseded candidate.");
+        }
+
         if (!work.activeGoalId) {
           throw new Error("A goal is required for new work.");
         }
@@ -299,7 +396,8 @@ export function applyWorkActions(
         if (
           budgetEdits.length &&
           previous &&
-          !affected.has(`document:${action.id}`)
+          !affected.has(`document:${action.id}`) &&
+          previous.freshness !== "stale"
         ) {
           break;
         }
@@ -457,7 +555,10 @@ export function applyWorkActions(
     );
 
     for (const d of work.decisions.filter(
-      (d) => d.estimatedCost !== null && d.status !== "rejected",
+      (d) =>
+        d.estimatedCost !== null &&
+        d.estimatedCost > 0 &&
+        d.status !== "rejected",
     )) {
       d.conflict ??=
         "Proposed allocations exceed the confirmed budget; feasibility is unresolved.";
@@ -473,8 +574,10 @@ export function applyWorkActions(
   task.work = WorkStateSchema.parse(work);
 
   if (budgetEdits.length && work.budget) {
-    invalidate(task, ["budget"]);
+    // Work records were already invalidated and selectively recomputed above.
+    invalidate(task, ["budget"], false);
     task.brief.constraints.budget = work.budget.amount;
+    reevaluateSavedCandidates(task);
   }
 
   task.status =
@@ -483,6 +586,16 @@ export function applyWorkActions(
     work.decisions.some((d) => d.conflict)
       ? "partial"
       : "ready";
+  const critique = critiqueExperience(task);
+
+  if (work.decisions.some((d) => d.domain && d.domain !== "general")) {
+    task.work!.critique = critique;
+
+    if (critique.issues.some((issue) => issue.severity === "error")) {
+      task.status = "partial";
+    }
+  }
+
   task.error = null;
   const documents = actions
     .filter((a) => a.kind === "document")
@@ -499,7 +612,11 @@ function validateDependencies(work: WorkState) {
     ...work.decisions.map((d) => [`decision:${d.id}`, d.dependencies] as const),
     ...work.documents.map((d) => [`document:${d.id}`, d.dependencies] as const),
   ]);
-  const roots = new Set(["budget", ...work.goals.map((g) => `goal:${g.id}`)]);
+  const roots = new Set([
+    "budget",
+    "restriction:alcohol-free",
+    ...work.goals.map((g) => `goal:${g.id}`),
+  ]);
   const visiting = new Set<string>();
   const visited = new Set<string>();
 

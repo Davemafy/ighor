@@ -16,12 +16,77 @@ const Draft = {
   evidenceIds: EvidenceIds,
 };
 
+export const ExperienceFields = {
+  domain: z
+    .enum([
+      "general",
+      "audience",
+      "culture",
+      "music",
+      "food",
+      "atmosphere",
+      "venue",
+      "identity",
+      "schedule",
+      "budget",
+      "constraints",
+      "risk",
+    ])
+    .optional(),
+  rationaleKind: z
+    .enum(["interpretation", "cultural-evidence", "practical-evidence"])
+    .optional(),
+  candidateIds: z.array(z.string().min(1)).max(12).optional(),
+  alternatives: z
+    .array(
+      z.object({
+        value: z.string().max(500),
+        rationale: z.string().max(1000),
+        evidenceIds: EvidenceIds,
+      }),
+    )
+    .max(6)
+    .optional(),
+  containsAlcohol: z.boolean().nullable().optional(),
+  schedule: z
+    .object({
+      startMinute: z.number().int().min(0).max(1440),
+      durationMinutes: z.number().int().positive().max(1440),
+      exclusive: z.boolean().optional(),
+    })
+    .optional(),
+};
+export const ExperienceCritiqueSchema = z.object({
+  at: z.string(),
+  issues: z
+    .array(
+      z.object({
+        id: z.string(),
+        severity: z.enum(["error", "warning"]),
+        kind: z.enum([
+          "budget",
+          "schedule",
+          "source",
+          "coherence",
+          "restriction",
+          "unknown",
+          "stale",
+        ]),
+        nodeIds: z.array(z.string()),
+        message: z.string(),
+        action: z.string(),
+      }),
+    )
+    .max(200),
+});
+
 /** Model-authored material is always a proposal. Confirmation is a separate action. */
 export const WorkActionSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("goal"), id: Id, title: Draft.title }),
   z.strictObject({
     kind: z.literal("decision"),
     ...Draft,
+    ...ExperienceFields,
     value: z.string().trim().min(1).max(3000),
     estimatedCost: z.number().min(0).max(1000000).nullable(),
     rationale: z.string().min(1).max(2000),
@@ -29,6 +94,8 @@ export const WorkActionSchema = z.discriminatedUnion("kind", [
   z.strictObject({
     kind: z.literal("document"),
     ...Draft,
+    candidateIds: z.array(z.string()).max(12).optional(),
+    fulfills: z.array(z.string().max(80)).max(6).optional(),
     content: z.string().trim().min(1).max(12000),
   }),
   z.strictObject({
@@ -38,6 +105,12 @@ export const WorkActionSchema = z.discriminatedUnion("kind", [
   z.strictObject({
     kind: z.literal("reduce-budget"),
     percent: z.number().min(0).max(100),
+  }),
+  z.strictObject({
+    kind: z.literal("restriction"),
+    name: z.literal("alcohol-free"),
+    enabled: z.boolean(),
+    sourceText: z.string().min(1).max(1000),
   }),
   z.strictObject({ kind: z.literal("approve"), id: Id }),
   z.strictObject({ kind: z.literal("reject"), id: Id }),
@@ -85,6 +158,8 @@ export const WorkStateSchema = z.object({
       z.object({
         ...Draft,
         goalId: Id,
+        ...ExperienceFields,
+        freshness: z.enum(["current", "stale"]).optional(),
         value: z.string(),
         rationale: z.string(),
         estimatedCost: z.number().nonnegative().nullable(),
@@ -101,6 +176,8 @@ export const WorkStateSchema = z.object({
       z.object({
         ...Draft,
         goalId: Id,
+        candidateIds: z.array(z.string()).max(12).optional(),
+        fulfills: z.array(z.string().max(80)).max(6).optional(),
         content: z.string(),
         basis: z.literal("creative-proposal"),
         edited: z.boolean(),
@@ -121,6 +198,14 @@ export const WorkStateSchema = z.object({
       }),
     )
     .max(100),
+  critique: ExperienceCritiqueSchema.optional(),
+  restrictions: z
+    .object({
+      alcoholFree: z.boolean(),
+      sourceText: z.string(),
+      at: z.string(),
+    })
+    .optional(),
   externalActions: z
     .array(
       z.object({
