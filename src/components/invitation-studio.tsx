@@ -68,27 +68,37 @@ function InvitationEditor({
   const hasSampleProfiles = scene.sampleProfiles;
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("igor-invite-style");
+    // Defer the initial stored appearance to the next frame: the server's
+    // first render remains identical to the client hydration frame.
+    const frame = requestAnimationFrame(() => {
+      try {
+        const stored = localStorage.getItem("igor-invite-style");
 
-      if (styles.some((option) => option.id === stored)) {
-        setStyle(stored as Style);
+        if (styles.some((option) => option.id === stored)) {
+          setStyle(stored as Style);
+        }
+      } catch {
+        // Custom preview style works without client-side persistence.
       }
-    } catch {
-      // Custom preview style works without client-side persistence.
-    }
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty) {
+      return;
+    }
 
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
+
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
   function chooseStyle(next: Style) {
     setStyle(next);
+
     try {
       localStorage.setItem("igor-invite-style", next);
     } catch {
@@ -97,7 +107,9 @@ function InvitationEditor({
   }
 
   async function copyDraft() {
-    if (!scene.artifact) return;
+    if (!scene.artifact) {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(
@@ -110,7 +122,9 @@ function InvitationEditor({
   }
 
   async function saveDraft() {
-    if (!writable || !scene.artifact) return;
+    if (!writable || !scene.artifact) {
+      return;
+    }
 
     try {
       const content = composeInvitationDraft(title, body);
