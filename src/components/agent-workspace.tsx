@@ -873,7 +873,7 @@ function Work({
   onTask: (t: Task) => void;
   onLoad: (id: string) => Promise<void>;
 }) {
-  const [resource, setResource] = useState("invite");
+  const [resource, setResource] = useState<string | null>(null);
   const research = buildResearchCards(task);
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",
@@ -882,7 +882,9 @@ function Work({
     (node) =>
       !["question", "stack", "columns", "tabs", "activity"].includes(node.type),
   );
-  const hasInvitation = Boolean(projectInvitationScene(task));
+  // A gathering is not an invitation. Only expose the editor once a
+  // genuine invitation artifact has been saved to this task.
+  const hasInvitation = Boolean(projectInvitationScene(task)?.artifact);
   const resources = [
     ...(hasInvitation ? [{ id: "invite", title: "Invitation" }] : []),
     ...(hasCanvasWork || research
@@ -902,7 +904,9 @@ function Work({
       ? [{ id: "connections", title: "Connections" }]
       : []),
   ];
-  const active = resources.some((item) => item.id === resource)
+  // Follow actual available work on first render, instead of pinning every
+  // gathering to the invitation tab. Retain explicit user tab selection.
+  const active = resource && resources.some((item) => item.id === resource)
     ? resource
     : resources[0]?.id;
   const saved = useSavedOutcomes(task, onTask, onTurn);
