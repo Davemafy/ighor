@@ -78,6 +78,7 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
     const current = (await (
       await page.request.get(`/api/tasks/${task.id}`)
     ).json()) as Task;
+
     return current.artifacts.find((item) => item.id === "invitation")?.content;
   }).toContain("# Films, friends & something unexpected");
 
