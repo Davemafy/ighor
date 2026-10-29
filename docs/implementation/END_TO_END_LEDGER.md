@@ -105,3 +105,19 @@ at the exact provider cap without another paid read. Provider/deadline regressio
 is required. Desktop/mobile connected-work browser suite: 6 passed locally.
 The full external browser suite on `497e62f` has reached the separate mobile
 acceptance gate; final terminal status is still pending.
+
+## End-to-end continuation: recovery procedure
+
+At `2803c4cc14801dec1cc5aabf104986a401a437c1`, external deterministic
+verification passed 538 unit tests, 6 evaluation tests and 39 browser tests,
+including desktop/mobile. The separate live run returned Gemini HTTP 503 before
+Qloo. A bounded retry of only the live job is underway; no full live success is
+claimed.
+
+Added a Node 24 four-store SQLite snapshot/verification/restore utility, using the
+SQLite backup API and streamed checksums. It requires quiesced writes and new
+output directories, preserves committed WAL state, rejects incomplete/tampered
+snapshots and never overwrites existing state. Two local recovery tests and
+typecheck pass. Actual hosting volume/backup configuration remains unverified.
+See `docs/operations/PERSISTENCE_RECOVERY.md` for the operator contract. No private
+snapshot or database is included in source or CI artifacts.

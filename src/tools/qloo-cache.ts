@@ -59,6 +59,10 @@ export class SqliteResponseCache implements ResponseCache {
     }
   }
 
+  close() {
+    this.db.close();
+  }
+
   set(key: string, value: CachedResponse) {
     this.db
       .prepare("INSERT OR REPLACE INTO qloo_cache VALUES(?,?,?)")
