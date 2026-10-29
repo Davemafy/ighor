@@ -120,3 +120,12 @@
     padding: 18px;
   }
 }
+
+/* Keep the saved ledger's headings legible inside the light canvas shell. */
+.iw-app .ic-canvas .ig-revision-impact h3 {
+  color: #f0f2e9;
+}
+
+.iw-app .ic-canvas .ig-revision-impact h4 {
+  color: #b3c9b9;
+}
