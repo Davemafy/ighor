@@ -5,6 +5,8 @@ import { UserRound } from "lucide-react";
 import { AccountDialog } from "./account-panel";
 import { Connections } from "./connections-view";
 import { DecisionWork } from "./decision-work";
+import { InvitationStudio } from "./invitation-studio";
+import { projectInvitationScene } from "@/core/invitation-scene";
 import { AppearanceControl } from "./appearance-control";
 import { AdaptiveStage } from "./adaptive-stage";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -871,7 +873,7 @@ function Work({
   onTask: (t: Task) => void;
   onLoad: (id: string) => Promise<void>;
 }) {
-  const [resource, setResource] = useState("documents");
+  const [resource, setResource] = useState("invite");
   const research = buildResearchCards(task);
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",
@@ -880,7 +882,9 @@ function Work({
     (node) =>
       !["question", "stack", "columns", "tabs", "activity"].includes(node.type),
   );
+  const hasInvitation = Boolean(projectInvitationScene(task));
   const resources = [
+    ...(hasInvitation ? [{ id: "invite", title: "Invitation" }] : []),
     ...(hasCanvasWork || research
       ? [{ id: "workspace", title: research ? "Explore" : "Current view" }]
       : []),
@@ -945,6 +949,9 @@ function Work({
             excludeQuestions
           />
         ))}
+      {active === "invite" && (
+        <InvitationStudio task={task} busy={busy} onTurn={onTurn} />
+      )}
       {active === "documents" && (
         <ConnectedWorkCanvas task={task} busy={busy} onTurn={onTurn} />
       )}
@@ -961,7 +968,7 @@ function Work({
           focusNodeId={placeNode.id}
         />
       )}
-      {task.candidates.length > 0 && (
+      {active !== "invite" && task.candidates.length > 0 && (
         <section className="iw-references">
           <header>
             <h2>Connected references</h2>
