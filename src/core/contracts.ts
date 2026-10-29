@@ -355,7 +355,17 @@ export const AgentRunHistorySchema = z.object({
   savedArtifactIds: z.array(z.string()).max(12),
 });
 
+export const ConversationFocusSchema = z.object({
+  activeArtifactId: z.string().nullable().default(null),
+  activeCandidateIds: z.array(z.string()).max(30).default([]),
+  ordinalMap: z.record(z.string(), z.string()).default({}),
+  lastResultRevision: z.number().int().nonnegative().default(0),
+  lastQuestionId: z.string().nullable().default(null),
+  referencedParticipants: z.array(z.string()).max(12).default([]),
+});
+
 export const TaskSchema = z.object({
+  conversationFocus: ConversationFocusSchema.optional(),
   // Optional TrueForge delegation context, owned by this single Igor task.
   trueforgeSessionId: z.string().regex(/^[a-zA-Z0-9_-]{1,160}$/).optional(),
   agentRun: AgentRunSchema.optional(),
