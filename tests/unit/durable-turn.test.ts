@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { SqliteTaskStore, ConflictError, TurnIdReuseError } from "../../src/data/store";
+import {
+  SqliteTaskStore,
+  ConflictError,
+  TurnIdReuseError,
+} from "../../src/data/store";
 import { freshTask } from "../../src/data/fixtures";
 import { runTurn } from "../../src/core/orchestrator";
 
@@ -34,7 +38,11 @@ describe("Durable accepted turn journal", () => {
     };
     const accepted = db.acceptTurn(task.id, owner, firstId, input);
 
-    expect(accepted).toEqual({ duplicate: false, acceptedVersion: 1 });
+    expect(accepted).toEqual({
+      duplicate: false,
+      acceptedVersion: 1,
+      runId: expect.any(String),
+    });
     expect(db.load(task.id, owner).messages.at(-1)).toMatchObject({
       role: "user",
       text: input.text,
@@ -42,11 +50,13 @@ describe("Durable accepted turn journal", () => {
     expect(db.readTurn(task.id, owner, firstId)).toMatchObject({
       status: "accepted",
       acceptedVersion: 1,
-      events: [],
+      phase: "accepted",
+      events: [{ sequence: 1, event: { type: "action", phase: "accepted" } }],
     });
     expect(db.acceptTurn(task.id, owner, firstId, input)).toEqual({
       duplicate: true,
       acceptedVersion: 1,
+      runId: accepted.runId,
     });
     expect(db.load(task.id, owner).messages).toHaveLength(1);
     expect(() =>
@@ -55,9 +65,9 @@ describe("Durable accepted turn journal", () => {
         text: "A different paid instruction",
       }),
     ).toThrow(TurnIdReuseError);
-    expect(() =>
-      db.acceptTurn(task.id, owner, secondId, input),
-    ).toThrow(ConflictError);
+    expect(() => db.acceptTurn(task.id, owner, secondId, input)).toThrow(
+      ConflictError,
+    );
     expect(() => db.readTurn(task.id, "someone-else", firstId)).toThrow();
   });
 
@@ -76,17 +86,18 @@ describe("Durable accepted turn journal", () => {
     const recorded = db.readTurn(task.id, owner, firstId);
 
     expect(recorded.status).toBe("completed");
-    expect(recorded.events.map((row) => row.sequence)).toEqual([1, 2]);
+    expect(recorded.events.map((row) => row.sequence)).toEqual([1, 2, 3]);
     expect(recorded.events.map((row) => row.event.type)).toEqual([
+      "action",
       "action",
       "done",
     ]);
-    expect(db.readTurn(task.id, owner, firstId, 1).events).toHaveLength(1);
+    expect(db.readTurn(task.id, owner, firstId, 2).events).toHaveLength(1);
     db.recordTurnEvent(task.id, owner, firstId, {
       type: "action",
       message: "Unexpected late event",
     });
-    expect(db.readTurn(task.id, owner, firstId).events).toHaveLength(2);
+    expect(db.readTurn(task.id, owner, firstId).events).toHaveLength(3);
   });
 
   it("runs the existing conversational model without duplicating pre-saved messages", async () => {
@@ -121,7 +132,10 @@ describe("Durable accepted turn journal", () => {
           expect(text).toBe("hey");
           expect(context?.messages).toHaveLength(0);
 
-          return { intent: "conversation", reply: "Hello. What are we planning?" };
+          return {
+            intent: "conversation",
+            reply: "Hello. What are we planning?",
+          };
         },
       },
       undefined,
@@ -138,7 +152,11 @@ describe("Durable accepted turn journal", () => {
 
   it("preserves a precommitted input after a model failure", async () => {
     const { db, task } = setup();
-    const input = { type: "message" as const, text: "What can you do?", version: 0 };
+    const input = {
+      type: "message" as const,
+      text: "What can you do?",
+      version: 0,
+    };
     const accepted = db.acceptTurn(task.id, owner, firstId, input);
     const result = await runTurn(
       db,

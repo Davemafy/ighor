@@ -367,7 +367,10 @@ export const ConversationFocusSchema = z.object({
 export const TaskSchema = z.object({
   conversationFocus: ConversationFocusSchema.optional(),
   // Optional TrueForge delegation context, owned by this single Igor task.
-  trueforgeSessionId: z.string().regex(/^[a-zA-Z0-9_-]{1,160}$/).optional(),
+  trueforgeSessionId: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{1,160}$/)
+    .optional(),
   agentRun: AgentRunSchema.optional(),
   agentRunHistory: z.array(AgentRunHistorySchema).max(12).optional(),
   canvas: CanvasStateSchema.optional(),
@@ -700,6 +703,24 @@ export const EventSchema = z.discriminatedUnion("type", [
     type: z.literal("action"),
     message: z.string(),
     activity: AgentActivitySchema.optional(),
+    phase: z
+      .enum([
+        "accepted",
+        "understanding",
+        "responding",
+        "awaiting_input",
+        "retrieving",
+        "evaluating",
+        "composing",
+        "awaiting_approval",
+        "completed",
+        "partial",
+        "failed",
+        "superseded",
+        "interrupted",
+      ])
+      .optional(),
+    runId: z.string().uuid().optional(),
   }),
   z.object({
     type: z.literal("error"),

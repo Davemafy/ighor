@@ -1,3 +1,4 @@
+import { phaseForAction } from "./turn-lifecycle";
 import { groundQuestionAnswer } from "./question-grounding";
 import type { FormAnswerGrounding } from "./conversation";
 import { mutateCanvas } from "./presentation";
@@ -203,6 +204,7 @@ export async function runTurn(
     emit({
       type: "action",
       message: outcome,
+      phase: phaseForAction(action),
       activity: {
         eventId: row.id,
         threadId: task.id,
@@ -227,7 +229,15 @@ export async function runTurn(
 
   const update =
     input.type === "message"
-      ? await interpretMessage(task, input, model, budget, trace, formAnswer, acceptedUserMessage)
+      ? await interpretMessage(
+          task,
+          input,
+          model,
+          budget,
+          trace,
+          formAnswer,
+          acceptedUserMessage,
+        )
       : applyStructuredTurn(task, input, {
           taskId: id,
           owner,

@@ -17,7 +17,11 @@ export async function GET(
   try {
     const { id } = await context.params;
 
-    return Response.json(getStore().load(id, ownerFromToken(token)), {
+    const owner = ownerFromToken(token);
+    const store = getStore();
+    store.recoverExpiredTurns(id, owner);
+
+    return Response.json(store.load(id, owner), {
       headers: { "Cache-Control": "no-store" },
     });
   } catch {

@@ -70,7 +70,12 @@ export async function submitTurn(
     method: "POST",
     signal: AbortSignal.timeout(150000),
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...action, version: task.brief.version, clientTurnId }),
+    body: JSON.stringify({
+      ...action,
+      version: task.brief.version,
+      clientTurnId,
+      workspaceId: task.id,
+    }),
   });
 
   if (!response.ok) {
@@ -89,7 +94,10 @@ export async function fetchTurnJournal(
   turnId: string,
   after = 0,
 ): Promise<{
-  status: "accepted" | "running" | "completed" | "failed" | "superseded" | "interrupted";
+  status: import("../core/turn-lifecycle").TurnStatus;
+  task: Task;
+  hasMore: boolean;
+  lastSequence: number;
   events: Array<{ sequence: number; event: Event }>;
 }> {
   const res = await fetch(
@@ -101,12 +109,22 @@ export async function fetchTurnJournal(
     throw new Error("The saved turn could not be recovered.");
   }
 
-  return res.json();
+  const payload = await res.json();
+
+  return {
+    ...payload,
+    task: TaskSchema.parse(payload.task),
+    events: payload.events.map((row: { sequence: number; event: unknown }) => ({
+      ...row,
+      event: EventSchema.parse(row.event),
+    })),
+  };
 }
 
 export async function* readTurnEvents(
   response: Response,
   idleTimeoutMs = 45000,
+  cursor?: { after?: number; onEventId?: (id: number) => void },
 ): AsyncGenerator<Event> {
   const reader = response.body?.getReader();
 
@@ -117,6 +135,7 @@ export async function* readTurnEvents(
   const decoder = new TextDecoder();
   let pending = "";
   let completed = false;
+  let lastId = cursor?.after ?? 0;
 
   try {
     while (true) {
@@ -144,10 +163,27 @@ export async function* readTurnEvents(
         const packet = pending.slice(0, boundary);
         pending = pending.slice(boundary + 2);
 
-        const dataLine = packet.split("\n").find((line) => line.startsWith("data: "));
+        const dataLine = packet
+          .split("\n")
+          .find((line) => line.startsWith("data: "));
 
-        if (dataLine) {
+        const idLine = packet
+          .split("\n")
+          .find((line) => line.startsWith("id: "));
+        const eventId = idLine ? Number(idLine.slice(4)) : null;
+
+        if (
+          dataLine &&
+          (eventId === null ||
+            (Number.isSafeInteger(eventId) && eventId > lastId))
+        ) {
           const event = EventSchema.parse(JSON.parse(dataLine.slice(6)));
+
+          if (eventId !== null) {
+            lastId = eventId;
+            cursor?.onEventId?.(eventId);
+          }
+
           completed = event.type === "done" || event.type === "error";
           yield event;
 
@@ -187,4 +223,83 @@ export function completedTurnAfter(
       .slice(messageCount)
       .some((message) => message.role === "assistant")
   );
+}
+
+export type PendingTurn = { turnId: string; after: number };
+const pendingKey = (workspace: string) => `igor-pending-turn:${workspace}`;
+
+export function pendingTurn(workspace: string): PendingTurn | null {
+  try {
+    const value = JSON.parse(
+      localStorage.getItem(pendingKey(workspace)) || "null",
+    );
+
+    return value &&
+      /^[a-f0-9-]{36}$/.test(value.turnId) &&
+      Number.isSafeInteger(value.after) &&
+      value.after >= 0
+      ? value
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberTurn(workspace: string, value: PendingTurn | null) {
+  try {
+    if (value) {
+      localStorage.setItem(pendingKey(workspace), JSON.stringify(value));
+    } else {
+      localStorage.removeItem(pendingKey(workspace));
+    }
+  } catch {
+    /* Server journaling works even when browser storage is unavailable. */
+  }
+}
+
+/** Read-only reconnect: paginates persisted events and polls the authoritative
+ * snapshot. Never retries POST, provider calls or an external operation. */
+export async function* recoverTurnJournal(
+  workspace: string,
+  turn: PendingTurn,
+  signal?: AbortSignal,
+) {
+  let cursor = turn.after;
+
+  for (let polls = 0; polls < 300 && !signal?.aborted; polls++) {
+    const page = await fetchTurnJournal(workspace, turn.turnId, cursor);
+    yield page;
+    cursor = page.events.at(-1)?.sequence ?? cursor;
+
+    if (
+      !page.hasMore &&
+      page.status !== "accepted" &&
+      page.status !== "running"
+    ) {
+      return;
+    }
+
+    if (page.hasMore) {
+      continue;
+    }
+
+    await new Promise<void>((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", finish);
+        resolve();
+      };
+
+      const timer = setTimeout(finish, 1000);
+      signal?.addEventListener("abort", finish, { once: true });
+    });
+  }
+}
+
+/** A late response can never visually roll back a newer saved correction. */
+export function newestWorkspace(current: Task | null, incoming: Task): Task {
+  return current?.id === incoming.id &&
+    current.brief.version > incoming.brief.version
+    ? current
+    : incoming;
 }

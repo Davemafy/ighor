@@ -1,7 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Task } from "../../src/core/contracts";
 import { DatabaseSync } from "node:sqlite";
-import { installPresentation, PresentationSchema } from "../../src/core/presentation";
+import {
+  installPresentation,
+  PresentationSchema,
+} from "../../src/core/presentation";
 
 async function act(page: Page, task: Task, action: Record<string, unknown>) {
   const response = await page.request.post(`/api/tasks/${task.id}/turn`, {
@@ -35,7 +38,10 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
   expect(task.mode).toBe("qloo-live");
   expect(task.artifacts.some((item) => item.id === "invitation")).toBe(true);
 
-  await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
   await page.goto(`/app?task=${task.id}`);
 
   const studio = page.getByRole("region", {
@@ -44,19 +50,25 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
   await expect(studio).toBeVisible();
   await expect(studio.getByLabel("Invitation poster preview")).toBeVisible();
   await expect(studio.getByText("DATE TO BE DECIDED")).toBeVisible();
-  await expect(studio.getByText(/nothing is sent|nothing was sent|hasn.t contacted/i).first()).toBeVisible();
+  await expect(
+    studio
+      .getByText(/nothing is sent|nothing was sent|hasn.t contacted/i)
+      .first(),
+  ).toBeVisible();
 
   // Source artwork is external and optional. Give returned images time to
   // settle before the proof capture; an unavailable image stays a legible
   // reference poster rather than an empty white card.
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll(".ei-print img")].every(
-        (node) => (node as HTMLImageElement).complete,
-      ),
-    undefined,
-    { timeout: 10000 },
-  ).catch(() => {});
+  await page
+    .waitForFunction(
+      () =>
+        [...document.querySelectorAll(".ei-print img")].every(
+          (node) => (node as HTMLImageElement).complete,
+        ),
+      undefined,
+      { timeout: 10000 },
+    )
+    .catch(() => {});
 
   await page.screenshot({
     path: testInfo.outputPath("igor-native-invitation-desktop.png"),
@@ -70,19 +82,24 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
   const title = studio.getByLabel("Invitation title");
   const message = studio.getByLabel("Message to your people");
   await title.fill("Films, friends & something unexpected");
-  await message.fill("We have a plan in progress. Date and location still to confirm.");
+  await message.fill(
+    "We have a plan in progress. Date and location still to confirm.",
+  );
   await expect(studio.getByLabel("Invitation poster preview")).toContainText(
     "Films, friends & something unexpected",
   );
 
   await studio.getByRole("button", { name: "Save changes" }).click();
-  await expect.poll(async () => {
-    const current = (await (
-      await page.request.get(`/api/tasks/${task.id}`)
-    ).json()) as Task;
+  await expect
+    .poll(async () => {
+      const current = (await (
+        await page.request.get(`/api/tasks/${task.id}`)
+      ).json()) as Task;
 
-    return current.artifacts.find((item) => item.id === "invitation")?.content;
-  }).toContain("# Films, friends & something unexpected");
+      return current.artifacts.find((item) => item.id === "invitation")
+        ?.content;
+    })
+    .toContain("# Films, friends & something unexpected");
 
   await studio.getByRole("button", { name: "Midnight" }).click();
   await expect(studio.getByLabel("Invitation poster preview")).toHaveAttribute(
@@ -111,7 +128,9 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
   ).toBe(true);
 });
 
-test("a gathering without a saved invitation opens its actual work, not a placeholder poster", async ({ page }) => {
+test("a gathering without a saved invitation opens its actual work, not a placeholder poster", async ({
+  page,
+}) => {
   const response = await page.request.post("/api/tasks");
   expect(response.ok()).toBe(true);
   const task = (await response.json()) as Task;
@@ -133,29 +152,38 @@ test("a gathering without a saved invitation opens its actual work, not a placeh
       title: "Dinner in New York",
       basis: "user-supplied",
       root: "request",
-      nodes: [{
-        id: "request",
-        type: "text",
-        text: "Discover options for dinner in New York.",
-      }],
+      nodes: [
+        {
+          id: "request",
+          type: "text",
+          text: "Discover options for dinner in New York.",
+        },
+      ],
     }),
   );
 
-  const db = new DatabaseSync(
-    `${process.env.IGOR_BROWSER_RUN_DIR ?? ".igor/integration-browser"}/tasks.sqlite`,
-  );
-  db.prepare("UPDATE tasks SET state=? WHERE id=?").run(
-    JSON.stringify(task),
-    task.id,
-  );
+  const db = new DatabaseSync(".igor/e2e/recorded/tasks.sqlite");
+  const updated = db
+    .prepare("UPDATE tasks SET state=? WHERE id=?")
+    .run(JSON.stringify(task), task.id);
+  expect(updated.changes).toBe(1);
   db.close();
 
-  await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
   await page.goto(`/app?task=${task.id}`);
 
-  await expect(page.getByRole("complementary", { name: "Task canvas" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Your gathering invitation" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Invitation", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("complementary", { name: "Task canvas" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Your gathering invitation" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Invitation", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText("Untitled gathering")).toHaveCount(0);
   await expect(page.getByText("Dinner in New York").first()).toBeVisible();
 });

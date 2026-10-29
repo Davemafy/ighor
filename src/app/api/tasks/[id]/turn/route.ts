@@ -1,7 +1,13 @@
+import { isActiveTurn } from "@/core/turn-lifecycle";
 import { cookies } from "next/headers";
 import { z, ZodError } from "zod";
 import { randomUUID } from "node:crypto";
-import { AccessError, ConflictError, TurnIdReuseError, getStore } from "@/data/store";
+import {
+  AccessError,
+  ConflictError,
+  TurnIdReuseError,
+  getStore,
+} from "@/data/store";
 import { runTurn } from "@/core/orchestrator";
 import { checkOrigin, ownerFromToken, sessionCookie } from "@/core/security";
 import { readBoundedJson } from "@/core/server-input";
@@ -22,7 +28,11 @@ export async function GET(
 
     const url = new URL(request.url);
     const turnId = z.string().uuid().parse(url.searchParams.get("turnId"));
-    const afterRaw = Number(url.searchParams.get("after") ?? "0");
+    const afterRaw = Number(
+      url.searchParams.get("after") ??
+        request.headers.get("Last-Event-ID") ??
+        "0",
+    );
     const after = z.number().int().min(0).max(100000).parse(afterRaw);
     const owner = ownerFromToken(token);
     const { id } = await context.params;
@@ -58,15 +68,26 @@ export async function POST(
 
     // Accept a stable client turn ID without changing the old TurnSchema.
     // Legacy clients are compatible but cannot safely dedupe their retries.
-    const raw = z.record(z.string(), z.unknown()).parse(await readBoundedJson(request));
-    const turnId = raw.clientTurnId === undefined
-      ? randomUUID()
-      : z.string().uuid().parse(raw.clientTurnId);
-    const { clientTurnId: _clientTurnId, ...payload } = raw;
+    const raw = z
+      .record(z.string(), z.unknown())
+      .parse(await readBoundedJson(request));
+    const turnId =
+      raw.clientTurnId === undefined
+        ? randomUUID()
+        : z.string().uuid().parse(raw.clientTurnId);
+    const { clientTurnId: _clientTurnId, workspaceId, ...payload } = raw;
     void _clientTurnId;
     const input = TurnSchema.parse(payload);
     const owner = ownerFromToken(token);
     const { id } = await context.params;
+
+    if (workspaceId !== undefined && workspaceId !== id) {
+      return Response.json(
+        { error: "Workspace context mismatch." },
+        { status: 400 },
+      );
+    }
+
     const store = getStore();
     let admitted;
 
@@ -75,20 +96,29 @@ export async function POST(
     } catch (error) {
       if (error instanceof ConflictError) {
         return Response.json(
-          { error: "A newer edit exists. Reload the workspace.", code: "conflict" },
+          {
+            error: "A newer edit exists. Reload the workspace.",
+            code: "conflict",
+          },
           { status: 409 },
         );
       }
 
       if (error instanceof TurnIdReuseError) {
         return Response.json(
-          { error: "This turn ID belongs to a different request.", code: "turn-id-reuse" },
+          {
+            error: "This turn ID belongs to a different request.",
+            code: "turn-id-reuse",
+          },
           { status: 409 },
         );
       }
 
       if (error instanceof AccessError) {
-        return Response.json({ error: "Workspace not found." }, { status: 404 });
+        return Response.json(
+          { error: "Workspace not found." },
+          { status: 404 },
+        );
       }
 
       throw error;
@@ -97,17 +127,19 @@ export async function POST(
     if (admitted.duplicate) {
       const saved = store.readTurn(id, owner, turnId);
       const replay = saved.events
-        .map(({ sequence, event }) =>
-          `id: ${sequence}\ndata: ${JSON.stringify(event)}\n\n`)
+        .map(
+          ({ sequence, event }) =>
+            `id: ${sequence}\ndata: ${JSON.stringify(event.type === "state" || event.type === "done" ? { ...event, task: saved.task } : event)}\n\n`,
+        )
         .join("");
-      const terminal = saved.status === "completed" ||
-        saved.status === "failed" || saved.status === "superseded";
+      const terminal = !isActiveTurn(saved.status);
       const continuation = terminal
         ? ""
         : `data: ${JSON.stringify({
             type: "error",
             code: "already-running",
-            message: "Your request was already accepted. Your saved work is safe; refresh to check its progress.",
+            message:
+              "Your request was already accepted. Your saved work is safe; refresh to check its progress.",
           })}\n\n`;
 
       return new Response(replay + continuation, {
@@ -125,20 +157,63 @@ export async function POST(
         const send = (event: Event) => {
           // Store server-generated progress BEFORE attempting network delivery.
           // A disconnected client cannot suppress event persistence.
-          store.recordTurnEvent(id, owner, turnId, event);
+          const sequence = store.recordTurnEvent(id, owner, turnId, event);
+
+          if (sequence === undefined) {
+            return;
+          }
 
           try {
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+              encoder.encode(
+                `id: ${sequence}\ndata: ${JSON.stringify(event)}\n\n`,
+              ),
             );
           } catch {
             /* Client disconnected; never bypass version checks. */
           }
         };
 
+        // Admission and its first event were one transaction. Deliver that
+        // existing event without manufacturing a second acceptance record.
+        for (const saved of store.readTurn(id, owner, turnId).events) {
+          try {
+            controller.enqueue(
+              encoder.encode(
+                `id: ${saved.sequence}\ndata: ${JSON.stringify(saved.event)}\n\n`,
+              ),
+            );
+          } catch {
+            /* Disconnected. */
+          }
+        }
+
         // Keep proxies and clients informed while inference or retrieval runs.
         const heartbeat = setInterval(() => {
           try {
+            if (!store.renewTurnLease(id, owner, turnId, admitted.runId)) {
+              const snapshot = store.readTurn(id, owner, turnId);
+              const terminal = store.readTurn(
+                id,
+                owner,
+                turnId,
+                Math.max(0, snapshot.lastSequence - 1),
+              );
+
+              for (const saved of terminal.events) {
+                controller.enqueue(
+                  encoder.encode(
+                    `id: ${saved.sequence}\ndata: ${JSON.stringify(saved.event)}\n\n`,
+                  ),
+                );
+              }
+
+              controller.close();
+              clearInterval(heartbeat);
+
+              return;
+            }
+
             controller.enqueue(encoder.encode(": heartbeat\n\n"));
           } catch {
             /* The client may have left. */
@@ -148,6 +223,8 @@ export async function POST(
         try {
           send({
             type: "action",
+            phase: "understanding",
+            runId: admitted.runId,
             message:
               input.type === "message"
                 ? "Reading your message"
@@ -160,7 +237,7 @@ export async function POST(
             version: admitted.acceptedVersion,
           };
           await runTurn(
-            store,
+            store.forTurn(id, owner, turnId, admitted.runId),
             id,
             owner,
             acceptedInput,
@@ -185,7 +262,12 @@ export async function POST(
           });
         } finally {
           clearInterval(heartbeat);
-          controller.close();
+
+          try {
+            controller.close();
+          } catch {
+            /* Already disconnected or fenced. */
+          }
         }
       },
     });

@@ -131,3 +131,24 @@ it("accepts CRLF packets and heartbeats split across network chunks", async () =
   expect(events.map((event) => event.type)).toEqual(["action", "error"]);
   expect(response.body?.locked).toBe(false);
 });
+
+it("honors stable SSE IDs and suppresses replayed packets across byte boundaries", async () => {
+  const response = streamedResponse([
+    new TextEncoder().encode(
+      'id: 2\ndata: {"type":"action","message":"already seen"}\n\nid: 3\ndata: {"type":"action","message":"new progress"}\n\nid: 4\ndata: {"type":"error","message":"stopped"}\n\n',
+    ),
+  ]);
+  const ids: number[] = [];
+  const events = [];
+
+  for await (const event of readTurnEvents(response, 1000, {
+    after: 2,
+    onEventId: (id) => ids.push(id),
+  })) {
+    events.push(event);
+  }
+
+  expect(ids).toEqual([3, 4]);
+  expect(events).toHaveLength(2);
+  expect(events[0]).toMatchObject({ message: "new progress" });
+});

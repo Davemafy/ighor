@@ -7,6 +7,10 @@ import {
   fetchWorkspace,
   fetchWorkspaceHistory,
   fetchTurnJournal,
+  newestWorkspace,
+  pendingTurn,
+  rememberTurn,
+  recoverTurnJournal,
   readTurnEvents,
   submitTurn,
   TurnRequestError,
@@ -35,6 +39,7 @@ export function useWorkspace() {
 
   useEffect(() => {
     let active = true;
+    const recovery = new AbortController();
 
     async function restoreWorkspace() {
       try {
@@ -47,6 +52,55 @@ export function useWorkspace() {
         if (active) {
           setTask(workspace);
           localStorage.setItem(savedWorkspaceKey, workspace.id);
+          setIsLoadingWorkspace(false);
+          const pending = pendingTurn(workspace.id);
+
+          if (pending) {
+            for await (const journal of recoverTurnJournal(
+              workspace.id,
+              pending,
+              recovery.signal,
+            )) {
+              if (
+                !active ||
+                localStorage.getItem(savedWorkspaceKey) !== workspace.id ||
+                pendingTurn(workspace.id)?.turnId !== pending.turnId
+              ) {
+                break;
+              }
+
+              setTask((current) => newestWorkspace(current, journal.task));
+              const last = journal.events.at(-1);
+
+              if (last) {
+                rememberTurn(workspace.id, {
+                  turnId: pending.turnId,
+                  after: last.sequence,
+                });
+              }
+
+              if (
+                journal.status !== "accepted" &&
+                journal.status !== "running"
+              ) {
+                rememberTurn(workspace.id, null);
+                setExecutionMessage("");
+
+                if (
+                  ["failed", "interrupted", "superseded"].includes(
+                    journal.status,
+                  )
+                ) {
+                  setErrorMessage(
+                    journal.task.error ||
+                      "The saved request stopped. Your work is preserved.",
+                  );
+                }
+              } else {
+                setExecutionMessage("Restoring saved execution progress");
+              }
+            }
+          }
         }
       } catch {
         if (active) {
@@ -65,6 +119,7 @@ export function useWorkspace() {
 
     return () => {
       active = false;
+      recovery.abort();
     };
   }, []);
 
@@ -156,11 +211,15 @@ export function useWorkspace() {
     let failed = false;
     let morphed = false;
     const clientTurnId = crypto.randomUUID();
+    rememberTurn(currentTask.id, { turnId: clientTurnId, after: 0 });
 
     try {
       const response = await submitTurn(currentTask, action, clientTurnId);
 
-      for await (const event of readTurnEvents(response)) {
+      for await (const event of readTurnEvents(response, 45000, {
+        onEventId: (after) =>
+          rememberTurn(currentTask.id, { turnId: clientTurnId, after }),
+      })) {
         if (event.type === "state" || event.type === "done") {
           const previousVisual = Boolean(
             currentTask.canvas ||
@@ -198,9 +257,11 @@ export function useWorkspace() {
               significantWorkEdit)
           ) {
             morphed = true;
-            morphLayout(() => setTask(event.task));
+            morphLayout(() =>
+              setTask((current) => newestWorkspace(current, event.task)),
+            );
           } else {
-            setTask(event.task);
+            setTask((current) => newestWorkspace(current, event.task));
           }
 
           const terminalError =
@@ -272,6 +333,10 @@ export function useWorkspace() {
           }
         }
 
+        if (event.type === "done" || event.type === "error") {
+          rememberTurn(currentTask.id, null);
+        }
+
         if (event.type === "error") {
           failed = true;
           setFeedback((previous) =>
@@ -327,7 +392,16 @@ export function useWorkspace() {
         try {
           const recorded = await fetchTurnJournal(currentTask.id, clientTurnId);
 
-          if (recorded.status === "completed") {
+          setTask((current) => newestWorkspace(current, recorded.task));
+
+          if (recorded.status !== "accepted" && recorded.status !== "running") {
+            rememberTurn(currentTask.id, null);
+          }
+
+          if (
+            recorded.status === "completed" ||
+            recorded.status === "awaiting_input"
+          ) {
             const latest = await fetchWorkspace(currentTask.id);
 
             if (latest) {
@@ -340,7 +414,10 @@ export function useWorkspace() {
                   : previous,
               );
             }
-          } else if (recorded.status === "running" || recorded.status === "accepted") {
+          } else if (
+            recorded.status === "running" ||
+            recorded.status === "accepted"
+          ) {
             setErrorMessage(
               "Igor accepted this message. Its progress is saved; reload to check the result. No duplicate request was sent.",
             );
