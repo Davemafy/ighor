@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Task } from "../../src/core/contracts";
+import { DatabaseSync } from "node:sqlite";
+import { installPresentation, PresentationSchema } from "../../src/core/presentation";
 
 async function act(page: Page, task: Task, action: Record<string, unknown>) {
   const response = await page.request.post(`/api/tasks/${task.id}/turn`, {
@@ -107,4 +109,53 @@ test("recorded Qloo gathering produces a native, editable invitation — desktop
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
+});
+
+test("a gathering without a saved invitation opens its actual work, not a placeholder poster", async ({ page }) => {
+  const response = await page.request.post("/api/tasks");
+  expect(response.ok()).toBe(true);
+  const task = (await response.json()) as Task;
+  task.status = "ready";
+  task.brief.kind = "gathering";
+  task.brief.goal = "Dinner in New York";
+  task.messages = [
+    {
+      role: "user",
+      text: "dinner in new york",
+      at: new Date().toISOString(),
+    },
+  ];
+  task.artifacts = [];
+  task.canvas = installPresentation(
+    undefined,
+    PresentationSchema.parse({
+      id: "dinner-discovery",
+      title: "Dinner in New York",
+      basis: "user-supplied",
+      root: "request",
+      nodes: [{
+        id: "request",
+        type: "text",
+        text: "Discover options for dinner in New York.",
+      }],
+    }),
+  );
+
+  const db = new DatabaseSync(
+    `${process.env.IGOR_BROWSER_RUN_DIR ?? ".igor/integration-browser"}/tasks.sqlite`,
+  );
+  db.prepare("UPDATE tasks SET state=? WHERE id=?").run(
+    JSON.stringify(task),
+    task.id,
+  );
+  db.close();
+
+  await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
+  await page.goto(`/app?task=${task.id}`);
+
+  await expect(page.getByRole("complementary", { name: "Task canvas" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Your gathering invitation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Invitation", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Untitled gathering")).toHaveCount(0);
+  await expect(page.getByText("Dinner in New York").first()).toBeVisible();
 });
