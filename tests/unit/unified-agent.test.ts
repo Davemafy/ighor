@@ -1120,7 +1120,7 @@ it("can save observed work at the provider request limit without offering anothe
       research: {
         research: vi.fn(),
         searchOnce: vi.fn(async () => ({
-          status: "ok",
+          status: "ok" as const,
           sources: [source()],
           requests: 1,
         })),

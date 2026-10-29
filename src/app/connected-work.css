@@ -298,7 +298,7 @@
   color: #c8d7b7;
   margin: 0 0 14px;
 }
-.ig-work-showcase h3 {
+.iw-app .ic-canvas .ig-work-showcase h3 {
   font-family: "Archivo", "DM Sans", Arial, sans-serif;
   font-size: clamp(32px, 4.2vw, 59px);
   line-height: 0.99;
@@ -459,7 +459,7 @@
     max-height: 245px;
     padding: 0 10px 10px;
   }
-  .ig-work-showcase h3 {
+  .iw-app .ic-canvas .ig-work-showcase h3 {
     max-width: 16ch;
   }
 }
