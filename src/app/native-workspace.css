@@ -2003,7 +2003,7 @@
   padding: 26px clamp(22px, 3vw, 46px) 40px;
   background: #f5f6ee;
   border-left: 1px solid #e0e3d7;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 .iw-work-stage > .iw-result-content {
   max-width: 850px;
@@ -2269,4 +2269,137 @@
 .iw-app[data-motion="off"] .ird-card {
   transition: none;
   transform: none;
+}
+
+
+/* Workspace composition pass: user conversation remains quiet; the output owns
+   the visual hierarchy. The welcome page still retains its chosen atmosphere. */
+.iw-app.iw-active::before {
+  opacity: 0;
+}
+.iw-app .iw-inline-workspace {
+  background: #fafaf7;
+}
+.iw-app .iw-inline-workspace .iw-thread {
+  background: #fafaf7;
+}
+.iw-app .iw-inline-workspace .iw-work-stage {
+  padding: 26px clamp(22px, 3vw, 48px) 46px;
+  background: #f3f5ee;
+  border-left-color: #d8ded1;
+  scrollbar-gutter: auto;
+}
+.iw-app .iw-with-result .iw-messages {
+  padding-top: 31px;
+  padding-bottom: 32px;
+}
+.iw-app .iw-inline-workspace .iw-workbar {
+  background: #fafaf7;
+}
+.iw-app .iw-inline-workspace .iw-workspace-footer {
+  background: #fafaf7;
+  backdrop-filter: none;
+}
+.iw-app .iw-with-result .iw-user .pp-message-text {
+  background: #e9ebe5;
+  border-radius: 12px 12px 3px 12px;
+}
+.iw-app .iw-dock .iw-composer {
+  border-radius: 14px;
+  box-shadow: none;
+}
+.iw-app .iw-work-stage .iw-resource-tabs {
+  gap: 24px;
+  margin: 0 0 14px;
+  padding: 0;
+  border-bottom: 1px solid #cdd4c8;
+}
+.iw-app .iw-work-stage .iw-resource-tabs button {
+  position: relative;
+  min-height: 44px;
+  padding: 10px 1px 12px;
+  color: #657060;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.iw-app .iw-work-stage .iw-resource-tabs button[aria-pressed="true"] {
+  color: #202c20;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid #2d432b;
+  border-radius: 0;
+  box-shadow: none;
+}
+.iw-app .iw-work-stage .iw-resource-tabs button:hover {
+  color: #273c24;
+  background: none;
+}
+/* A precise, low-chrome scrollbar. Keep native scrolling, keyboard access,
+   and a visible thumb rather than hiding the ability to scroll. */
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea) {
+  scrollbar-width: thin;
+  scrollbar-color: #c6cdc1 transparent;
+}
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-track {
+  background: transparent;
+}
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: #c1c9ba;
+}
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-thumb:hover {
+  background: #899985;
+}
+.iw-app :is(.iw-messages, .iw-work-stage, .iw-composer textarea)::-webkit-scrollbar-button {
+  display: none;
+}
+@media (min-width: 961px) {
+  .iw-app .iw-inline-workspace.iw-with-result .iw-workgrid,
+  .iw-app .iw-inline-workspace.iw-with-result .iw-workspace-footer {
+    grid-template-columns: minmax(315px, 0.78fr) minmax(0, 1.4fr);
+  }
+  .iw-app.iw-active .iw-appearance {
+    right: 16px;
+    bottom: 15px;
+  }
+  .iw-app.iw-active .iw-appearance-trigger {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    justify-content: center;
+    padding: 9px;
+    border: 1px solid #cbd4c6;
+    border-radius: 5px;
+    background: #fafaf7;
+    box-shadow: none;
+  }
+  .iw-app.iw-active .iw-appearance-trigger > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 960px) {
+  .iw-app .iw-inline-workspace .iw-work-stage {
+    border-left: 0;
+    padding: 22px 20px 32px;
+  }
+  .iw-app .iw-work-stage .iw-resource-tabs {
+    gap: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app.iw-active::before { animation: none; }
 }
