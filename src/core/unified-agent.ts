@@ -263,12 +263,21 @@ export async function runUnifiedAgent(
   for (let index = 0; index < maxSteps; index++) {
     const run = task.agentRun;
 
-    if (!run || run.requests >= maxRequests) {
-      if (run) {
-        run.warnings.push("Paid request limit reached.");
-      }
-
+    if (!run) {
       break;
+    }
+
+    const readsExhausted = run.requests >= maxRequests;
+
+    if (
+      readsExhausted &&
+      !run.warnings.includes(
+        "Paid request limit reached; internal saving and critique remain available.",
+      )
+    ) {
+      run.warnings.push(
+        "Paid request limit reached; internal saving and critique remain available.",
+      );
     }
 
     const references = run.requirements?.culturalReferences ?? [];
@@ -303,6 +312,7 @@ export async function runUnifiedAgent(
     const available = tools.filter(
       (t) =>
         t.available &&
+        (!readsExhausted || t.permission === "internal") &&
         (t.permission === "read" || t.permission === "internal") &&
         !(
           waitingForCulture &&

@@ -84,3 +84,24 @@ live Qloo demonstrations. External exact-head checks remain pending.
 Live model/Qloo and TrueForge are BLOCKED locally: no authorized binding is
 present. Railway volume mounting and backup/restore are unverified because this
 session has no hosting access. No production deployment or secret change occurred.
+
+## Live execution boundary diagnosed
+
+At source `497e62f`, bounded authorized live acceptance resolved all three anchors
+and completed `qloo.discover` (4 provider requests). It then failed at the next
+model decision with safe category `provider timeout`; no action was selected or
+artifact saved. Acceptance remains FAILED, not a Qloo-resolution success claim.
+The chooser forced a 15-second transport deadline despite Gemini's configured
+80-second outer limit. It now uses the configured limit less a 5-second margin,
+with no automatic retry or increased request count. A fake-clock regression
+reproduces a valid composition response at 16 seconds in one request. The argument
+JSON envelope also permits the already-declared 12k document size plus metadata;
+actual tool argument, source and permission schemas remain unchanged.
+
+Paid-read exhaustion now removes paid tools while leaving internal composition,
+critique and saving available. A regression proves an observed source can be saved
+at the exact provider cap without another paid read. Provider/deadline regressions:
+36 passed locally before the envelope-boundary extension; final exact-head CI
+is required. Desktop/mobile connected-work browser suite: 6 passed locally.
+The full external browser suite on `497e62f` has reached the separate mobile
+acceptance gate; final terminal status is still pending.

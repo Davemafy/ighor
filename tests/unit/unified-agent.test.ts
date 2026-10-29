@@ -1073,3 +1073,66 @@ it("feeds premature finish back to the bounded loop until the requested artifact
     store.close();
   }
 });
+
+it("can save observed work at the provider request limit without offering another paid read", async () => {
+  vi.stubEnv("IGOR_AGENT_MAX_REQUESTS", "1");
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("bounded-save", "owner");
+  store.create(task);
+  let step = 0;
+
+  try {
+    await runUnifiedAgent({
+      task,
+      owner: "owner",
+      store,
+      goal: "Research and save a brief",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: ["brief"],
+      },
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async (_goal, tools) => {
+          step++;
+
+          if (step === 1) {
+            return { name: "web.search", arguments: { query: "venue source" } };
+          }
+
+          expect(tools.every((t) => t.permission === "internal")).toBe(true);
+
+          return step === 2
+            ? {
+                name: "document.create",
+                arguments: {
+                  title: "Observed brief",
+                  content:
+                    "Source lead [web-1]; availability and costs remain unknown.",
+                  sourceIds: ["web-1"],
+                  fulfills: ["brief"],
+                },
+              }
+            : { name: "agent.finish", arguments: {} };
+        },
+      },
+      research: {
+        research: vi.fn(),
+        searchOnce: vi.fn(async () => ({
+          status: "ok",
+          sources: [source()],
+          requests: 1,
+        })),
+      },
+      trace: vi.fn(),
+    });
+    const saved = store.load(task.id, "owner");
+    expect(saved.agentRun?.requests).toBe(1);
+    expect(saved.agentRun?.acceptance?.status).toBe("satisfied");
+    expect(saved.artifacts.some((a) => a.content.includes("web-1"))).toBe(true);
+  } finally {
+    store.close();
+    vi.unstubAllEnvs();
+  }
+});

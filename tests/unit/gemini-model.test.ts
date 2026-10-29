@@ -510,3 +510,74 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
     expect(qloo.mock.calls.length - qlooBefore).toBe(1);
   });
 });
+
+it("lets a valid post-discovery composition decision outlast 15 seconds within Gemini's configured deadline", async () => {
+  vi.useFakeTimers();
+  const actions = [
+    {
+      kind: "document",
+      id: "brief",
+      title: "Brief",
+      content: "x".repeat(11000),
+      dependencies: [],
+      evidenceIds: [],
+    },
+  ];
+  const transport = vi.fn(
+    async (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(
+          () =>
+            resolve(
+              result("choose_agent_action", {
+                name: "experience.compose",
+                argumentsJson: JSON.stringify({ actions }),
+              }),
+            ),
+          16000,
+        );
+        init?.signal?.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(timer);
+            reject(new Error("transport timeout"));
+          },
+          { once: true },
+        );
+      }),
+  );
+
+  try {
+    const task = freshLiveExample("deadline", "owner");
+    const model = new GeminiModel(key, "gemini-3.5-flash-lite", transport);
+    const pending = model.chooseAgentAction(
+      "Compose from saved discovery",
+      [
+        {
+          name: "experience.compose",
+          permission: "internal",
+          description: "Save linked work",
+          inputSchema: { type: "object" },
+        },
+      ],
+      [
+        {
+          tool: "qloo.discover",
+          status: "ok",
+          summary: "Real query observation saved",
+        },
+      ],
+      task,
+    );
+    const expected = expect(pending).resolves.toMatchObject({
+      name: "experience.compose",
+      arguments: { actions },
+    });
+    await vi.advanceTimersByTimeAsync(16001);
+    await expected;
+    expect(model.calls).toBe(1);
+    expect(transport).toHaveBeenCalledTimes(1);
+  } finally {
+    vi.useRealTimers();
+  }
+});
