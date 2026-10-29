@@ -275,6 +275,11 @@ export function ProductText({ text }: { text: string }) {
       index++;
       continue;
     }
+    if (/^(?:-{3,}|\*{3,}|_{3,})$/.test(line)) {
+      blocks.push(<hr key={index} />);
+      index++;
+      continue;
+    }
     const heading = /^#{1,6}\s+(.+)$/.exec(line);
     if (heading) {
       blocks.push(<h3 key={index}>{inline(heading[1])}</h3>);
@@ -304,7 +309,8 @@ export function ProductText({ text }: { text: string }) {
     while (
       index < lines.length &&
       lines[index].trim() &&
-      !/^(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)/.test(lines[index].trim())
+      !/^(?:#{1,6}\s|[-*+]\s|\d+[.)]\s)/.test(lines[index].trim()) &&
+      !/^(?:-{3,}|\*{3,}|_{3,})$/.test(lines[index].trim())
     )
       paragraph.push(lines[index++].trim());
     blocks.push(<p key={start}>{inline(paragraph.join(" "))}</p>);
