@@ -1,4 +1,5 @@
 import { installPresentation, validatePresentation } from "./presentation";
+import { resolveOrdinalFocus } from "./conversation-focus";
 import { practicalDiscoveryOpportunity } from "./action-readiness";
 import {
   interpretationFailure,
@@ -85,6 +86,20 @@ export async function interpretMessage(
 
   if (!messageAccepted && !replayingFailedTurn) {
     task.messages.push({ role: "user", text: input.text, at: at() });
+  }
+
+  const referenced = resolveOrdinalFocus(task, input.text);
+
+  if (referenced.kind === "ambiguous") {
+    task.messages.push({
+      role: "assistant",
+      kind: "conversation",
+      text: "Which set of options do you mean? Open the current choices or name the one you want.",
+      at: at(),
+    });
+    trace("conversation.reference.ambiguous", "Ordinal has no current saved option.");
+
+    return { ...update, task, conversationOnly: true };
   }
 
   try {
