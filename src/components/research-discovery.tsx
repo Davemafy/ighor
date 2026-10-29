@@ -194,6 +194,12 @@ export function ResearchDiscovery({
                 <span className="ird-cover">
                   {finding.imageUrl ? (
                     <SourceImage key={finding.imageUrl} finding={finding} />
+                  ) : index === 0 ? (
+                    <span className="ird-title-cover" aria-hidden="true">
+                      <span>{finding.kind === "qloo" ? "Qloo source" : "Web source"}</span>
+                      <strong>{finding.title}</strong>
+                      <span>01</span>
+                    </span>
                   ) : (
                     <span className="ird-reference-number" aria-hidden="true">
                       {String(index + 1).padStart(2, "0")}
