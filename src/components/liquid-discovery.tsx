@@ -371,12 +371,12 @@ export function LiquidDiscovery({
               }}
             >
               <div
-              ref={detail}
-              tabIndex={-1}
-              role="region"
-              aria-label={"Details for " + inspected.name}
-              className="iw-liquid-detail"
-            >
+                ref={detail}
+                tabIndex={-1}
+                role="region"
+                aria-label={"Details for " + inspected.name}
+                className="iw-liquid-detail"
+              >
               <button
                 type="button"
                 className="iw-liquid-back"
