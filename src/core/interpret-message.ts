@@ -32,6 +32,7 @@ export async function interpretMessage(
   budget: ExecutionBudget,
   trace: Trace,
   formAnswer?: FormAnswerGrounding,
+  messageAccepted = false,
 ): Promise<TurnUpdate> {
   // Never reinterpret arbitrary short messages as a taste-profile form answer.
   // "Go", a correction or a topic switch still belongs to the full conversation
@@ -55,13 +56,22 @@ export async function interpretMessage(
   // Only a matching *last* failed interpretation is eligible; a new message
   // or a different failure type must always create a fresh turn.
   const replayingFailedTurn =
-    task.status === "error" &&
+    !messageAccepted && task.status === "error" &&
     task.trace.at(-1)?.action === "model.interpret.error" &&
     task.messages.at(-1)?.role === "user" &&
     task.messages.at(-1)?.text === input.text;
   const context = structuredClone(task);
 
-  if (replayingFailedTurn) {
+  if (messageAccepted) {
+    // The API committed this user's message before the model call.
+    // Exclude only that latest current-turn message from prior context.
+    if (task.messages.at(-1)?.role !== "user" ||
+        task.messages.at(-1)?.text !== input.text) {
+      throw new Error("Accepted turn does not match the saved user message.");
+    }
+
+    context.messages.pop();
+  } else if (replayingFailedTurn) {
     context.messages.pop();
   }
 
@@ -73,7 +83,7 @@ export async function interpretMessage(
       .reverse(),
   ].join("\n");
 
-  if (!replayingFailedTurn) {
+  if (!messageAccepted && !replayingFailedTurn) {
     task.messages.push({ role: "user", text: input.text, at: at() });
   }
 
