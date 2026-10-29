@@ -81,6 +81,7 @@ function OptionCard({
   actions,
   compact = false,
   featured = false,
+  gallery = false,
   onInspect,
 }: {
   candidate: Candidate;
@@ -88,6 +89,7 @@ function OptionCard({
   actions?: ReactNode;
   compact?: boolean;
   featured?: boolean;
+  gallery?: boolean;
   onInspect?: () => void;
 }) {
   // The visual instance changes, but the candidate's identity and evidence do not.
@@ -95,10 +97,14 @@ function OptionCard({
   return (
     <motion.article
       layoutId={task.id + ":candidate:" + candidate.id}
-      layout="position"
+      layout={gallery ? true : "position"}
       transition={{ type: "spring", stiffness: 340, damping: 34 }}
       data-candidate-id={candidate.id}
-      className={"iw-liquid-card" + (compact ? " iw-liquid-card-compact" : "")}
+      className={
+        "iw-liquid-card grid_gallery_item" +
+        (compact ? " iw-liquid-card-compact" : "")
+      }
+      data-gallery={gallery}
       data-featured={featured && Boolean(candidate.imageUrl)}
       data-artwork={Boolean(candidate.imageUrl)}
     >
@@ -128,18 +134,18 @@ function OptionCard({
           {candidate.location ? " / " + candidate.location : ""}
         </small>
         <h4>{candidate.name}</h4>
-        <p>{candidate.description}</p>
-        {candidate.fitReason && (
+        {!gallery && <p>{candidate.description}</p>}
+        {!gallery && candidate.fitReason && (
           <p className="iw-liquid-reason">{candidate.fitReason}</p>
         )}
-        {candidate.cost.value !== null && (
+        {!gallery && candidate.cost.value !== null && (
           <p className="iw-liquid-uncertain">
             Supplied cost: {candidate.cost.value} (
             {candidate.cost.source.replaceAll("-", " ")}). Currency and
             availability require verification.
           </p>
         )}
-        <EvidenceNote candidate={candidate} task={task} />
+        {!gallery && <EvidenceNote candidate={candidate} task={task} />}
         {onInspect && !candidate.imageUrl && (
           <button
             type="button"
@@ -149,7 +155,7 @@ function OptionCard({
             Read details <ArrowRight aria-hidden="true" />
           </button>
         )}
-        {actions && <div className="iw-liquid-actions">{actions}</div>}
+        {!gallery && actions && <div className="iw-liquid-actions">{actions}</div>}
       </div>
     </motion.article>
   );
@@ -191,6 +197,7 @@ export function LiquidDiscovery({
   };
 
   const [inspectedId, setInspectedId] = useState<string | null>(null);
+  const [galleryLayout, setGalleryLayout] = useState(true);
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -219,6 +226,9 @@ export function LiquidDiscovery({
     )
     .filter((candidate): candidate is Candidate => Boolean(candidate));
   const inspected = available.find((candidate) => candidate.id === inspectedId);
+  const canShowGallery =
+    available.filter((candidate) => Boolean(candidate.imageUrl)).length >= 3;
+  const galleryActive = canShowGallery && galleryLayout;
   const compare = available.filter((candidate) =>
     canvas?.comparisonIds.includes(candidate.id),
   );
@@ -339,6 +349,24 @@ export function LiquidDiscovery({
                     : "Selections are saved with this conversation. No booking, price or route has been confirmed."}
             </p>
           </div>
+          {mode === "explore" && !inspected && canShowGallery && (
+            <div className="iw-liquid-gallery-controls" role="group" aria-label="Discovery layout">
+              <button
+                type="button"
+                aria-pressed={galleryActive}
+                onClick={() => setGalleryLayout(true)}
+              >
+                Gallery
+              </button>
+              <button
+                type="button"
+                aria-pressed={!galleryActive}
+                onClick={() => setGalleryLayout(false)}
+              >
+                Detailed
+              </button>
+            </div>
+          )}
           {mode === "explore" && inspected ? (
             <div
               ref={detail}
@@ -410,13 +438,17 @@ export function LiquidDiscovery({
             </div>
           ) : (
             mode === "explore" && (
-              <div className="iw-liquid-grid">
+              <div
+                className="iw-liquid-grid grid_gallery_container"
+                data-size-grid={galleryActive ? "150%" : "75%"}
+              >
                 {available.map((candidate, index) => (
                   <OptionCard
                     key={candidate.id}
                     candidate={candidate}
                     task={task}
                     featured={index === 0 && Boolean(candidate.imageUrl)}
+                    gallery={galleryActive && Boolean(candidate.imageUrl)}
                     onInspect={() => {
                       opener.current = candidate.id;
                       setInspectedId(candidate.id);
