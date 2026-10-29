@@ -162,5 +162,31 @@ describe("Durable accepted turn journal", () => {
       { role: "user", text: input.text },
     ]);
     expect(db.load(task.id, owner).brief.version).toBeGreaterThan(1);
+    const failed = db.load(task.id, owner);
+    const retryInput = { ...input, version: failed.brief.version };
+    const retry = db.acceptTurn(task.id, owner, secondId, retryInput);
+
+    expect(db.load(task.id, owner).messages).toHaveLength(1);
+    const recovered = await runTurn(
+      db,
+      task.id,
+      owner,
+      { ...retryInput, version: retry.acceptedVersion },
+      () => {},
+      undefined,
+      {
+        async interpret() {
+          return { intent: "conversation", reply: "I can help you plan." };
+        },
+      },
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(recovered.messages.map((message) => message.role)).toEqual([
+      "user",
+      "assistant",
+    ]);
   });
 });
