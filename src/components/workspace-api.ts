@@ -64,12 +64,13 @@ export async function fetchWorkspaceHistory(): Promise<
 export async function submitTurn(
   task: Task,
   action: TaskAction,
+  clientTurnId: string = crypto.randomUUID(),
 ): Promise<Response> {
   const response = await fetch(`/api/tasks/${task.id}/turn`, {
     method: "POST",
     signal: AbortSignal.timeout(150000),
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...action, version: task.brief.version }),
+    body: JSON.stringify({ ...action, version: task.brief.version, clientTurnId }),
   });
 
   if (!response.ok) {
@@ -81,6 +82,26 @@ export async function submitTurn(
   }
 
   return response;
+}
+
+export async function fetchTurnJournal(
+  workspaceId: string,
+  turnId: string,
+  after = 0,
+): Promise<{
+  status: "accepted" | "running" | "completed" | "failed" | "superseded";
+  events: Array<{ sequence: number; event: Event }>;
+}> {
+  const res = await fetch(
+    `/api/tasks/${encodeURIComponent(workspaceId)}/turn?turnId=${encodeURIComponent(turnId)}&after=${after}`,
+    { cache: "no-store" },
+  );
+
+  if (!res.ok) {
+    throw new Error("The saved turn could not be recovered.");
+  }
+
+  return res.json();
 }
 
 export async function* readTurnEvents(
@@ -123,8 +144,10 @@ export async function* readTurnEvents(
         const packet = pending.slice(0, boundary);
         pending = pending.slice(boundary + 2);
 
-        if (packet.startsWith("data: ")) {
-          const event = EventSchema.parse(JSON.parse(packet.slice(6)));
+        const dataLine = packet.split("\n").find((line) => line.startsWith("data: "));
+
+        if (dataLine) {
+          const event = EventSchema.parse(JSON.parse(dataLine.slice(6)));
           completed = event.type === "done" || event.type === "error";
           yield event;
 
