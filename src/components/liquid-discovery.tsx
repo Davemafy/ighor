@@ -225,6 +225,7 @@ export function LiquidDiscovery({
   const canShowGallery =
     available.filter((candidate) => Boolean(candidate.imageUrl)).length >= 3;
   const galleryActive = canShowGallery && galleryLayout;
+  const exampleGallery = available.length > 0 && available.every((candidate) => candidate.sample);
   const compare = available.filter((candidate) =>
     canvas?.comparisonIds.includes(candidate.id),
   );
@@ -318,7 +319,7 @@ export function LiquidDiscovery({
           </div>
           <div className="iw-liquid-intro" aria-live="polite">
             <div className="iw-liquid-kicker">
-              <span>DISCOVERY</span>
+              <span>{exampleGallery ? "EXAMPLE ARTWORK" : "DISCOVERY"}</span>
               <span>
                 {available.length}{" "}
                 {available.length === 1 ? "reference" : "references"}
