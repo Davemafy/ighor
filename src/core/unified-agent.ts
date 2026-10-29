@@ -470,6 +470,7 @@ export async function runUnifiedAgent(
         task.candidates = workingTask.candidates;
         task.evidence = workingTask.evidence;
         task.artifacts = workingTask.artifacts;
+        task.trueforgeSessionId = workingTask.trueforgeSessionId;
         sources.splice(0, sources.length, ...workingSources);
       }
     } catch {
