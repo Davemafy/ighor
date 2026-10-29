@@ -119,7 +119,7 @@ describe("Durable accepted turn journal", () => {
         async interpret(text, context) {
           modelCalls++;
           expect(text).toBe("hey");
-          expect(context.messages).toHaveLength(0);
+          expect(context?.messages).toHaveLength(0);
           return { intent: "conversation", reply: "Hello. What are we planning?" };
         },
       },
