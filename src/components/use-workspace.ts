@@ -6,6 +6,7 @@ import {
   createWorkspace as requestNewWorkspace,
   fetchWorkspace,
   fetchWorkspaceHistory,
+  fetchTurnJournal,
   readTurnEvents,
   submitTurn,
   TurnRequestError,
@@ -154,9 +155,10 @@ export function useWorkspace() {
     setExecutionMessage("Waiting for Igor");
     let failed = false;
     let morphed = false;
+    const clientTurnId = crypto.randomUUID();
 
     try {
-      const response = await submitTurn(currentTask, action);
+      const response = await submitTurn(currentTask, action, clientTurnId);
 
       for await (const event of readTurnEvents(response)) {
         if (event.type === "state" || event.type === "done") {
@@ -317,6 +319,35 @@ export function useWorkspace() {
         setFeedback((previous) =>
           previous ? { ...previous, state: "complete" } : previous,
         );
+      }
+
+      // The journal is authoritative when the network drops after admission.
+      // Never automatically resend a paid call merely because SSE was lost.
+      if (failed) {
+        try {
+          const recorded = await fetchTurnJournal(currentTask.id, clientTurnId);
+
+          if (recorded.status === "completed") {
+            const latest = await fetchWorkspace(currentTask.id);
+
+            if (latest) {
+              setTask(latest);
+              failed = false;
+              setErrorMessage("");
+              setFeedback((previous) =>
+                previous
+                  ? { ...previous, state: "complete", error: undefined }
+                  : previous,
+              );
+            }
+          } else if (recorded.status === "running" || recorded.status === "accepted") {
+            setErrorMessage(
+              "Igor accepted this message. Its progress is saved; reload to check the result. No duplicate request was sent.",
+            );
+          }
+        } catch {
+          // Request may have failed before the server accepted the turn.
+        }
       }
 
       // A transport error can happen after the server saved a turn. Reconcile
