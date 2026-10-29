@@ -329,7 +329,9 @@ test("original Codrops gallery switches real candidate layout without losing ins
   // not a newly created empty workspace from a previous session.
   await page.goto(`/app?task=${task.id}`);
   const work = page.getByRole("button", { name: "Your work", exact: true });
-  if (await work.isVisible()) await work.click();
+  if (await work.isVisible()) {
+    await work.click();
+  }
   await expect(page.getByRole("button", { name: "Expand canvas" })).toBeVisible();
   await page.getByRole("button", { name: "Expand canvas" }).click();
   await expect(page.getByRole("complementary", { name: "Task canvas" })).toHaveClass(/ic-fullscreen/);
