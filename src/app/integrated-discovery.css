@@ -17,8 +17,8 @@
   color: inherit;
 }
 .iw-app .iw-liquid-toolbar button[aria-pressed="true"] {
-  background: #e6edda;
-  color: #253225;
+  background: #fff;
+  color: #222421;
 }
 .iw-app .iw-liquid-grid {
   display: grid;
@@ -97,7 +97,7 @@
 }
 .iw-app .iw-liquid button:focus-visible,
 .iw-app .iw-liquid summary:focus-visible {
-  outline: 3px solid #536b35;
+  outline: 3px solid #3e4ff0;
   outline-offset: 4px;
 }
 @container (max-width: 600px) {
@@ -152,8 +152,8 @@
 .iw-app .iw-liquid .iw-liquid-actions button,
 .iw-app .iw-liquid-back,
 .iw-app .iw-liquid-text-open {
-  background: #edf0e8;
-  color: #293127;
+  background: #f7f7f7;
+  color: #222421;
   border-radius: 24px;
   padding: 12px 18px;
 }
@@ -171,54 +171,57 @@
   align-items: center;
   cursor: pointer;
   gap: 12px;
-  color: #293127;
+  color: #222421;
 }
 .iw-fluid-compare input:focus-visible {
-  outline: 3px solid #536b35;
+  outline: 3px solid #3e4ff0;
   outline-offset: 4px;
 }
 
 /*
- * Source structure adapted from the original MIT-licensed Codrops GSAP Flip
- * Grid Layout Transition (https://github.com/Ibaliqbal/grid-layout-transition).
- * Original LICENSE preserved at src/vendor/codrops-grid/LICENSE.
- * Key unchanged mechanics: data-size-grid density, CSS Grid spans, variable image
- * aspect ratio, hover exposure and responsive reflow. Motion handles FLIP in React.
+ * Responsive geometry adapted from MIT Codrops Grid Layout Transitions:
+ * https://github.com/Ibaliqbal/grid-layout-transition
+ * License retained at src/vendor/codrops-grid/LICENSE.
+ * Source-inspired geometry only. Igor's typography, colours, artifacts, and
+ * Motion ownership remain authoritative (docs/design-system.md).
  */
 .iw-app .iw-liquid-gallery-controls {
   display: inline-flex;
-  gap: 2px;
-  margin: 4px 0 22px;
+  align-items: center;
+  gap: 3px;
+  margin: 4px 0 25px;
+  border: 1px solid #dededb;
   padding: 3px;
-  border: 1px solid #d6d9d0;
   border-radius: 25px;
-  background: #e5e8e2;
+  background: #f7f7f7;
 }
 .iw-app .iw-liquid-gallery-controls button {
-  min-height: 39px;
-  padding: 9px 18px;
-  border: 0;
+  padding: 10px 17px;
+  min-height: 44px;
   border-radius: 22px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #4e544e;
   background: transparent;
+  color: #62635f;
+  border: 0;
+  font-family: Archivo, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 550;
 }
 .iw-app .iw-liquid-gallery-controls button[aria-pressed="true"] {
-  background: #1a211d;
-  color: #f5f6ed;
+  background: #fff;
+  color: #222421;
+  box-shadow: 0 1px 4px #11111112;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container {
   display: grid;
   width: 100%;
-  gap: clamp(10px, 1.8cqi, 24px);
   align-items: start;
+  gap: clamp(12px, 1.7cqi, 24px);
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0,1fr));
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0,1fr));
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item {
   grid-column: span 1;
@@ -234,25 +237,27 @@
   grid-column: 1 / -1;
   grid-row: auto;
 }
+/* The artwork is the expressive element; its metadata belongs on the paper
+ * below it, not over an obscured photo or in fabricated telemetry. */
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] {
-  position: relative;
   display: block;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 0;
-  border-radius: 12px;
-  background: #171c1a;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-artwork {
-  height: 100%;
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  background: #171c1a;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #e8e8e3;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:first-child .iw-liquid-artwork {
-  aspect-ratio: 4 / 5;
-  min-height: 100%;
+  aspect-ratio: 7 / 5;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:nth-child(3n) .iw-liquid-artwork {
   aspect-ratio: 5 / 4;
@@ -261,61 +266,97 @@
   display: block;
   width: 100%;
   height: 100%;
-  max-height: none;
   min-height: 100%;
+  max-height: none;
   aspect-ratio: inherit;
   object-fit: cover;
-  filter: brightness(0.79);
-  transition: filter 300ms cubic-bezier(0.25, 0.1, 0.25, 1), transform 520ms cubic-bezier(0.25,0.1,0.25,1);
+  filter: none;
+  transition: transform 450ms cubic-bezier(.2,.7,.25,1);
 }
 @media (hover: hover) and (pointer: fine) {
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:hover .iw-liquid-image {
-    filter: brightness(1);
-    transform: scale(1.025);
+    transform: scale(1.035);
   }
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-card-body {
-  position: absolute;
-  inset: auto 0 0;
-  z-index: 1;
-  padding: 54px clamp(11px, 1.7cqi, 23px) clamp(12px, 1.7cqi, 22px);
-  background: linear-gradient(transparent, rgba(5,9,7,.88));
-  color: #f7f7f1;
-  pointer-events: none;
+  position: static;
+  pointer-events: auto;
+  padding: 13px 1px 20px;
+  color: #222421;
+  background: transparent;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-category {
-  color: #d2d9ce;
-  font-size: 10px;
-  letter-spacing: .11em;
+  font: 500 11px/1.4 Archivo, Arial, sans-serif;
+  color: #65635d;
+  text-transform: capitalize;
+  letter-spacing: 0;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-card-body h4 {
-  color: #f7f7f1;
-  font-size: clamp(16px, 2.4cqi, 29px);
-  line-height: 1.06;
+  color: #222421;
+  font: 680 clamp(17px, 2.4cqi, 30px)/1.07 Archivo, Arial, sans-serif;
+  letter-spacing: -.04em;
   text-wrap: balance;
-  margin: 7px 0 0;
+  margin: 5px 0 0;
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-open {
-  bottom: auto;
-  right: 12px;
-  top: 12px;
+  top: auto;
+  right: 13px;
+  bottom: 13px;
   z-index: 2;
-  min-height: 38px;
-  padding: 8px 12px;
-  border-radius: 24px;
-  background: rgba(244,245,237,0.91);
-  color: #192019;
+  min-height: 44px;
+  padding: 11px 15px;
+  border-radius: 25px;
+  color: #222421;
+  background: #fff;
+  box-shadow: 0 2px 12px #22242112;
+}
+/* Native candidate dialog uses the application's existing neutral workbench.
+ * No independent product shell or faux cinematic instrumentation. */
+.iw-app .iw-liquid-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: clamp(18px, 3vw, 30px);
+  background: #fafaf6;
+  border: 1px solid #dededb;
+  border-radius: 20px;
+  color: #222421;
+  overflow: auto;
+  box-shadow: 0 30px 90px #11111125;
+}
+.iw-app .iw-liquid-dialog::backdrop {
+  background: #222421aa;
+}
+.iw-app .iw-liquid-dialog .iw-liquid-detail {
+  outline: none;
+}
+.iw-app .iw-liquid-dialog .iw-liquid-detail > .iw-liquid-back {
+  margin-bottom: 20px;
+}
+.iw-app .iw-liquid-dialog .iw-liquid-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
+  background: white;
+}
+.iw-app .iw-liquid-dialog .iw-liquid-card-body {
+  padding: clamp(18px, 3vw, 36px);
+}
+.iw-app .iw-liquid-dialog .iw-liquid-card .iw-liquid-artwork img {
+  min-height: 330px;
+  height: 100%;
+  max-height: none;
 }
 @container (max-width: 720px) {
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0,1fr));
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item:first-child {
     grid-column: span 2;
     grid-row: auto;
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0,1fr));
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item {
     grid-column: span 1;
@@ -326,13 +367,23 @@
 }
 @container (max-width: 450px) {
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0,1fr);
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item,
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item[data-featured="true"] {
     grid-column: 1;
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:first-child .iw-liquid-artwork {
+    aspect-ratio: 4 / 3;
+  }
+}
+@media (max-width: 660px) {
+  .iw-app .iw-liquid-dialog .iw-liquid-card {
+    display: block;
+  }
+  .iw-app .iw-liquid-dialog .iw-liquid-card .iw-liquid-artwork img {
+    min-height: 0;
+    max-height: 350px;
     aspect-ratio: 4 / 3;
   }
 }
