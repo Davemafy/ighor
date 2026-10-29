@@ -239,6 +239,44 @@
   place-items: end start;
   padding: 22px;
 }
+/* When a source supplies no photograph, its actual title becomes the art.
+   No generated venue image, stock illustration, or pretend Qloo confidence. */
+.ird-title-cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  color: #354931;
+}
+.ird-title-cover > span:first-child {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ird-title-cover > strong {
+  display: -webkit-box;
+  max-width: 100%;
+  color: #2b3d29;
+  font-size: clamp(25px, 3.15vw, 47px);
+  font-weight: 750;
+  font-stretch: 82%;
+  line-height: 0.99;
+  letter-spacing: -0.073em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
+.ird-title-cover > span:last-child {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .ird-card:first-child .ird-reference-number {
   font-size: clamp(76px, 8.8vw, 136px);
   line-height: 0.8;
