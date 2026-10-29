@@ -84,12 +84,13 @@ try {
       .filter((e) => /error|rejected/.test(e.action))
       .map((e) => ({
         action: e.action,
-        category:
-          e.outcome
-            .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
-            ?.slice(1)
-            .filter(Boolean)
-            .join(";") || "unclassified",
+        category: /^agent\.(decision|requirements)\.error$/.test(e.action)
+          ? e.outcome
+          : e.outcome
+              .match(/Diagnostic: ([^.]+)|failed \(([^)]+)\)/)
+              ?.slice(1)
+              .filter(Boolean)
+              .join(";") || "unclassified",
       })),
   });
   let first = await turn(
@@ -100,8 +101,11 @@ try {
     fullPage: true,
   });
   report.initial = diagnostic(first);
-  if (first.agentRun?.acceptance?.status !== "satisfied")
+
+  if (first.agentRun?.acceptance?.status !== "satisfied") {
     throw Error("initial_acceptance_unsatisfied");
+  }
+
   // A real owner-authored independent constraint, explicitly saved and approved.
   // This is not model output or Qloo evidence.
   await turn({

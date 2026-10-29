@@ -15,7 +15,19 @@ async function saved(page: Page): Promise<Task> {
   });
 }
 
+async function showPane(page: Page, name: "Conversation" | "Your work") {
+  const control = page
+    .getByRole("navigation", { name: "Conversation and work" })
+    .getByRole("button", { name, exact: true });
+
+  if (await control.isVisible()) {
+    await control.click();
+    await expect(control).toHaveAttribute("aria-pressed", "true");
+  }
+}
+
 async function message(page: Page, text: string) {
+  await showPane(page, "Conversation");
   const input = page.getByRole("textbox", {
     name: "Message Igor",
     exact: true,
@@ -58,6 +70,7 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
     "I want to launch a small listening bar for people into alternative music and independent art. Help me make it distinctive without overspending.",
   );
   expect(task.work?.documents).toHaveLength(8);
+  await showPane(page, "Your work");
   const surface = page.getByRole("complementary", { name: "Connected work" });
   await expect(surface).toBeVisible();
   await surface
@@ -142,6 +155,7 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
 
   await surface.getByRole("button", { name: "Close expanded work" }).click();
   await expect(surface).not.toHaveClass(/ic-fullscreen/);
+  await showPane(page, "Conversation");
   await expect(page.locator(".iw-message.iw-assistant").last()).toContainText(
     "Launch brief: saved your wording.",
   );
@@ -222,6 +236,7 @@ test("technical recommendation changes audience without replacing its decision o
   ).toEqual(unrelated);
   expect(task.receipts!.every((r) => r.culturalRequests === 0)).toBe(true);
   expect(report.content).toContain("shortened for beginners");
+  await showPane(page, "Your work");
   const work = page.getByRole("complementary", { name: "Connected work" });
   await work
     .getByRole("button", { name: "Technical recommendation", exact: true })

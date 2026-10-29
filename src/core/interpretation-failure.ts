@@ -14,6 +14,10 @@ export function interpretationFailure(error: unknown): string {
   if (error instanceof z.ZodError) {
     const fields = new Set([
       "decision",
+      "argumentsJson",
+      "name",
+      "domain",
+      "fulfills",
       "workActions",
       "presentation",
       "id",
@@ -84,6 +88,18 @@ export function interpretationFailure(error: unknown): string {
   }
 
   if (error instanceof Error) {
+    if (error.message === "Model input size budget reached.") {
+      return "model input_size budget exceeded before provider request";
+    }
+
+    if (
+      /Unauthorized general-agent decision|Model selected a tool that was not offered/.test(
+        error.message,
+      )
+    ) {
+      return "invalid agent tool selection";
+    }
+
     const status = /(?:Gemini|OpenAI) returned HTTP (\d{3})/.exec(
       error.message,
     );

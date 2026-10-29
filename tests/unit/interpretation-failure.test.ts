@@ -27,3 +27,9 @@ it("distinguishes provider HTTP failure and invalid JSON", () => {
     "invalid JSON",
   );
 });
+
+it("categorizes a local model input limit without exposing request content", () => {
+  expect(
+    interpretationFailure(new Error("Model input size budget reached.")),
+  ).toBe("model input_size budget exceeded before provider request");
+});
