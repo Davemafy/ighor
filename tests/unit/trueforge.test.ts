@@ -18,9 +18,7 @@ const successfulStream = [
   'data: {"type":"model.message.delta","thread_id":"subagent-1","content":"Do not include this"}',
   'data: {"type":"model.message.delta","thread_id":"main","content":"candidate."}',
   'data: {"type":"turn.done","state":{"status":"done","output":{"content":"An observed candidate."},"required_actions":[]}}',
-  "",
-  "",
-].join("\n");
+].join("\n\n") + "\n\n";
 
 function turn(body = successfulStream) {
   return new Response(body, {
@@ -151,9 +149,7 @@ describe("TrueForge opt-in safety boundary", () => {
         'data: {"type":"model.message.delta","thread_id":"main","content":"Validated placeholder"}',
         'data: {"type":"model.message.delta","thread_id":"subagent-2","content":"Bad output"}',
         'data: {"type":"turn.done","state":{"status":"done","output":null,"required_actions":[]}}',
-        "",
-        "",
-      ].join("\n")),
+      ].join("\n\n") + "\n\n"),
     );
 
     expect(answer).toBe("Validated placeholder");
