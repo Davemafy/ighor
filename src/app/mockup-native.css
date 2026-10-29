@@ -1,0 +1,461 @@
+/* Igor mockup-to-native visual foundation.
+   Source: existing Igor identity, not an additional UI framework.
+   All selectors are scoped to the native /app route. CSS remains alongside
+   the current components until the Tailwind v4 migration is lockfile-verified. */
+.iw-app.igor-mockup {
+  --igor-ink: #141414;
+  --igor-paper: #fbfaf8;
+  --igor-soft: #f3f1ed;
+  --igor-line: #deddd7;
+  --igor-subtle: #73716c;
+  --igor-signal: #f36b45;
+  color: var(--igor-ink);
+  background: var(--igor-paper);
+  font-family: Archivo, Arial, sans-serif;
+}
+.iw-app.igor-mockup :is(button, a, input, textarea, summary):focus-visible {
+  outline: 2px solid var(--igor-signal);
+  outline-offset: 3px;
+}
+.iw-app.igor-mockup .iw-welcome,
+.iw-app.igor-mockup .iw-inline-workspace,
+.iw-app.igor-mockup .iw-inline-workspace .iw-thread,
+.iw-app.igor-mockup .iw-inline-workspace .iw-workbar,
+.iw-app.igor-mockup .iw-inline-workspace .iw-workspace-footer {
+  background: var(--igor-paper);
+}
+.iw-app.igor-mockup.iw-active::before,
+.iw-app.igor-mockup .iw-welcome::before,
+.iw-app.igor-mockup .iw-inline-output::before {
+  display: none;
+}
+
+/* Source-locked visual hierarchy: quiet navigation, work as protagonist. */
+@media (min-width: 761px) {
+  .iw-app.igor-mockup {
+    --iw-rail: 94px;
+    padding-left: 94px;
+  }
+  .iw-app.igor-mockup .iw-nav,
+  .iw-app.igor-mockup .iw-nav:is(:hover, :focus-within) {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 94px;
+    height: 100dvh;
+    padding: 22px 8px 16px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #0d0d0d;
+    color: #fafaf8;
+    transition: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 23px;
+  }
+  .iw-app.igor-mockup .iw-nav .iw-brand {
+    min-width: 0;
+    width: 100%;
+    height: 48px;
+    margin: 0;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    color: #fff;
+  }
+  .iw-app.igor-mockup .iw-nav .iw-brand img {
+    min-width: 27px;
+    width: 27px;
+    filter: invert(1);
+  }
+  .iw-app.igor-mockup .iw-nav .iw-brand span {
+    font-size: 14px;
+    font-weight: 750;
+    letter-spacing: -.06em;
+  }
+  .iw-app.igor-mockup .iw-nav span,
+  .iw-app.igor-mockup .iw-nav:is(:hover, :focus-within) span {
+    opacity: 1;
+    transition: none;
+  }
+  .iw-app.igor-mockup .iw-nav nav {
+    width: 100%;
+    gap: 9px;
+  }
+  .iw-app.igor-mockup .iw-nav nav button,
+  .iw-app.igor-mockup .iw-nav .iw-new {
+    display: flex;
+    width: 100%;
+    min-height: 68px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 2px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: #bababa;
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
+    box-shadow: none;
+  }
+  .iw-app.igor-mockup .iw-nav nav button[aria-current="page"] {
+    background: #2a2a29;
+    color: #fff;
+    border-color: #3b3b39;
+  }
+  .iw-app.igor-mockup .iw-nav nav button:hover,
+  .iw-app.igor-mockup .iw-nav .iw-new:hover {
+    background: #222;
+    color: white;
+  }
+  .iw-app.igor-mockup .iw-nav .iw-new {
+    order: 2;
+    margin-top: 0;
+  }
+  .iw-app.igor-mockup .iw-nav .iw-account {
+    order: 3;
+    margin-top: auto;
+    color: #fff;
+  }
+  .iw-app.igor-mockup .iw-nav :is(nav button, .iw-new) svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+/* Display typography is intentionally distinct from high-density UI copy. */
+.iw-app.igor-mockup .iw-welcome {
+  max-width: 1210px;
+  margin: 0 auto;
+  padding: clamp(56px, 8vh, 120px) clamp(24px, 5vw, 70px) 65px;
+}
+.iw-app.igor-mockup .iw-intro h1 {
+  max-width: 950px;
+  font-family: Archivo, Arial, sans-serif;
+  font-stretch: condensed;
+  font-size: clamp(58px, 7.5vw, 116px);
+  font-weight: 900;
+  letter-spacing: -.075em;
+  line-height: .86;
+  text-wrap: balance;
+  color: #101010;
+}
+.iw-app.igor-mockup .iw-intro p {
+  max-width: 35ch;
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.35;
+  color: #51504d;
+  letter-spacing: -.025em;
+}
+.iw-app.igor-mockup .iw-welcome-compose {
+  width: min(100%, 780px);
+  margin: 35px 0 0;
+}
+.iw-app.igor-mockup .iw-composer {
+  border: 1px solid #d9d8d2;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+}
+.iw-app.igor-mockup .iw-composer:focus-within {
+  border-color: #5b5954;
+}
+.iw-app.igor-mockup .iw-composer button[type="submit"] {
+  border-radius: 7px;
+  background: #111;
+  color: #fff;
+}
+.iw-app.igor-mockup .iw-ideas {
+  max-width: 1110px;
+  gap: clamp(10px, 1.5vw, 21px);
+  margin-top: 55px;
+}
+.iw-app.igor-mockup .iw-ideas > button {
+  border-radius: 0;
+  text-align: left;
+  background: transparent;
+}
+.iw-app.igor-mockup .iw-ideas .iw-poster {
+  aspect-ratio: 4 / 5;
+  border-radius: 4px;
+  box-shadow: 0 12px 32px #16161616;
+}
+.iw-app.igor-mockup .iw-ideas h2 {
+  font-size: clamp(15px, 1.4vw, 18px);
+  font-weight: 650;
+  line-height: 1.12;
+  letter-spacing: -.035em;
+}
+.iw-app.igor-mockup .iw-ideas > button:hover .iw-poster {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 35px #16161620;
+}
+
+/* The same live Work component now gets its own responsive stage.
+   No duplicate state, invented recommendations or parallel artifact store. */
+.iw-app.igor-mockup .iw-inline-workspace .iw-workbar {
+  border-bottom: 1px solid var(--igor-line);
+}
+.iw-app.igor-mockup .iw-workbar h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -.025em;
+}
+.iw-app.igor-mockup .iw-inline-workspace .iw-messages {
+  background: var(--igor-paper);
+}
+.iw-app.igor-mockup .iw-inline-workspace .iw-message .pp-message-text {
+  color: #292929;
+  line-height: 1.6;
+}
+.iw-app.igor-mockup .iw-inline-workspace .iw-user .pp-message-text {
+  border-radius: 6px;
+  background: #eeeeeb;
+  padding: 11px 15px;
+}
+.iw-app.igor-mockup .iw-inline-output {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(23px, 3vw, 48px);
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+  isolation: isolate;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.iw-app.igor-mockup .iw-inline-output .iw-result-content {
+  width: 100%;
+  max-width: 1110px;
+  margin-inline: auto;
+}
+.iw-app.igor-mockup .iw-resource-tabs {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+  margin-bottom: 25px;
+  padding: 0 0 15px;
+  border-bottom: 1px solid #dfdedb;
+}
+.iw-app.igor-mockup .iw-resource-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 0;
+  color: #686662;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 550;
+}
+.iw-app.igor-mockup .iw-resource-tabs button[aria-pressed="true"] {
+  color: #111;
+  border-bottom-color: #111;
+  background: transparent;
+}
+.iw-app.igor-mockup .iw-resource-tabs button:hover { color: #111; }
+.iw-app.igor-mockup .iw-workspace-footer {
+  border-top: 1px solid var(--igor-line);
+}
+.iw-app.igor-mockup .iw-dock > p {
+  color: #85827b;
+  font-size: 11px;
+}
+
+/* Visually rich evidence cards, never fake photography. Source images only. */
+.iw-app.igor-mockup .ird-intro {
+  padding: 8px 0 26px;
+}
+.iw-app.igor-mockup .ird-masthead {
+  font-size: 10px;
+  letter-spacing: .09em;
+  color: #6c6a65;
+  border-bottom-color: #deddd8;
+}
+.iw-app.igor-mockup .ird-intro h2 {
+  max-width: 20ch;
+  font-size: clamp(30px, 3.4vw, 54px);
+  line-height: .99;
+  letter-spacing: -.065em;
+  color: #121212;
+}
+.iw-app.igor-mockup .ird-intro p {
+  max-width: 57ch;
+  color: #77736e;
+}
+.iw-app.igor-mockup .ird-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+  border: 0;
+}
+.iw-app.igor-mockup .ird-experience .ird-card {
+  border: 1px solid #e4e2dd;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color .18s ease, transform .18s ease;
+}
+.iw-app.igor-mockup .ird-experience .ird-card:hover {
+  border-color: #9f9e98;
+  background: #fff;
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+.iw-app.igor-mockup .ird-card-open {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  text-align: left;
+}
+.iw-app.igor-mockup .ird-cover {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+  border-radius: 0;
+  background: #eeece8;
+}
+.iw-app.igor-mockup .ird-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.iw-app.igor-mockup .ird-card-body {
+  display: flex;
+  min-height: 170px;
+  flex: 1;
+  flex-direction: column;
+  gap: 7px;
+  padding: 17px 18px 16px;
+}
+.iw-app.igor-mockup .ird-card-body h3 {
+  margin: 0;
+  font-size: clamp(17px, 1.6vw, 23px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -.04em;
+  color: #171717;
+}
+.iw-app.igor-mockup .ird-card-index,
+.iw-app.igor-mockup .ird-description {
+  color: #76736f;
+}
+.iw-app.igor-mockup .ird-card-action {
+  margin-top: auto;
+  color: #161616;
+  font-weight: 600;
+}
+.iw-app.igor-mockup .ird-filters button {
+  min-height: 40px;
+  border-radius: 4px;
+  border-color: #d9d7d2;
+  color: #595651;
+}
+.iw-app.igor-mockup .ird-filters button[aria-pressed="true"] {
+  background: #141414;
+  border-color: #141414;
+  color: #fff;
+}
+
+/* Distinct source and authored artifacts still use the same ink and geometry. */
+.iw-app.igor-mockup .iw-references article,
+.iw-app.igor-mockup .iw-decision-work,
+.iw-app.igor-mockup .ig-connected-document {
+  border-color: #e1dfda;
+}
+.iw-app.igor-mockup .iw-inline-output :is(.ig-connected-work, .ic-canvas):not(.ic-fullscreen) {
+  box-shadow: none;
+}
+.iw-app.igor-mockup .iw-inline-output :is(.ig-work-showcase, .ig-connected-paper) {
+  color: #151515;
+}
+@media (min-width: 1024px) {
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-workgrid {
+    display: grid;
+    grid-template-columns: minmax(300px, .75fr) minmax(0, 1.45fr);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-thread {
+    display: flex !important;
+    width: auto;
+    min-width: 0;
+    border-right: 1px solid var(--igor-line);
+  }
+  .iw-app.igor-mockup .iw-with-result .iw-messages {
+    overflow-y: auto;
+    padding: 30px clamp(16px, 2.2vw, 36px) 24px;
+  }
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-inline-output {
+    height: 100%;
+    min-height: 0;
+    border-left: 0;
+  }
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-workspace-footer {
+    display: grid;
+    grid-template-columns: minmax(300px, .75fr) minmax(0, 1.45fr);
+    background: var(--igor-paper);
+  }
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-dock {
+    grid-column: 1;
+    padding: 12px clamp(16px, 2.2vw, 36px);
+  }
+}
+@media (max-width: 1023px) {
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-workgrid {
+    display: block;
+    overflow-y: auto;
+  }
+  .iw-app.igor-mockup .iw-inline-workspace.iw-with-result .iw-thread {
+    display: block !important;
+    width: 100%;
+    min-height: 0;
+  }
+  .iw-app.igor-mockup .iw-with-result .iw-messages {
+    overflow: visible;
+  }
+  .iw-app.igor-mockup .iw-inline-output {
+    overflow: visible;
+    height: auto;
+    border-top: 1px solid var(--igor-line);
+  }
+}
+@media (max-width: 760px) {
+  .iw-app.igor-mockup { padding-left: 0; }
+  .iw-app.igor-mockup .iw-nav {
+    background: #fff;
+    color: #111;
+    border-bottom: 1px solid var(--igor-line);
+  }
+  .iw-app.igor-mockup .iw-welcome { padding: 60px 18px 36px; }
+  .iw-app.igor-mockup .iw-intro h1 {
+    font-size: clamp(49px, 12vw, 70px);
+  }
+  .iw-app.igor-mockup .iw-ideas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px 12px;
+  }
+  .iw-app.igor-mockup .iw-ideas h2 { font-size: 15px; }
+  .iw-app.igor-mockup .iw-inline-output { padding: 25px 18px 40px; }
+  .iw-app.igor-mockup .ird-gallery { grid-template-columns: 1fr; }
+  .iw-app.igor-mockup .ird-card-body { min-height: 0; }
+  .iw-app.igor-mockup .iw-resource-tabs { overflow-x: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iw-app.igor-mockup .iw-ideas .iw-poster,
+  .iw-app.igor-mockup .ird-experience .ird-card {
+    transition: none !important;
+    transform: none !important;
+  }
+}
