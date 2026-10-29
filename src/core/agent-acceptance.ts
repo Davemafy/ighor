@@ -41,6 +41,21 @@ export const AgentAcceptanceSchema = z.object({
   ),
 });
 
+/** Query-qualified map keys retain independent context signals. Evidence keeps
+ * its original provider-adapter identity; qualification must not invent IDs. */
+export function culturalEvidenceId(
+  candidate: { id: string; providerId: string | null },
+  scope: string,
+  signal: { queryId: string; signalScope?: "context" | "participant" },
+) {
+  const originalScope =
+    signal.signalScope === "context" && scope === `context:${signal.queryId}`
+      ? "context"
+      : scope;
+
+  return `qloo:${signal.queryId}:${originalScope}:${candidate.providerId ?? candidate.id}`;
+}
+
 export function verifyAgentOutcome(
   task: Task,
   goal: string,
@@ -136,7 +151,7 @@ export function verifyAgentOutcome(
         for (const [scope, signal] of Object.entries(
           candidate.cultural ?? {},
         )) {
-          const evidenceId = `qloo:${signal.queryId}:${scope}:${candidate.providerId ?? candidate.id}`;
+          const evidenceId = culturalEvidenceId(candidate, scope, signal);
           const evidence = task.evidence.find(
             (e) =>
               e.id === evidenceId &&

@@ -1015,3 +1015,61 @@ it("reports a verified saved document as ready without requiring a redundant web
     store.close();
   }
 });
+
+it("feeds premature finish back to the bounded loop until the requested artifact is saved", async () => {
+  const store = new SqliteTaskStore(":memory:");
+  const task = freshTask("premature-finish", "owner");
+  store.create(task);
+  let count = 0;
+
+  try {
+    await runUnifiedAgent({
+      task,
+      owner: "owner",
+      store,
+      goal: "Save an editable proposal",
+      requirements: {
+        culturalDecision: false,
+        culturalReferences: [],
+        deliverables: ["proposal"],
+      },
+      research: { research: vi.fn() },
+      trace: vi.fn(),
+      model: {
+        interpret: vi.fn(),
+        chooseAgentAction: async (_goal, _tools, observed) => {
+          count++;
+
+          if (count === 2) {
+            expect(observed[0]).toMatchObject({
+              tool: "agent.finish",
+              status: "blocked",
+            });
+            expect(observed[0].summary).toContain("proposal");
+
+            return {
+              name: "document.create",
+              arguments: {
+                title: "A useful proposal",
+                content:
+                  "A provisional, editable proposal with practical details explicitly unverified.",
+                sourceIds: [],
+                fulfills: ["proposal"],
+              },
+            };
+          }
+
+          return { name: "agent.finish", arguments: {} };
+        },
+      },
+    });
+    const saved = store.load(task.id, "owner");
+    expect(count).toBe(3);
+    expect(saved.agentRun?.status).toBe("completed");
+    expect(saved.artifacts).toHaveLength(1);
+    expect(saved.agentRun?.outputArtifactIds).toEqual([saved.artifacts[0].id]);
+    expect(saved.agentRun?.requests).toBe(0);
+  } finally {
+    store.close();
+  }
+});

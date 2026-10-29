@@ -68,7 +68,7 @@ try {
   }
 
   let first = await turn(
-    "Create and save a practical proposal for an unexpected Brooklyn community experience inspired by Sade, Radiohead and Wong Kar-wai. Keep the total budget within $3,000. Include a defensible cultural direction, provisional schedule and budget, and a partner pitch. Use cultural discovery to inform the actual choices; label unverified practical facts.",
+    "I run a 100-capacity space in Brooklyn. Our community loves Sade, Radiohead and Wong Kar-wai films. Design an unexpected Saturday experience, keep the proposed production budget under $3,000 and give me something I can pitch to partners. Save an editable proposal, provisional budget and schedule, and partner pitch. Label unverified practical facts.",
   );
   await page.screenshot({
     path: "test-results/live-flagship/01-proposal.png",
@@ -79,11 +79,15 @@ try {
   await turn({
     type: "work",
     actions: [
-      {
-        kind: "goal",
-        id: "flagship-access",
-        title: "Independent access requirement",
-      },
+      ...(task.work?.activeGoalId
+        ? []
+        : [
+            {
+              kind: "goal",
+              id: "flagship-experience",
+              title: "Community experience",
+            },
+          ]),
       {
         kind: "document",
         id: "access-principle",
@@ -100,7 +104,7 @@ try {
     actions: [{ kind: "approve", id: "access-principle" }],
   });
   const second = await turn(
-    "Replace Radiohead with Bad Bunny. Keep the $3,000 budget, Sade and Wong Kar-wai, and preserve approved independent work. Revise only dependent decisions and save the revised proposal.",
+    "Replace Radiohead with Bad Bunny. Keep approved decisions and the $3,000 budget. Show me what changes and why, and save the revised proposal.",
   );
   await page.screenshot({
     path: "test-results/live-flagship/02-revision.png",
@@ -123,8 +127,44 @@ try {
         b.id === a.id && b.content === a.content && b.status === "approved",
     ),
   );
+  const revised = loaded.artifacts.filter(
+    (artifact) =>
+      second.agentRun?.outputArtifactIds?.includes(artifact.id) &&
+      first.artifacts.some(
+        (old) => old.id === artifact.id && old.content !== artifact.content,
+      ),
+  );
+  const historyRetained =
+    revised.length > 0 &&
+    revised.every((artifact) =>
+      first.artifacts.some(
+        (old) =>
+          old.id === artifact.id &&
+          loaded.artifactHistory?.some(
+            (entry) =>
+              entry.artifact.id === old.id &&
+              entry.artifact.content === old.content,
+          ),
+      ),
+    );
+  await fs.writeFile(
+    "test-results/live-flagship/documents.json",
+    JSON.stringify(
+      {
+        initial: first.artifacts,
+        current: loaded.artifacts,
+        history: loaded.artifactHistory ?? [],
+      },
+      null,
+      2,
+    ),
+  );
   report = {
     ...report,
+    historyRetained,
+    revisedDocumentCount: revised.length,
+    firstRunId: first.agentRun?.id,
+    revisionRunId: second.agentRun?.id,
     firstStatus: first.agentRun?.status ?? first.status,
     firstRun: first.agentRun
       ? {
@@ -198,6 +238,8 @@ try {
     report.newLiveCulturalEvidence > 0 &&
     report.budgetRetained &&
     report.reloadStable &&
+    historyRetained &&
+    first.agentRun?.id !== second.agentRun?.id &&
     approved.length > 0 &&
     approvedPreserved;
 } catch (error) {

@@ -387,7 +387,9 @@ export function createAgentToolRegistry(
             ...candidate,
             cultural: Object.fromEntries(
               Object.entries(candidate.cultural ?? {}).map(([key, signal]) => [
-                key === "context" ? `context:${signal.queryId}` : key,
+                key === "context" && signal.signalScope === "context"
+                  ? `context:${signal.queryId}`
+                  : key,
                 signal,
               ]),
             ),

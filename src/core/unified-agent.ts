@@ -1,3 +1,4 @@
+import { recordArtifactChanges } from "./preserve-artifacts";
 import { applyConversationActions } from "./conversation";
 import { invalidate } from "./revision";
 import { z } from "zod";
@@ -167,6 +168,7 @@ export async function runUnifiedAgent(
   const attempted = new Set<string>();
   let modelFinished = false;
   let argumentRepairs = 0;
+  let finishRepairs = 0;
   task.agentRun.status = "reasoning";
 
   try {
@@ -347,6 +349,46 @@ export async function runUnifiedAgent(
     }
 
     if (selected.name === "agent.finish") {
+      const acceptance = verifyAgentOutcome(task, input.goal, true);
+      const obligations = run.requirements;
+      const paidFailure = run.steps.some(
+        (step) =>
+          step.requests > 0 &&
+          (step.status === "blocked" || step.status === "error"),
+      );
+
+      if (
+        acceptance.status !== "satisfied" &&
+        obligations &&
+        (obligations.culturalDecision || obligations.deliverables.length > 0) &&
+        !paidFailure &&
+        finishRepairs++ < 2
+      ) {
+        const missing = acceptance.checks
+          .filter((check) => check.status !== "satisfied")
+          .map((check) => check.requirement)
+          .join("; ");
+        run.steps.push({
+          id: randomUUID(),
+          tool: "agent.finish",
+          status: "blocked",
+          requests: 0,
+          summary:
+            `Completion is not verified: ${missing}. Continue with authorized tools; resolved seeds alone are not cultural discovery, and requested deliverables must be saved.`.slice(
+              0,
+              600,
+            ),
+          at: now(),
+          durationMs: 0,
+        });
+        trace(
+          "agent.finish.blocked",
+          "Unmet acceptance requirements returned to the bounded agent loop.",
+        );
+        persist();
+        continue;
+      }
+
       modelFinished = true;
       trace(
         "agent.finish",
@@ -421,6 +463,8 @@ export async function runUnifiedAgent(
       );
 
       if (outcome.status === "ok" || outcome.status === "partial") {
+        recordArtifactChanges(workingTask, structuredClone(task.artifacts));
+        task.artifactHistory = workingTask.artifactHistory;
         task.entities = workingTask.entities;
         task.catalogue = workingTask.catalogue;
         task.candidates = workingTask.candidates;

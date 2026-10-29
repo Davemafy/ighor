@@ -250,6 +250,7 @@ it("executes the Brooklyn revision against persisted work; stale Radiohead evide
   const task = culturalTask();
   bindCulture(task, ["provider-0", "provider-1", "provider-2"], "old");
   const artifactId = task.artifacts[0].id;
+  const originalContent = task.artifacts[0].content;
   const approved = {
     ...task.artifacts[0],
     id: "approved-independent",
@@ -311,6 +312,13 @@ it("executes the Brooklyn revision against persisted work; stale Radiohead evide
     expect(loaded.artifacts.find((a) => a.id === artifactId)?.id).toBe(
       artifactId,
     );
+    expect(
+      loaded.artifactHistory?.some(
+        (entry) =>
+          entry.artifact.id === artifactId &&
+          entry.artifact.content === originalContent,
+      ),
+    ).toBe(true);
     expect(loaded.artifacts.find((a) => a.id === approved.id)).toEqual(
       originalApproved,
     );
@@ -318,4 +326,29 @@ it("executes the Brooklyn revision against persisted work; stale Radiohead evide
   } finally {
     store.close();
   }
+});
+
+it("query-qualified context signals retain their original evidence identities", async () => {
+  const { culturalEvidenceId } =
+    await import("../../src/core/agent-acceptance");
+  const task = culturalTask();
+  bindCulture(task, ["provider-0", "provider-1", "provider-2"]);
+  const signal = task.catalogue[0].cultural!.context;
+  task.catalogue[0].cultural = { [`context:${signal.queryId}`]: signal };
+  expect(verifyAgentOutcome(task, brooklyn, true).status).toBe("satisfied");
+  task.evidence[0].freshness = "stale";
+  expect(verifyAgentOutcome(task, brooklyn, true).status).toBe("unknown");
+  const candidate = { id: "candidate", providerId: "provider-id" };
+  expect(
+    culturalEvidenceId(candidate, "context:actual-query", {
+      queryId: "actual-query",
+      signalScope: "context",
+    }),
+  ).toBe("qloo:actual-query:context:provider-id");
+  expect(
+    culturalEvidenceId(candidate, "participant-id", {
+      queryId: "actual-query",
+      signalScope: "participant",
+    }),
+  ).toBe("qloo:actual-query:participant-id:provider-id");
 });

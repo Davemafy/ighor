@@ -142,6 +142,7 @@ test("recorded cultural outcome → collection → export → independent review
   const url = await page.getByLabel("Your review link").inputValue();
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
+  let reviewPhase = "guest-open";
 
   try {
     await guest.goto(url);
@@ -179,6 +180,7 @@ test("recorded cultural outcome → collection → export → independent review
         (p) => p.value === "Radiohead",
       )?.polarity,
     ).toBe("like");
+    reviewPhase = "owner-refresh";
     await page
       .getByRole("button", {
         name: "Refresh",
@@ -188,6 +190,7 @@ test("recorded cultural outcome → collection → export → independent review
     await expect(
       page.getByText("Please retain the listening interlude.", { exact: true }),
     ).toBeVisible();
+    reviewPhase = "owner-apply-preference";
     await page
       .getByRole("button", {
         name: "Apply proposed preference",
@@ -209,12 +212,17 @@ test("recorded cultural outcome → collection → export → independent review
       before.brief.participants.slice(1),
     );
     expect(after.receipts?.at(-1)?.culturalRequests).toBe(0);
+    reviewPhase = "owner-revoke";
     await page.getByRole("button", { name: "Revoke", exact: true }).click();
+    reviewPhase = "guest-revocation-check";
     await guest.reload();
     await expect(
       guest.getByRole("alert").filter({ hasText: /unavailable.*expired/ }),
     ).toContainText("unavailable or has expired");
   } finally {
+    test
+      .info()
+      .annotations.push({ type: "review-phase", description: reviewPhase });
     await guestContext.close();
   }
 });

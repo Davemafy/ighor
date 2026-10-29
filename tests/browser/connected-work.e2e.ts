@@ -89,6 +89,31 @@ test("existing chat UI carries a listening-bar concept through approvals, edits,
     "Invite a small pilot community. This sentence is my exact wording.",
   );
   await surface.getByRole("button", { name: "Preview" }).click();
+  const compareControl = surface.getByRole("button", {
+    name: "Compare saved versions",
+  });
+  const compareCount = await compareControl.count();
+  test.info().annotations.push({
+    type: "compare-control",
+    description: JSON.stringify({
+      count: compareCount,
+      visible: compareCount === 1 ? await compareControl.isVisible() : false,
+      geometry:
+        compareCount === 1
+          ? await compareControl.evaluate((el) => {
+              const r = el.getBoundingClientRect();
+
+              return {
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+                viewportHeight: innerHeight,
+              };
+            })
+          : null,
+    }),
+  });
   await surface.getByRole("button", { name: "Compare saved versions" }).click();
   const compared = surface.locator(".ig-work-version-pair");
   await expect(compared).toContainText("PREVIOUS");
