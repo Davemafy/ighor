@@ -197,6 +197,17 @@ describe("read-only conversation routing across the entire thread", () => {
 
 it("honors Gemini's configured deadline for a route that returns after the old 14-second cutoff", async () => {
   vi.useFakeTimers();
+  const timeout = vi
+    .spyOn(AbortSignal, "timeout")
+    .mockImplementation((milliseconds) => {
+      const controller = new AbortController();
+      setTimeout(
+        () => controller.abort(new DOMException("Timed out", "TimeoutError")),
+        milliseconds,
+      );
+
+      return controller.signal;
+    });
   const transport = vi.fn(
     async (_url: string | URL | Request, init?: RequestInit) =>
       new Promise<Response>((resolve, reject) => {
@@ -235,6 +246,7 @@ it("honors Gemini's configured deadline for a route that returns after the old 1
     await expected;
     expect(transport).toHaveBeenCalledTimes(1);
   } finally {
+    timeout.mockRestore();
     vi.useRealTimers();
   }
 });

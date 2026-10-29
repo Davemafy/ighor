@@ -37,7 +37,8 @@ export {
 export class LiveQlooProvider implements CulturalProvider {
   timeoutMs = 120000;
 
-  private deadline = Date.now() + 110000;
+  // Model reasoning between tool calls must not spend the Qloo I/O budget.
+  private activeTimeMs = 0;
 
   calls = 0;
 
@@ -81,7 +82,7 @@ export class LiveQlooProvider implements CulturalProvider {
       );
     }
 
-    if (this.calls >= this.maxCalls || Date.now() > this.deadline) {
+    if (this.calls >= this.maxCalls || this.activeTimeMs >= 110000) {
       throw new ProviderFailure(
         "partial",
         "Qloo per-run request/time cap reached. Cached results remain available.",
@@ -89,75 +90,86 @@ export class LiveQlooProvider implements CulturalProvider {
     }
 
     this.calls++;
-    let response: Response;
+    const started = performance.now();
 
     try {
-      response = await this.transport(url, {
-        headers: { "X-Api-Key": this.key, Accept: "application/json" },
-        redirect: "error",
-        cache: "no-store",
-        signal: AbortSignal.timeout(4000),
-      });
-    } catch {
-      throw new ProviderFailure(
-        "error",
-        "Qloo request failed or timed out; no retry was made.",
-      );
-    }
+      let response: Response;
 
-    if (!response.ok) {
-      throw new ProviderFailure(
-        response.status === 401 || response.status === 403
-          ? "blocked"
-          : "error",
-        response.status === 429
-          ? "Qloo rate limit reached; no retry was made."
-          : `Qloo returned HTTP ${response.status}.`,
-      );
-    }
-
-    const length = Number(response.headers.get("content-length") ?? 0);
-
-    if (length > 1000000) {
-      throw new ProviderFailure("error", "Qloo response too large.");
-    }
-
-    let responseText: string;
-
-    try {
-      responseText = await readResponseText(response, 1000000);
-    } catch (error) {
-      if (error instanceof ResponseBodyError) {
+      try {
+        response = await this.transport(url, {
+          headers: { "X-Api-Key": this.key, Accept: "application/json" },
+          redirect: "error",
+          cache: "no-store",
+          signal: AbortSignal.timeout(
+            Math.max(1, Math.min(4000, 110000 - this.activeTimeMs)),
+          ),
+        });
+      } catch {
         throw new ProviderFailure(
           "error",
-          error.reason === "missing"
-            ? "Qloo response body missing."
-            : "Qloo response too large.",
+          "Qloo request failed or timed out; no retry was made.",
         );
       }
 
-      throw error;
+      if (!response.ok) {
+        throw new ProviderFailure(
+          response.status === 401 || response.status === 403
+            ? "blocked"
+            : "error",
+          response.status === 429
+            ? "Qloo rate limit reached; no retry was made."
+            : `Qloo returned HTTP ${response.status}.`,
+        );
+      }
+
+      const length = Number(response.headers.get("content-length") ?? 0);
+
+      if (length > 1000000) {
+        throw new ProviderFailure("error", "Qloo response too large.");
+      }
+
+      let responseText: string;
+
+      try {
+        responseText = await readResponseText(response, 1000000);
+      } catch (error) {
+        if (error instanceof ResponseBodyError) {
+          throw new ProviderFailure(
+            "error",
+            error.reason === "missing"
+              ? "Qloo response body missing."
+              : "Qloo response too large.",
+          );
+        }
+
+        throw error;
+      }
+
+      let body: QlooBody;
+
+      try {
+        body = QlooEnvelopeSchema.parse(JSON.parse(responseText));
+      } catch {
+        throw new ProviderFailure(
+          "error",
+          "Qloo response schema was not recognized.",
+        );
+      }
+
+      if (JSON.stringify(body).includes(this.key)) {
+        throw new ProviderFailure(
+          "error",
+          "Unsafe provider response rejected.",
+        );
+      }
+
+      const at = new Date().toISOString();
+      this.cache.set(id, { body, at });
+
+      return { body, at, delivery: "LIVE" as const, id, requests: 1 };
+    } finally {
+      this.activeTimeMs += Math.max(0, performance.now() - started);
     }
-
-    let body: QlooBody;
-
-    try {
-      body = QlooEnvelopeSchema.parse(JSON.parse(responseText));
-    } catch {
-      throw new ProviderFailure(
-        "error",
-        "Qloo response schema was not recognized.",
-      );
-    }
-
-    if (JSON.stringify(body).includes(this.key)) {
-      throw new ProviderFailure("error", "Unsafe provider response rejected.");
-    }
-
-    const at = new Date().toISOString();
-    this.cache.set(id, { body, at });
-
-    return { body, at, delivery: "LIVE" as const, id, requests: 1 };
   }
 
   private failure<T>(e: unknown, start: number, data: T): ToolResult<T> {

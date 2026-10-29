@@ -75,11 +75,25 @@ try {
     status: t.agentRun?.status ?? t.status,
     acceptance: t.agentRun?.acceptance?.status ?? null,
     usage: t.agentRun?.usage ?? null,
-    steps: (t.agentRun?.steps ?? []).map(({ tool, status, requests }) => ({
-      tool,
-      status,
-      requests,
+    resolvedEntities: t.entities
+      .filter((e) => e.status === "resolved")
+      .map(({ name, type, providerId }) => ({ name, type, providerId })),
+    culturalEvidence: t.evidence
+      .filter((e) => e.kind === "cultural")
+      .map(({ id, delivery, freshness }) => ({ id, delivery, freshness })),
+    savedDocuments: documents(t).map(({ id, title, content }) => ({
+      id,
+      title,
+      characters: content.length,
     })),
+    steps: (t.agentRun?.steps ?? []).map(
+      ({ tool, status, requests, summary }) => ({
+        tool,
+        status,
+        requests,
+        summary: summary.slice(0, 600),
+      }),
+    ),
     failureCategories: t.trace
       .filter((e) => /error|rejected/.test(e.action))
       .map((e) => ({

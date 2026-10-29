@@ -121,3 +121,22 @@ snapshots and never overwrites existing state. Two local recovery tests and
 typecheck pass. Actual hosting volume/backup configuration remains unverified.
 See `docs/operations/PERSISTENCE_RECOVERY.md` for the operator contract. No private
 snapshot or database is included in source or CI artifacts.
+
+## Qloo budget correction
+
+The resumed `2803c4c` live attempt resolved all three anchors, then discovery
+returned partial with zero requests; subsequent Gemini selection returned HTTP 503. A matching deterministic failure was found in the adapter: a 110-second wall
+clock deadline began at provider construction and expired during model reasoning.
+It now accounts only active Qloo I/O time, retaining the request cap, cache behavior
+and maximum 4-second individual request deadline. A regression advances the clock
+through two 80-second model pauses and proves discovery is still allowed, then
+proves the request cap and cached-only reads still hold.
+
+Qloo discovery errors retain their error status at the registry boundary instead
+of being mislabeled partial. The live verifier now retains safe step summaries,
+resolved IDs, evidence provenance and saved-document counts even when initial
+acceptance fails. Fake-clock model deadline regressions explicitly mock abort
+signals so the old 14/15-second deadlines actually fail those tests.
+
+Focused recovery/provider regressions: 30 passed locally; typecheck passes. The
+new source still requires exact-head external CI and live acceptance.

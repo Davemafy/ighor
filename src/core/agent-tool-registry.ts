@@ -507,7 +507,9 @@ export function createAgentToolRegistry(
               ? "ok"
               : result.status === "blocked"
                 ? "blocked"
-                : "partial",
+                : result.status === "error"
+                  ? "error"
+                  : "partial",
           requests: result.requestCount,
           culturalSeedIds: [entity.providerId!],
           summary:

@@ -513,6 +513,17 @@ describe("Gemini backend adapter (mock HTTP; not additional live API calls)", ()
 
 it("lets a valid post-discovery composition decision outlast 15 seconds within Gemini's configured deadline", async () => {
   vi.useFakeTimers();
+  const timeout = vi
+    .spyOn(AbortSignal, "timeout")
+    .mockImplementation((milliseconds) => {
+      const controller = new AbortController();
+      setTimeout(
+        () => controller.abort(new DOMException("Timed out", "TimeoutError")),
+        milliseconds,
+      );
+
+      return controller.signal;
+    });
   const actions = [
     {
       kind: "document",
@@ -578,6 +589,7 @@ it("lets a valid post-discovery composition decision outlast 15 seconds within G
     expect(model.calls).toBe(1);
     expect(transport).toHaveBeenCalledTimes(1);
   } finally {
+    timeout.mockRestore();
     vi.useRealTimers();
   }
 });
