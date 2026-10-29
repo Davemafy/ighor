@@ -110,6 +110,17 @@ test("real desktop research view is editorial and does not dump URLs or activity
   );
   const imageBox = await gallery.locator("img").boundingBox();
   expect(imageBox!.width).toBeGreaterThan(250);
+  // Source-backed media leads the composition; missing photography becomes
+  // numbered type, not an invented venue image or generic file icon.
+  await expect(gallery.locator(".ird-card").first()).toHaveCSS(
+    "border-radius",
+    "0px",
+  );
+  await expect(gallery.locator(".ird-reference-number")).toContainText("02");
+  await expect(page.locator(".iw-work-stage")).toHaveCSS(
+    "scrollbar-gutter",
+    "auto",
+  );
   await expect(gallery.getByText("About these sources")).toBeVisible();
   await gallery.getByRole("button", { name: "Open A board-game cafe" }).click();
   const detail = page.getByRole("dialog", { name: "A closer look" });
