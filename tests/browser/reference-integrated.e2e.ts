@@ -5,7 +5,7 @@ test("cinematic Home accepts arbitrary editable prompts without domain intake", 
   await expect(page.getByRole("heading", { name: /Your agent.*With taste/i })).toBeVisible();
   await expect(page.getByRole("button", { name: "Research a topic" })).toBeVisible();
   await page.getByRole("button", { name: "Research a topic" }).click();
-  await expect(page.getByRole("textbox", { name: "Message Igor" })).toContainText("research a topic");
+  await expect(page.getByRole("textbox", { name: "Message Igor" })).toHaveValue(/research a topic/);
   await page.getByRole("textbox", { name: "Message Igor" }).fill("Explain the major differences between two database indexes.");
   await expect(page.getByRole("textbox", { name: "Message Igor" })).toHaveValue(/database indexes/);
   await page.screenshot({ path: "test-results/reference-native-home-desktop.png" });
