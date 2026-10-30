@@ -170,6 +170,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const [category, setCategory] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [comparisonIds, setComparisonIds] = useState<string[]>([]);
+  const [comparisonEdited, setComparisonEdited] = useState(false);
   const [planTab, setPlanTab] = useState<"overview" | "itinerary" | "map" | "options" | "notes">("overview");
   const candidates = vm.candidates.filter((c) => !c.sample && (!("freshness" in c) || c.freshness === "current"));
   const categories = ["all", "places", "films", "music", "books", "dining", "experiences", "ideas"];
@@ -194,8 +195,9 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const emptyDiscovery = candidates.length === 0;
 
   const chosen = (selectedId && vm.candidateById.get(selectedId)) || filtered[0] || candidates[0];
-  const comparedIds = comparisonIds.length ? comparisonIds : task.canvas?.comparisonIds.length
-    ? task.canvas.comparisonIds : task.brief.selected.length ? task.brief.selected : candidates.slice(0, 3).map((c) => c.id);
+  const originalComparisonIds = task.canvas?.comparisonIds.length
+    ? task.canvas.comparisonIds : task.brief.selected.length ? task.brief.selected : candidates.slice(0, 4).map((c) => c.id);
+  const comparedIds = comparisonEdited ? comparisonIds : originalComparisonIds.slice(0, 4);
   const compared = comparedIds.map((id) => vm.candidateById.get(id)).filter((c): c is Candidate => !!c);
   const proposalNode = task.canvas?.surface.nodes.find((node) => node.type === "discovery" || node.type === "spatial");
 
@@ -214,7 +216,11 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
     }
   }
   function toggleCompare(id: string) {
-    setComparisonIds((old) => old.includes(id) ? old.filter((entry) => entry !== id) : old.length >= 4 ? old : [...old, id]);
+    const current = comparisonEdited ? comparisonIds : originalComparisonIds.slice(0, 4);
+    setComparisonIds(current.includes(id)
+      ? current.filter((entry) => entry !== id)
+      : current.length >= 4 ? current : [...current, id]);
+    setComparisonEdited(true);
   }
   const heading = view === "discover" ? "Explore" : view === "compare" ? "Compare" :
     view === "plan" ? task.brief.goal || "Connected work" :
@@ -300,37 +306,80 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
       )}
 
       {view === "compare" && (
-        <>
+        <div className="ir-comparison-workspace">
+          <div className="ir-comparison-toolbar">
+            <div className="ir-compare-domains" role="group" aria-label="Comparison category">
+              {["all", "films", "music", "dining", "experiences"].map((tab) => (
+                <button key={tab} aria-pressed={category === tab} onClick={() => setCategory(tab)}>
+                  {tab === "all" ? "All" : tab === "films" ? "Films" : tab[0].toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+            <button className="ir-clear-comparison" onClick={() => {setComparisonIds([]);setComparisonEdited(true);}}>
+              Clear all
+            </button>
+          </div>
           <div className="ir-compare-picker" role="group" aria-label="Choose candidates to compare">
-            {candidates.map((c) => <button key={c.id} aria-pressed={comparedIds.includes(c.id)}
-              onClick={() => toggleCompare(c.id)}>{comparedIds.includes(c.id) ? <Check size={14}/> : <Plus size={14}/>} {c.name}</button>)}
+            {candidates.filter(matchesCategory).map((candidate) => (
+              <button key={candidate.id} aria-pressed={comparedIds.includes(candidate.id)}
+                onClick={() => toggleCompare(candidate.id)}>
+                {comparedIds.includes(candidate.id) ? <Check size={14}/> : <Plus size={14}/>}
+                {candidate.name}
+              </button>
+            ))}
           </div>
           {compared.length ? (
-            <div className="ir-matrix-scroll" tabIndex={0} aria-label="Scrollable candidate comparison">
-              <div className="ir-matrix" style={{gridTemplateColumns: `repeat(${compared.length}, minmax(220px, 1fr))`}}>
-                {compared.map((c) => <article className="ir-matrix-column" key={c.id}>
-                  <button className="ir-card-open" onClick={() => {setSelectedId(c.id);onNavigate("detail");}}>
-                    <CandidateMedia candidate={c} wide/><strong>{c.name}</strong><span>{typeLabel(c.type)}</span>
-                  </button>
-                  <div className="ir-matrix-metric"><small>Practical constraints</small>
-                    <p>Cost · {fact(c.cost.value)} {task.brief.constraints.currency}</p>
-                    <p>Duration · {c.duration.value == null ? "Not checked" : c.duration.value + " min"}</p>
-                    <p>Availability · {c.available == null ? "Not checked" : c.available ? "Reported available" : "Reported unavailable"}</p>
-                  </div>
-                  <div className="ir-matrix-metric"><small>People and query-scoped evidence</small>
-                    <CandidateSignals task={task} candidate={c} vm={vm}/>
-                  </div>
-                  <div className="ir-matrix-metric"><small>Sources</small>
-                    {vm.evidenceForCandidate(c.id).length ? vm.evidenceForCandidate(c.id).map((s) => <p key={s.id}>{s.title || s.summary.slice(0, 80)}</p>)
-                      : <p>None returned</p>}
-                  </div>
-                  <button className="ir-primary" disabled={busy} onClick={() => void addToWork(c.id)}><Plus size={17}/> Add to work</button>
-                </article>)}
+            <div className="ir-matrix-scroll" tabIndex={0} aria-label="Scrollable side by side comparison">
+              <div className="ir-matrix" style={{gridTemplateColumns: `repeat(${compared.length}, minmax(240px, 1fr))`}}>
+                {compared.map((candidate) => {
+                  const signals = vm.culturalSignalsForCandidate(candidate.id);
+                  const participants = task.brief.participants.filter((person) => !person.sample || task.mode === "illustrative-fixtures");
+                  return (
+                    <article className="ir-matrix-column" key={candidate.id}>
+                      <button className="ir-comparison-cover" onClick={() => {setSelectedId(candidate.id);onNavigate("detail");}}
+                        aria-label={`Open details for ${candidate.name}`}>
+                        <CandidateMedia candidate={candidate} wide />
+                        <strong>{candidate.name}</strong>
+                      </button>
+                      <div className="ir-comparison-people">
+                        {participants.length ? participants.map((person) => {
+                          const signal = signals.find((entry) => entry.participantId === person.id);
+                          return (
+                            <div className="ir-comparison-person" key={person.id}>
+                              <span className="ir-person-avatar" aria-hidden="true">{person.name.slice(0,1).toUpperCase()}</span>
+                              <div className="ir-person-signal">
+                                <div className="ir-person-topline">
+                                  <strong>{person.name}</strong>
+                                  <span>{signal ? `Rank #${signal.rankWithinQuery} · ${signal.rawAffinity ?? "—"}` : "Not scored"}</span>
+                                </div>
+                                <small>{signal ? `Within Qloo query ${signal.queryId}` :
+                                  person.preferences.filter((pref) => pref.confirmed).slice(0,2).map((pref) => pref.value).join(" · ") || "No comparable taste signal"}</small>
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <div className="ir-compare-no-people">
+                            <strong>Personal taste signals unavailable</strong>
+                            <p>Compare sourced attributes instead. Igor will not invent people or affinity scores.</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="ir-compare-practical">
+                        <p><span>Duration</span><strong>{candidate.duration.value == null ? "Unknown" : candidate.duration.value + " min"}</strong></p>
+                        <p><span>Cost</span><strong>{candidate.cost.value == null ? "Unknown" : candidate.cost.value + " " + task.brief.constraints.currency}</strong></p>
+                        <p><span>Availability</span><strong>{candidate.available == null ? "Not checked" : candidate.available ? "Reported available" : "Reported unavailable"}</strong></p>
+                      </div>
+                      <button className="ir-compare-add" disabled={busy} onClick={() => void addToWork(candidate.id)}>
+                        <Plus size={21}/> Add to plan
+                      </button>
+                    </article>
+                  );
+                })}
               </div>
             </div>
-          ) : <div className="ir-empty">No comparable candidates. Open Explore to begin.</div>}
-          <p className="ir-footnote">Ranks are within each returned Qloo query. Raw affinities from different queries are not comparable and are never averaged here.</p>
-        </>
+          ) : <div className="ir-empty"><h3>No options selected</h3><p>Select candidates above, or discover some first.</p></div>}
+          <p className="ir-footnote">Qloo ranks and raw affinity values belong to individual queries. Missing or incomparable values are never manufactured or averaged.</p>
+        </div>
       )}
 
       {view === "detail" && (chosen ? (
