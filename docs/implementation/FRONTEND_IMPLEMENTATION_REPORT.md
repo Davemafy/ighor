@@ -23,8 +23,8 @@
 
 **Code additions/refinements:**
 - `src/components/reference-work.tsx`: canonical-data views rather than 12 disconnected demos.
-- `src/components/workspace-view-model.ts`: schema validation and stable data selectors.
-- `src/components/workspace-api.ts`: additive snapshot GET, preserving turn transport.
+- `src/components/workspace-view-model.ts`: validated `TaskSchema` projection and stable read-only data selectors, with no independent state store.
+- `src/components/workspace-api.ts`: existing authenticated Task GET, turns and recovery transport preserved; the unsupported snapshot GET was removed.
 - `src/components/agent-workspace.tsx`: navigation and view integration; existing engine hooks, SSE, edits and persistence retained.
 - `src/app/mockup-native.css`: consolidated Igor styling and responsive reference geometry (no new UI framework).
 - `src/app/app/page.tsx`: deep-link the new views.
