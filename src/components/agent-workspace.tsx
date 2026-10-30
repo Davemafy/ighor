@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Compass, FilePlus2, Map, Home as HomeIcon, UserRound } from "lucide-react";
+import { Compass, FilePlus2, Heart, Map, Home as HomeIcon, UserRound } from "lucide-react";
 import { AccountDialog } from "./account-panel";
 import { Connections } from "./connections-view";
 import { ReferenceWork } from "./reference-work";
@@ -80,6 +80,7 @@ export function AgentWorkspace({
   const [accountOpen, setAccountOpen] = useState(false);
   const [page, setPage] = useState<Page>(initialPage);
   const [prompt, setPrompt] = useState("");
+  const [storyShortlist, setStoryShortlist] = useState<string[]>([]);
   const [menu, setMenu] = useState(false);
   const [exploreView, setExploreView] = useState<"discover" | "compare" | "plan" | "detail" | "revisions" | "maps">("discover");
   const [historyError, setHistoryError] = useState("");
@@ -488,35 +489,34 @@ export function AgentWorkspace({
               ))}
             </div>
             <div className="iw-ideas" aria-label="Ways to begin">
-              {starts.map((s, i) => (
-                <button
-                  key={s.title}
-                  disabled={!task || w.isBusy}
-                  onClick={() => {
-                    setPrompt(s.prompt);
-                    input.current?.focus();
-                  }}
-                >
-                  <div className="iw-poster">
+              {starts.map((story) => (
+                <article className="iw-story-card" key={story.title}>
+                  <button className="iw-story-open" disabled={!task || w.isBusy}
+                    onClick={() => { setPrompt(story.prompt); input.current?.focus(); }}
+                    aria-label={`Start: ${story.title}`}>
                     <img
-                      src={`/reference-art/${s.image}`}
+                      src={`/reference-art/${story.image}`}
                       alt=""
                       loading="eager"
                       onError={(event) => {
-                        const fallback = assets + s.fallback;
+                        const fallback = assets + story.fallback;
                         if (event.currentTarget.src !== new URL(fallback, location.origin).href) {
                           event.currentTarget.src = fallback;
                         }
                       }}
                     />
-                    <span className="iw-poster-number">0{i + 1}</span>
-                  </div>
-                  <div>
-                    <h2>{s.title}</h2>
-                    <ArrowUpRight />
-                  </div>
-
-                </button>
+                    <span className="iw-story-name">{story.title}</span>
+                  </button>
+                  <button type="button" className="iw-story-heart"
+                    aria-label={storyShortlist.includes(story.title)
+                      ? `Remove ${story.title} from this preview shortlist`
+                      : `Shortlist ${story.title} in this preview`}
+                    aria-pressed={storyShortlist.includes(story.title)}
+                    onClick={() => setStoryShortlist((items) => items.includes(story.title)
+                      ? items.filter((item) => item !== story.title) : [...items, story.title])}>
+                    <Heart size={23} fill={storyShortlist.includes(story.title) ? "currentColor" : "none"}/>
+                  </button>
+                </article>
               ))}
             </div>
           </section>
