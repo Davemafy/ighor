@@ -210,7 +210,9 @@ export function AgentWorkspace({
     presentedResult.current = resultIdentity;
     const frame = requestAnimationFrame(() => {
       // The work is already visible beside conversation on desktop.
-      if (window.matchMedia("(min-width: 1024px)").matches) {return;}
+      if (window.matchMedia("(min-width: 1024px)").matches) {
+        return;
+      }
 
       outputRef.current?.scrollIntoView({
         block: "start",
@@ -881,8 +883,11 @@ export function AgentWorkspace({
               onNavigate={(view) => {
                 setExploreView(view);
 
-                if (view === "maps") {navigate("maps");}
-                else if (page === "maps") {navigate("explore");}
+                if (view === "maps") {
+                  navigate("maps");
+                } else if (page === "maps") {
+                  navigate("explore");
+                }
               }}
             />
             <div className="iw-standalone-composer">{composer}</div>

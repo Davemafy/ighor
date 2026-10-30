@@ -62,16 +62,23 @@ export function adaptTaskForPresentation(input: unknown): WorkspaceViewModel {
   const byId = new Map<string, WorkspaceCandidate>();
 
   // Evaluated candidates override catalogue records with matching IDs.
-  for (const item of task.catalogue) {byId.set(item.id, item);}
+  for (const item of task.catalogue) {
+    byId.set(item.id, item);
+  }
 
-  for (const item of task.candidates) {byId.set(item.id, item);}
+  for (const item of task.candidates) {
+    byId.set(item.id, item);
+  }
 
   const evidenceById = new Map<string, Evidence>();
 
-  for (const item of task.evidenceArchive ?? [])
-    {evidenceById.set(item.id, item);}
+  for (const item of task.evidenceArchive ?? []) {
+    evidenceById.set(item.id, item);
+  }
 
-  for (const item of task.evidence) {evidenceById.set(item.id, item);}
+  for (const item of task.evidence) {
+    evidenceById.set(item.id, item);
+  }
 
   const participantById = new Map(
     task.brief.participants.map((person) => [person.id, person]),
@@ -106,7 +113,9 @@ export function adaptTaskForPresentation(input: unknown): WorkspaceViewModel {
   function evidenceForCandidate(id: string): readonly Evidence[] {
     const candidate = byId.get(id);
 
-    if (!candidate || !("evidenceIds" in candidate)) {return [];}
+    if (!candidate || !("evidenceIds" in candidate)) {
+      return [];
+    }
 
     return candidate.evidenceIds
       .map((evidenceId) => evidenceById.get(evidenceId))
@@ -118,7 +127,9 @@ export function adaptTaskForPresentation(input: unknown): WorkspaceViewModel {
   ): readonly ScopedCulturalSignal[] {
     const candidate = byId.get(id);
 
-    if (!candidate?.cultural) {return [];}
+    if (!candidate?.cultural) {
+      return [];
+    }
 
     return Object.entries(candidate.cultural).map(([key, signal]) => {
       const person = participantById.get(key);
