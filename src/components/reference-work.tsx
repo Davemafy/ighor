@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { projectWorkspace } from "@/core/workspace-snapshot";
 import { adaptWorkspaceSnapshot, type WorkspaceCandidate } from "./workspace-view-model";
-import { ArrowRight, Bookmark, Check, ChevronDown, MapPin, Plus, Search, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, MapPin, Plus, Search } from "lucide-react";
 import { TaskCanvas } from "./task-canvas";
 
 /**
@@ -22,8 +22,6 @@ type Props = {
 type Candidate = WorkspaceCandidate;
 
 const typeLabel = (value: string) => value.replaceAll("_", " ");
-const hasSources = (candidate: Candidate): candidate is Candidate & { evidenceIds: string[] } =>
-  "evidenceIds" in candidate;
 const fact = (value: number | null) =>
   value == null ? "Not checked" : Number.isFinite(value) ? String(value) : "Not checked";
 
@@ -63,13 +61,14 @@ function EvidenceSource({ source }: { source: Task["evidence"][number] }) {
 function CandidateSignals({ task, candidate }: { task: Task; candidate: Candidate }) {
   const vm = adaptWorkspaceSnapshot(projectWorkspace(task));
   const signals = vm.culturalSignalsForCandidate(candidate.id);
+  const sampleIds = new Set(task.brief.participants.filter((p) => p.sample).map((p) => p.id));
   return (
     <div className="ir-signals">
       {!signals.length && <p className="ir-subtle">No Qloo cultural signal returned for this candidate.</p>}
       {signals.map((signal) => (
         <div className="ir-signal" key={signal.key + ":" + signal.queryId}>
           <div className="ir-signal-top">
-            <strong>{signal.participantName || (signal.scope === "context" ? "Context query" : "Unattributed query")}</strong>
+            <strong>{signal.participantName ? `${sampleIds.has(signal.participantId || "") ? "Illustrative profile · " : ""}${signal.participantName}` : (signal.scope === "context" ? "Context query" : "Unattributed query")}</strong>
             <span>{signal.delivery}</span>
           </div>
           <p>Rank #{signal.rankWithinQuery} <span>within query {signal.queryId}</span></p>
@@ -127,6 +126,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
 
   return (
     <section className={`ir-surface ir-${view}`} aria-label={heading}>
+      {task.mode === "illustrative-fixtures" && <p className="ir-demo-note" role="status">Illustrative development data · not live Qloo or verified availability</p>}
       <header className="ir-heading">
         <div><h2>{heading}</h2><p>{subtitle}</p></div>
         {view === "detail" && <button className="ir-secondary" onClick={() => onNavigate("discover")}><ArrowRight size={17} /> Back to explore</button>}
