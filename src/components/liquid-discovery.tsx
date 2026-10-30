@@ -96,7 +96,9 @@ function OptionCard({
   // Exactly one card with this name is mounted in each view.
   return (
     <motion.article
-      layoutId={task.id + ":candidate:" + candidate.id + (onInspect ? "" : ":detail")}
+      layoutId={
+        task.id + ":candidate:" + candidate.id + (onInspect ? "" : ":detail")
+      }
       layout={gallery ? true : "position"}
       transition={{ type: "spring", stiffness: 340, damping: 34 }}
       data-candidate-id={candidate.id}
@@ -155,7 +157,9 @@ function OptionCard({
             Read details <ArrowRight aria-hidden="true" />
           </button>
         )}
-        {!gallery && actions && <div className="iw-liquid-actions">{actions}</div>}
+        {!gallery && actions && (
+          <div className="iw-liquid-actions">{actions}</div>
+        )}
       </div>
     </motion.article>
   );
@@ -225,7 +229,8 @@ export function LiquidDiscovery({
   const canShowGallery =
     available.filter((candidate) => Boolean(candidate.imageUrl)).length >= 3;
   const galleryActive = canShowGallery && galleryLayout;
-  const exampleGallery = available.length > 0 && available.every((candidate) => candidate.sample);
+  const exampleGallery =
+    available.length > 0 && available.every((candidate) => candidate.sample);
   const compare = available.filter((candidate) =>
     canvas?.comparisonIds.includes(candidate.id),
   );
@@ -347,7 +352,11 @@ export function LiquidDiscovery({
             </p>
           </div>
           {mode === "explore" && !inspected && canShowGallery && (
-            <div className="iw-liquid-gallery-controls" role="group" aria-label="Discovery layout">
+            <div
+              className="iw-liquid-gallery-controls"
+              role="group"
+              aria-label="Discovery layout"
+            >
               <button
                 type="button"
                 aria-pressed={galleryActive}
@@ -381,66 +390,66 @@ export function LiquidDiscovery({
                 aria-label={"Details for " + inspected.name}
                 className="iw-liquid-detail"
               >
-              <button
-                type="button"
-                className="iw-liquid-back"
-                onClick={() => closeInspector()}
-              >
-                <X aria-hidden="true" /> Close details
-              </button>
-              <OptionCard
-                candidate={inspected}
-                task={task}
-                compact
-                actions={
-                  <>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-pressed={selected?.id === inspected.id}
-                      onClick={() =>
-                        mutate({
-                          operation: "select",
-                          nodeId: node.id,
-                          candidateId: inspected.id,
-                        })
-                      }
-                    >
-                      {selected?.id === inspected.id ? (
-                        <Check aria-hidden="true" />
-                      ) : (
-                        <Plus aria-hidden="true" />
-                      )}
-                      {selected?.id === inspected.id
-                        ? "Selected"
-                        : "Choose this"}
-                    </button>
-                    <div
-                      className="iw-fluid-compare"
-                      data-fluid-candidate={inspected.id}
-                    >
-                      <LiquidSwitch
-                        size={32}
-                        material="flat"
-                        color="#d6e3c5"
-                        checkedTint="#cbdab9"
-                        label="Include in comparison"
+                <button
+                  type="button"
+                  className="iw-liquid-back"
+                  onClick={() => closeInspector()}
+                >
+                  <X aria-hidden="true" /> Close details
+                </button>
+                <OptionCard
+                  candidate={inspected}
+                  task={task}
+                  compact
+                  actions={
+                    <>
+                      <button
+                        type="button"
                         disabled={busy}
-                        checked={compare.some(
-                          (item) => item.id === inspected.id,
-                        )}
-                        onCheckedChange={() =>
+                        aria-pressed={selected?.id === inspected.id}
+                        onClick={() =>
                           mutate({
-                            operation: "compare-selection",
+                            operation: "select",
                             nodeId: node.id,
                             candidateId: inspected.id,
                           })
                         }
-                      />
-                    </div>
-                  </>
-                }
-              />
+                      >
+                        {selected?.id === inspected.id ? (
+                          <Check aria-hidden="true" />
+                        ) : (
+                          <Plus aria-hidden="true" />
+                        )}
+                        {selected?.id === inspected.id
+                          ? "Selected"
+                          : "Choose this"}
+                      </button>
+                      <div
+                        className="iw-fluid-compare"
+                        data-fluid-candidate={inspected.id}
+                      >
+                        <LiquidSwitch
+                          size={32}
+                          material="flat"
+                          color="#d6e3c5"
+                          checkedTint="#cbdab9"
+                          label="Include in comparison"
+                          disabled={busy}
+                          checked={compare.some(
+                            (item) => item.id === inspected.id,
+                          )}
+                          onCheckedChange={() =>
+                            mutate({
+                              operation: "compare-selection",
+                              nodeId: node.id,
+                              candidateId: inspected.id,
+                            })
+                          }
+                        />
+                      </div>
+                    </>
+                  }
+                />
               </div>
             </dialog>
           ) : (

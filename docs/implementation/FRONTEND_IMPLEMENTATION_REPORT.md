@@ -6,22 +6,23 @@
 
 ## Implemented in this PR
 
-| Reference | Working surface and grounding | Notes |
-| --- | --- | --- |
-| 01 Home | Cinematic approved local hero photo, 5 starter image cards, editable prompt chips, general-purpose composer | Uses existing Igor photography and Archivo; exact reference crop remains unverified |
-| 02 Discover | Search, type filters, distinct media cards, real sample exclusion, honest missing images, detail and compare actions | Data from canonical task projection |
-| 03 Conversation | Existing authenticated durable conversation, SSE recovery, activity and source links retained | Prior code reused; not redesigned as standalone chat |
-| 04 Plan | Context/constraints, actual schedule and selected/itinerary objects, detail drilldowns | No invented times or availability; document-only tasks get appropriate work |
-| 05 Maps 2D | Existing Google Maps-backed spatial renderer, only grounded geocoded IDs, place list | Requires provider config for live visual check |
-| 06 Maps 3D | Reuses current Google 3D adapter and existing graceful fallback | Immersive 3D visual not validated with live key |
-| 07 Create | Existing editable connected-work canvas, artifact editor and InvitationStudio | Separate contextual Create navigation; no fake send/publish claim |
-| 08 Compare | Actual candidate matrix, per-query Qloo signals (rank and raw affinity), evidence sources, missing values and constraints | Comparison selection is transient unless already saved via existing canvas |
-| 09 Library | Existing server-backed saved collections and task history, labeled library navigation | Existing backend contract retained |
-| 10 Details | Candidate media/metadata, actual evidence records and limitations, Qloo explanation scope, source links | No invented ratings, per-person scores or review tabs |
-| 11 Revise | Canonical revision receipts, artifact history, current version display; no unsupported Restore action | Server-driven follow-up still uses existing composer and engine |
-| 12 Mobile | Five-option bottom nav, safe-area composer, stacked layout and comparison horizontal scrolling | Screenshot suite written, execution pending |
+| Reference       | Working surface and grounding                                                                                             | Notes                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 01 Home         | Cinematic approved local hero photo, 5 starter image cards, editable prompt chips, general-purpose composer               | Uses existing Igor photography and Archivo; exact reference crop remains unverified |
+| 02 Discover     | Search, type filters, distinct media cards, real sample exclusion, honest missing images, detail and compare actions      | Data from canonical task projection                                                 |
+| 03 Conversation | Existing authenticated durable conversation, SSE recovery, activity and source links retained                             | Prior code reused; not redesigned as standalone chat                                |
+| 04 Plan         | Context/constraints, actual schedule and selected/itinerary objects, detail drilldowns                                    | No invented times or availability; document-only tasks get appropriate work         |
+| 05 Maps 2D      | Existing Google Maps-backed spatial renderer, only grounded geocoded IDs, place list                                      | Requires provider config for live visual check                                      |
+| 06 Maps 3D      | Reuses current Google 3D adapter and existing graceful fallback                                                           | Immersive 3D visual not validated with live key                                     |
+| 07 Create       | Existing editable connected-work canvas, artifact editor and InvitationStudio                                             | Separate contextual Create navigation; no fake send/publish claim                   |
+| 08 Compare      | Actual candidate matrix, per-query Qloo signals (rank and raw affinity), evidence sources, missing values and constraints | Comparison selection is transient unless already saved via existing canvas          |
+| 09 Library      | Existing server-backed saved collections and task history, labeled library navigation                                     | Existing backend contract retained                                                  |
+| 10 Details      | Candidate media/metadata, actual evidence records and limitations, Qloo explanation scope, source links                   | No invented ratings, per-person scores or review tabs                               |
+| 11 Revise       | Canonical revision receipts, artifact history, current version display; no unsupported Restore action                     | Server-driven follow-up still uses existing composer and engine                     |
+| 12 Mobile       | Five-option bottom nav, safe-area composer, stacked layout and comparison horizontal scrolling                            | Screenshot suite written, execution pending                                         |
 
 **Code additions/refinements:**
+
 - `src/components/reference-work.tsx`: canonical-data views rather than 12 disconnected demos.
 - `src/components/workspace-view-model.ts`: validated `TaskSchema` projection and stable read-only data selectors, with no independent state store.
 - `src/components/workspace-api.ts`: existing authenticated Task GET, turns and recovery transport preserved; the unsupported snapshot GET was removed.

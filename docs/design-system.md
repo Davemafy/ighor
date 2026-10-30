@@ -6,25 +6,25 @@
 
 1. This document summarizes verified **Igor source rules**; source-of-truth implementation docs remain [Discovery system](design/igor-visual-system.md), [Partiful-oriented invitation contract](design/partiful-native-invitation.md), [Partiful interface review](design/partiful-interface-review-20261028.md) and [native workspace CSS](../src/app/native-workspace.css).
 2. The **interaction and expressive-output hierarchy** is derived from publicly observable Partiful flows: content first, quiet surrounding controls, immediate preview, editable draft and a real next action. Do not copy their proprietary artwork, trademarks or code.
-3. The cloned [MIT Codrops grid](https://github.com/Ibaliqbal/grid-layout-transition) contributes *only* a proven responsive image-grid layout and layout transition method. The original MIT license is retained at `src/vendor/codrops-grid/LICENSE`. Do not use its unrelated imagery, global resets, typography or full demo shell.
+3. The cloned [MIT Codrops grid](https://github.com/Ibaliqbal/grid-layout-transition) contributes _only_ a proven responsive image-grid layout and layout transition method. The original MIT license is retained at `src/vendor/codrops-grid/LICENSE`. Do not use its unrelated imagery, global resets, typography or full demo shell.
 4. For each actual surface, preserve **existing Igor typography, navigation, task APIs and focus model**. Never add a separate dark instrument shell for one capability.
 
 ## Existing visual foundations — no new palette
 
-| Surface | Existing source values | Rule |
-| --- | --- | --- |
-| Discovery/home | `#fafaf6` canvas, `#222421` text, `#3e4ff0` primary action; **Bricolage Grotesque** headings, **DM Sans** body/controls | Keep the documented discovery system, local font licenses, and current responsive composer |
-| /app shell | Neutral paper `#f7f7f7` and `#efeee8`, black/near-black type; **Archivo** in `native-workspace.css` | Existing navigation and chat composer stay in place; authored content occupies the work area |
-| Invite poster | Existing `invitation-studio.css` colorways, editorial layout and Archivo | Color and personality belong **inside the invitation artifact**, not in the app chrome |
-| Cultural imagery | Returned candidate media when current, or labelled typographic fallback | No stock substitute represented as Qloo result; no invented venue/image data |
-| Interactive gallery | Existing `LiquidDiscovery` and Motion layout owner; responsive CSS from MIT Codrops adapter | A layout choice, not a new design language or second app shell |
+| Surface             | Existing source values                                                                                                  | Rule                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Discovery/home      | `#fafaf6` canvas, `#222421` text, `#3e4ff0` primary action; **Bricolage Grotesque** headings, **DM Sans** body/controls | Keep the documented discovery system, local font licenses, and current responsive composer   |
+| /app shell          | Neutral paper `#f7f7f7` and `#efeee8`, black/near-black type; **Archivo** in `native-workspace.css`                     | Existing navigation and chat composer stay in place; authored content occupies the work area |
+| Invite poster       | Existing `invitation-studio.css` colorways, editorial layout and Archivo                                                | Color and personality belong **inside the invitation artifact**, not in the app chrome       |
+| Cultural imagery    | Returned candidate media when current, or labelled typographic fallback                                                 | No stock substitute represented as Qloo result; no invented venue/image data                 |
+| Interactive gallery | Existing `LiquidDiscovery` and Motion layout owner; responsive CSS from MIT Codrops adapter                             | A layout choice, not a new design language or second app shell                               |
 
 The home and /app font choices are **existing route-specific decisions**, not a license to pick new fonts ad hoc. Color values here are copied from current Igor source, not asserted to be Partiful's proprietary tokens.
 
 ## Non-negotiable product rules
 
 - **One expressive object per scene.** An authored invite: poster; discovery: source images; document: actual document; map: valid provider coordinates. Tools, trace and actions remain peripheral.
-- **No zombie UI.** No faux HUDs, radar/crosshairs, luminous network nodes, scientific-looking rank decorations, invented names such as *instrument/reel/lens*, or universal dark dashboard. Avoid a new body/global CSS reset.
+- **No zombie UI.** No faux HUDs, radar/crosshairs, luminous network nodes, scientific-looking rank decorations, invented names such as _instrument/reel/lens_, or universal dark dashboard. Avoid a new body/global CSS reset.
 - **No fake outcomes.** Never show a booking, venue photo, price, personal affinity percentage or causal preference explanation that is not established by the saved task evidence.
 - **Real editing.** Preview follows user edits; server save acknowledges only confirmed completion. Preserve manual edits, task versions and approvals.
 - **Real source separation.** Qloo LIVE/CACHED/EXAMPLE derives from saved evidence; association is not availability or a person's endorsement. Keep details accessible but not louder than the result.
@@ -44,7 +44,7 @@ The home and /app font choices are **existing route-specific decisions**, not a 
 
 Before accepting each change, ask and record:
 
-1. **Source:** Which *existing* Igor design rule or licensed upstream behavior supports this exact choice? If none, reject it.
+1. **Source:** Which _existing_ Igor design rule or licensed upstream behavior supports this exact choice? If none, reject it.
 2. **Function:** What user decision or edit does this affordance help? If cosmetic only, remove it.
 3. **Continuity:** Does it keep the same task, source record, keyboard state, and handoff across views?
 4. **Truth:** Could a judge mistake an illustrative asset for live Qloo evidence or a booking? If yes, relabel or omit.

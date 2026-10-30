@@ -10,30 +10,30 @@ Install Node 24 or later, then run:
 
 ```bash
 npm ci
-npm run dev:recorded
+npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). Try a gathering for six friends, Tokyo discovery or a personal start with Radiohead.
+Open [localhost:3000/app](http://localhost:3000/app). To enable genuine cultural retrieval, configure `QLOO_API_KEY` server-side, and configure a supported model key for general-purpose conversation. See [development setup](docs/development.md). Without these keys, the app should report unavailable capabilities rather than pretending provider responses are live.
 
-The recorded demo needs no credentials and makes no provider calls. It uses archived Qloo responses and a limited local interpreter. Results retain their retrieval dates and show a cached label. Requests without a recording stop rather than invent a result.
+**Public submission boundary:** The original Qloo API response recordings and associated replay fixtures were intentionally removed from the entire public Git history because redistribution rights have not been established. `npm run dev:recorded` and the recording-only replay tests are **not** runnable from this sanitized checkout. We do not ship invented substitutes. Those historical tests remain visible for technical review, while `npm test` selects the independent unit suite and discloses the excluded suites.
 
-To connect live providers, see [development setup](docs/development.md).
+This public code is intended for review and authorized live-provider configuration, not a claim that the archived demo or externally hosted experience has already passed live acceptance.
 
 ## Find your way
 
-| Folder              | Contents                                               |
-| ------------------- | ------------------------------------------------------ |
-| `src/app/`          | Pages, API routes and styles                           |
-| `src/components/`   | Workspace views and editors                            |
-| `src/core/`         | Task contracts, conversations and revision rules       |
-| `src/capabilities/` | Discovery, comparison, composition and validation      |
-| `src/tools/`        | Provider adapters and response caches                  |
-| `src/data/`         | SQLite stores and sample tasks                         |
-| `tests/unit/`       | Unit and integration tests                             |
-| `tests/browser/`    | Complete browser journeys                              |
-| `tests/fixtures/`   | Recorded provider responses used by the demo and tests |
-| `scripts/`          | Local development and verification commands            |
-| `docs/`             | Setup, architecture, supported outcomes and research   |
+| Folder              | Contents                                             |
+| ------------------- | ---------------------------------------------------- |
+| `src/app/`          | Pages, API routes and styles                         |
+| `src/components/`   | Workspace views and editors                          |
+| `src/core/`         | Task contracts, conversations and revision rules     |
+| `src/capabilities/` | Discovery, comparison, composition and validation    |
+| `src/tools/`        | Provider adapters and response caches                |
+| `src/data/`         | SQLite stores and sample tasks                       |
+| `tests/unit/`       | Unit and integration tests                           |
+| `tests/browser/`    | Complete browser journeys                            |
+| `tests/fixtures/`   | Private recordings excluded from public release      |
+| `scripts/`          | Local development and verification commands          |
+| `docs/`             | Setup, architecture, supported outcomes and research |
 
 Start with [the orchestrator](src/core/orchestrator.ts) to follow a turn, or [the workspace](src/components/workspace.tsx) to follow the interface.
 
@@ -48,6 +48,6 @@ npm test
 npm run verify:all
 ```
 
-The full check includes formatting, types, lint, unit and integration tests, a production build and browser tests. Install the browser once with `npx playwright install chromium`. Checks use recorded or synthetic inputs and clear provider credentials.
+The full check requires formatting, types, lint, the runnable unit suite, a production build and browser tests. In this sanitized version, original recorded-provider suites remain excluded until authorized recordings are supplied privately; a green public-suite result is not a full replay-suite result. Install the browser once with `npx playwright install chromium`. Checks use recorded or synthetic inputs and clear provider credentials.
 
 [Contributing](docs/contributing.md) · [Architecture](docs/architecture.md) · [Demo](docs/demo.md) · [Supported outcomes and limits](docs/broader-outcomes.md)

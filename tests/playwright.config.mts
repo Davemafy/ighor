@@ -91,7 +91,10 @@ export default defineConfig({
     {
       name: "native-invite",
       testMatch: "native-invitation.e2e.ts",
-      use: { baseURL: "http://127.0.0.1:3400", viewport: { width: 1600, height: 1000 } },
+      use: {
+        baseURL: "http://127.0.0.1:3400",
+        viewport: { width: 1600, height: 1000 },
+      },
     },
     {
       name: "broader-outcomes",

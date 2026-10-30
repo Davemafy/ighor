@@ -218,28 +218,38 @@
   gap: clamp(12px, 1.7cqi, 24px);
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] {
-  grid-template-columns: repeat(4, minmax(0,1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-  grid-template-columns: repeat(10, minmax(0,1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item {
   grid-column: span 1;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item:first-child {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item:first-child {
   grid-column: span 2;
   grid-row: span 2;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+  .grid_gallery_item {
   grid-column: span 5;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item[data-featured="true"] {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+  .grid_gallery_item[data-featured="true"] {
   grid-column: 1 / -1;
   grid-row: auto;
 }
 /* The artwork is the expressive element; its metadata belongs on the paper
  * below it, not over an obscured photo or in fabricated telemetry. */
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"] {
   display: block;
   min-width: 0;
   overflow: visible;
@@ -248,7 +258,10 @@
   background: transparent;
   box-shadow: none;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-artwork {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-artwork {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -256,13 +269,22 @@
   border-radius: 12px;
   background: #e8e8e3;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:first-child .iw-liquid-artwork {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]:first-child
+  .iw-liquid-artwork {
   aspect-ratio: 7 / 5;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:nth-child(3n) .iw-liquid-artwork {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]:nth-child(3n)
+  .iw-liquid-artwork {
   aspect-ratio: 5 / 4;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-image {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-image {
   display: block;
   width: 100%;
   height: 100%;
@@ -271,34 +293,56 @@
   aspect-ratio: inherit;
   object-fit: cover;
   filter: none;
-  transition: transform 450ms cubic-bezier(.2,.7,.25,1);
+  transition: transform 450ms cubic-bezier(0.2, 0.7, 0.25, 1);
 }
 @media (hover: hover) and (pointer: fine) {
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:hover .iw-liquid-image {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+    .grid_gallery_item[data-gallery="true"]:hover
+    .iw-liquid-image {
     transform: scale(1.035);
   }
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-card-body {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-card-body {
   position: static;
   pointer-events: auto;
   padding: 13px 1px 20px;
   color: #222421;
   background: transparent;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-category {
-  font: 500 11px/1.4 Archivo, Arial, sans-serif;
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-category {
+  font:
+    500 11px/1.4 Archivo,
+    Arial,
+    sans-serif;
   color: #65635d;
   text-transform: capitalize;
   letter-spacing: 0;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-card-body h4 {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-card-body
+  h4 {
   color: #222421;
-  font: 680 clamp(17px, 2.4cqi, 30px)/1.07 Archivo, Arial, sans-serif;
-  letter-spacing: -.04em;
+  font:
+    680 clamp(17px, 2.4cqi, 30px)/1.07 Archivo,
+    Arial,
+    sans-serif;
+  letter-spacing: -0.04em;
   text-wrap: balance;
   margin: 5px 0 0;
 }
-.iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"] .iw-liquid-open {
+.iw-app
+  .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+  .grid_gallery_item[data-gallery="true"]
+  .iw-liquid-open {
   top: auto;
   right: 13px;
   bottom: 13px;
@@ -336,7 +380,7 @@
 }
 .iw-app .iw-liquid-dialog .iw-liquid-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
   background: white;
 }
 .iw-app .iw-liquid-dialog .iw-liquid-card-body {
@@ -349,31 +393,44 @@
 }
 @container (max-width: 720px) {
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] {
-    grid-template-columns: repeat(2, minmax(0,1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item:first-child {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+    .grid_gallery_item:first-child {
     grid-column: span 2;
     grid-row: auto;
   }
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-    grid-template-columns: repeat(2, minmax(0,1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+    .grid_gallery_item {
     grid-column: span 1;
   }
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item[data-featured="true"] {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+    .grid_gallery_item[data-featured="true"] {
     grid-column: span 2;
   }
 }
 @container (max-width: 450px) {
   .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] {
-    grid-template-columns: minmax(0,1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item,
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"] .grid_gallery_item[data-featured="true"] {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+    .grid_gallery_item,
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="75%"]
+    .grid_gallery_item[data-featured="true"] {
     grid-column: 1;
   }
-  .iw-app .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"] .grid_gallery_item[data-gallery="true"]:first-child .iw-liquid-artwork {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container[data-size-grid="150%"]
+    .grid_gallery_item[data-gallery="true"]:first-child
+    .iw-liquid-artwork {
     aspect-ratio: 4 / 3;
   }
 }
@@ -388,7 +445,10 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .iw-app .iw-liquid-grid.grid_gallery_container .grid_gallery_item .iw-liquid-image {
+  .iw-app
+    .iw-liquid-grid.grid_gallery_container
+    .grid_gallery_item
+    .iw-liquid-image {
     transition: none;
     transform: none !important;
   }

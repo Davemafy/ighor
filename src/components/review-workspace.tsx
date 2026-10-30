@@ -187,17 +187,15 @@ export function ReviewWorkspace({ token }: { token: string }) {
                     </label>
                     <label htmlFor="review-preference">Preference</label>
                     <select
-                        id="review-preference"
-                        aria-label="Preference"
-                        value={polarity}
-                        onChange={(e) => setPolarity(e.target.value)}
-                      >
-                        <option value="like">Like</option>
-                        <option value="dislike">Dislike</option>
-                        <option value="unknown">Unknown</option>
-                        <option value="not-now">
-                          Not interested right now
-                        </option>
+                      id="review-preference"
+                      aria-label="Preference"
+                      value={polarity}
+                      onChange={(e) => setPolarity(e.target.value)}
+                    >
+                      <option value="like">Like</option>
+                      <option value="dislike">Dislike</option>
+                      <option value="unknown">Unknown</option>
+                      <option value="not-now">Not interested right now</option>
                     </select>
                     <button
                       className="pp-solid"
