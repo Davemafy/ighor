@@ -1,21 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { freshTask, sampleCatalogue } from "../../src/data/fixtures";
-import { projectWorkspace } from "../../src/core/workspace-snapshot";
-import { adaptWorkspaceSnapshot } from "../../src/components/workspace-view-model";
+import { adaptTaskForPresentation } from "../../src/components/workspace-view-model";
 
 describe("workspace presentation adapter", () => {
-  it("rejects unvalidated or incompatible snapshots", () => {
-    expect(() => adaptWorkspaceSnapshot({})).toThrow();
-    const snapshot = projectWorkspace(freshTask("view-invalid", "owner"));
-    expect(() =>
-      adaptWorkspaceSnapshot({ ...snapshot, schemaVersion: 2 }),
-    ).toThrow();
+  it("rejects invalid canonical task payloads", () => {
+    expect(() => adaptTaskForPresentation({})).toThrow();
+    const task = freshTask("view-invalid", "owner");
+    expect(() => adaptTaskForPresentation({ ...task, status: "unsupported-status" })).toThrow();
   });
 
   it("preserves canonical IDs, participant identity and unknowns", () => {
     const task = freshTask("view-basic", "owner");
     task.brief.selected = ["moonrise"];
-    const view = adaptWorkspaceSnapshot(projectWorkspace(task));
+    const view = adaptTaskForPresentation(task);
 
     expect(view.id).toBe(task.id);
     expect(view.revision).toBe(task.brief.version);
@@ -37,6 +34,7 @@ describe("workspace presentation adapter", () => {
       name: "Verified coordinates from a provider",
       type: "place",
       sample: false,
+      providerId: "qloo-verified-place",
       place: {
         latitude: 40.731,
         longitude: -73.989,
@@ -59,8 +57,7 @@ describe("workspace presentation adapter", () => {
         locality: null,
       },
     });
-    const snapshot = projectWorkspace(task);
-    const view = adaptWorkspaceSnapshot(snapshot);
+    const view = adaptTaskForPresentation(task);
 
     expect(view.mapPlaces.map((place) => place.candidate.id)).toEqual([
       "verified-place",
@@ -98,7 +95,7 @@ describe("workspace presentation adapter", () => {
         retrievedAt: "2026-10-30T00:00:00Z",
       },
     };
-    const view = adaptWorkspaceSnapshot(projectWorkspace(task));
+    const view = adaptTaskForPresentation(task);
     const signals = view.culturalSignalsForCandidate("moonrise");
 
     expect(signals).toHaveLength(2);
