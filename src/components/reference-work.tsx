@@ -100,16 +100,20 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const comparedIds = comparisonIds.length ? comparisonIds : task.canvas?.comparisonIds.length
     ? task.canvas.comparisonIds : task.brief.selected.length ? task.brief.selected : candidates.slice(0, 3).map((c) => c.id);
   const compared = comparedIds.map((id) => vm.candidateById.get(id)).filter((c): c is Candidate => !!c);
-  const proposalNode = task.canvas?.surface.nodes.find((node) => node.type === "discovery" || node.type === "spatial");
+  const proposalNode = task.canvas?.surface.nodes.find((node) => (node.type === "discovery" || node.type === "spatial") && node.candidateIds.length > 0);
 
   async function addToWork(id: string) {
-    if (proposalNode && task.canvas) {
+    const canEditItinerary = !!proposalNode && !!task.canvas &&
+      proposalNode.candidateIds.includes(id) &&
+      task.candidates.some((candidate) => candidate.id === id && candidate.freshness === "current");
+    if (canEditItinerary && task.canvas && proposalNode) {
+      const candidateIds = [...new Set([...task.canvas.itineraryIds, id])];
       await onTurn({ type: "canvas", surfaceId: task.canvas.surface.id,
-        mutation: { operation: "select", nodeId: proposalNode.id, candidateId: id } });
+        mutation: { operation: "itinerary", nodeId: proposalNode.id, candidateIds } });
     } else {
-      // No supported mutation target: use the normal agent turn with an exact ID
-      // so the engine, not this component, decides what work changes.
-      await onTurn({ type: "message", text: `Add the existing candidate ${id} to my current work, preserving the other decisions.` });
+      // A canvas 'select' only changes visual focus: it does NOT add to a plan.
+      // Route unsupported structural changes through the authoritative engine.
+      await onTurn({ type: "message", text: `Add the existing candidate with ID ${id} to my current work. Preserve unrelated selections and return the updated work.` });
     }
   }
   function toggleCompare(id: string) {
@@ -228,9 +232,12 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
                 <div><strong>{stop.label}</strong><p>{stop.candidateId ? vm.candidateById.get(stop.candidateId)?.name || "Candidate unavailable" : "No linked candidate"}</p></div>
               </li>)}</ol> :
               <div className="ir-empty"><h3>No timeline saved</h3><p>This task may be research, analysis or creation rather than an event. Its actual work remains in the workspace documents and canvas.</p></div>}
-            <h3>Selected objects</h3>
-            <div className="ir-selection-list">{vm.selectedCandidates.map((c) => <button key={c.id} onClick={() => {setSelectedId(c.id);onNavigate("detail");}}>{c.name}<ArrowRight size={16}/></button>)}</div>
-            {!vm.selectedCandidates.length && <p className="ir-subtle">No confirmed candidate selections yet.</p>}
+            <h3>Selected and planned objects</h3>
+            <div className="ir-selection-list">{[...new Set([...vm.selectedIds, ...(task.canvas?.itineraryIds || [])])].map((id) => {
+              const candidate = vm.candidateById.get(id);
+              return candidate ? <button key={id} onClick={() => {setSelectedId(id);onNavigate("detail");}}>{candidate.name}<ArrowRight size={16}/></button> : null;
+            })}</div>
+            {!vm.selectedIds.length && !task.canvas?.itineraryIds.length && <p className="ir-subtle">No confirmed candidate selections yet.</p>}
           </div>
           <aside className="ir-constraint-panel">
             <h3>Current constraints</h3>
