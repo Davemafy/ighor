@@ -252,3 +252,25 @@
 @media(prefers-reduced-motion:reduce) {
  .iw-app.igor-mockup :is(.ir-candidate,.ir-chip-row button,.iw-ideas .iw-poster) {transition:none!important;animation:none!important;transform:none!important}
 }
+/* Reference-inspired prompt suggestions, distinct from image-led work cards. */
+.iw-app.igor-mockup .iw-quick-start {
+ display:flex;flex-wrap:wrap;gap:9px;margin-top:24px;
+ max-width:1080px;
+}
+.iw-app.igor-mockup .iw-quick-start button {
+ border-radius:30px;border:1px solid #ffffff33;background:#142025d4;
+ color:#fff;font:500 14px/1.2 Archivo,Arial,sans-serif;padding:12px 21px;
+ min-height:44px;backdrop-filter:blur(3px);
+}
+.iw-app.igor-mockup .iw-quick-start button:hover,
+.iw-app.igor-mockup .iw-quick-start button:focus-visible {background:#ffffff2a}
+.ir-demo-note {
+ margin:0 0 19px;padding:10px 13px;border-radius:9px;
+ background:#fff7e9;color:#735223;font-size:12px;border:1px solid #e9d7ad;
+}
+@media(max-width:760px){
+ .iw-app.igor-mockup .iw-quick-start {gap:7px}
+ .iw-app.igor-mockup .iw-quick-start button {padding:10px 13px;font-size:12px;min-height:40px}
+ .iw-app.igor-mockup .iw-nav nav button:nth-child(5) {order:6}
+ .iw-app.igor-mockup .iw-nav nav button:nth-child(6) {order:5}
+}
