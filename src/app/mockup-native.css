@@ -1124,3 +1124,21 @@
  .ir-person-topline strong {font-size:15px}
  .ir-person-topline span {font-size:13px}
 }
+
+/* Refined vertical rhythm measured against supplied 1448 × 1086 screens. */
+@media (min-width:1120px) and (min-height:900px) {
+  .iw-app.igor-mockup .iw-welcome-compose {margin-top:59px}
+  .iw-app.igor-mockup .iw-ideas {margin-top:34px!important}
+}
+.ir-discover .ir-reference-disclaimer {
+  position:absolute;right:clamp(30px,4.7vw,72px);top:226px;
+  max-width:245px;text-align:right;font-size:10px;line-height:1.2;
+  margin:0;color:#747d87;
+}
+.ir-discover .ir-reference-rail {margin-top:7px}
+.ir-discover .ir-reference-rail + .ir-reference-rail {margin-top:58px}
+@media(max-width:760px){
+ .ir-discover .ir-reference-disclaimer {position:static;max-width:none;text-align:left;margin:3px 0 12px}
+ .ir-discover .ir-reference-rail {margin-top:10px}
+ .ir-discover .ir-reference-rail + .ir-reference-rail {margin-top:23px}
+}
