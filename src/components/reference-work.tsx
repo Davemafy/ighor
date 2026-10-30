@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { adaptTaskForPresentation, type WorkspaceCandidate, type WorkspaceViewModel } from "./workspace-view-model";
-import { ArrowRight, Check, ChevronDown, MapPin, Plus, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Heart, MapPin, Plus, Search } from "lucide-react";
 import { TaskCanvas } from "./task-canvas";
 
 /**
@@ -82,6 +82,88 @@ function CandidateSignals({ task, candidate, vm }: { task: Task; candidate: Cand
   );
 }
 
+type Inspiration = {
+  title: string;
+  domain: string;
+  image: string;
+  fallback: string;
+  prompt: string;
+};
+const inspirationPrimary: Inspiration[] = [
+  { title: "Dune", domain: "Film", image: "discover-trending-1.webp", fallback: "covers/c08.webp", prompt: "Help me explore the film Dune, and recommend related films with sources." },
+  { title: "SZA", domain: "Music", image: "discover-trending-2.webp", fallback: "photos/gallery-800.webp", prompt: "Explore SZA and recommend related musicians with grounded cultural context." },
+  { title: "The Bear", domain: "TV Series", image: "discover-trending-3.webp", fallback: "photos/hero-dinner-a-800.webp", prompt: "Tell me about The Bear and find related television series." },
+  { title: "Tokyo", domain: "Places", image: "discover-trending-4.webp", fallback: "photos/gallery-800.webp", prompt: "Explore memorable food and design experiences in Tokyo." },
+  { title: "Radiohead", domain: "Music", image: "discover-trending-5.webp", fallback: "covers/c09.webp", prompt: "Explore Radiohead and suggest connected artists and albums." },
+];
+const inspirationSecondary: Inspiration[] = [
+  { title: "Indie films", domain: "Film", image: "discover-crew-1.webp", fallback: "covers/c07.webp", prompt: "Find independent films with a thoughtful, intimate mood." },
+  { title: "Live jazz", domain: "Music", image: "discover-crew-2.webp", fallback: "photos/gallery-800.webp", prompt: "Find live jazz performances and artists worth exploring." },
+  { title: "Modern Japanese", domain: "Dining", image: "discover-crew-3.webp", fallback: "photos/hero-dinner-a-800.webp", prompt: "Explore modern Japanese cuisine and interesting restaurants." },
+  { title: "Design hotels", domain: "Places", image: "discover-crew-4.webp", fallback: "photos/london-street-800.webp", prompt: "Find beautifully designed hotels for a future trip." },
+  { title: "Art exhibitions", domain: "Experiences", image: "discover-crew-5.webp", fallback: "covers/c10.webp", prompt: "Find contemporary art exhibitions worth visiting." },
+];
+
+function InspirationImage({ item }: { item: Inspiration }) {
+  return (
+    <img
+      src={`/reference-art/${item.image}`}
+      alt=""
+      loading="lazy"
+      onError={(event) => {
+        const fallback = `/marketing/assets/${item.fallback}`;
+        if (event.currentTarget.src !== new URL(fallback, location.origin).href) {
+          event.currentTarget.src = fallback;
+        }
+      }}
+    />
+  );
+}
+
+function InspirationRail({
+  title,
+  items,
+  type,
+  onChoose,
+}: {
+  title: string;
+  items: Inspiration[];
+  type: "portrait" | "landscape";
+  onChoose: (item: Inspiration) => void;
+}) {
+  const [saved, setSaved] = useState<string[]>([]);
+
+  return (
+    <section className="ir-reference-rail" aria-label={title}>
+      <div className="ir-reference-section-heading">
+        <h3>{title}</h3>
+        <span>Illustrative inspiration</span>
+      </div>
+      <div className={`ir-reference-tiles ir-reference-${type}`}>
+        {items.map((item) => (
+          <article key={item.title} className="ir-reference-tile">
+            <div className="ir-reference-image">
+              <button className="ir-reference-image-open" onClick={() => onChoose(item)}
+                aria-label={`Explore ${item.title}`}>
+                <InspirationImage item={item} />
+              </button>
+              <button className="ir-reference-favorite" aria-pressed={saved.includes(item.title)}
+                aria-label={saved.includes(item.title) ? `Remove ${item.title} from preview shortlist` : `Shortlist ${item.title} for this preview`}
+                onClick={() => setSaved((current) => current.includes(item.title)
+                  ? current.filter((value) => value !== item.title) : [...current, item.title])}>
+                <Heart size={22} fill={saved.includes(item.title) ? "currentColor" : "none"} />
+              </button>
+            </div>
+            <button className="ir-reference-tile-label" onClick={() => onChoose(item)}>
+              <strong>{item.title}</strong><span>{item.domain}</span>
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const vm = useMemo(() => adaptTaskForPresentation(task), [task]);
   const [query, setQuery] = useState("");
@@ -89,11 +171,27 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [comparisonIds, setComparisonIds] = useState<string[]>([]);
   const candidates = vm.candidates.filter((c) => !c.sample && (!("freshness" in c) || c.freshness === "current"));
-  const categories = ["all", ...new Set(candidates.map((c) => c.type))];
+  const categories = ["all", "places", "films", "music", "books", "dining", "experiences", "ideas"];
+  const matchesCategory = (candidate: Candidate) => category === "all" ||
+    (category === "films" && (candidate.type === "movie" || candidate.type === "tv_show")) ||
+    (category === "music" && candidate.type === "artist") ||
+    (category === "books" && candidate.type === "book") ||
+    (category === "places" && candidate.type === "place") ||
+    candidate.tags.some((tag) => tag.toLocaleLowerCase() === category);
   const filtered = candidates.filter((c) =>
-    (category === "all" || c.type === category) &&
+    matchesCategory(c) &&
     [c.name, c.description, ...c.tags].join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   );
+  const inspirationMatches = (item: Inspiration) =>
+    (category === "all" ||
+      (category === "films" && ["Film", "TV Series"].includes(item.domain)) ||
+      (category === "music" && item.domain === "Music") ||
+      (category === "books" && item.title.toLowerCase().includes("book")) ||
+      (category === "places" && item.domain === "Places") ||
+      category === item.domain.toLowerCase()) &&
+    (query.trim() === "" || (item.title + " " + item.domain).toLowerCase().includes(query.trim().toLowerCase()));
+  const emptyDiscovery = candidates.length === 0;
+
   const chosen = (selectedId && vm.candidateById.get(selectedId)) || filtered[0] || candidates[0];
   const comparedIds = comparisonIds.length ? comparisonIds : task.canvas?.comparisonIds.length
     ? task.canvas.comparisonIds : task.brief.selected.length ? task.brief.selected : candidates.slice(0, 3).map((c) => c.id);
@@ -135,30 +233,69 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
       </header>
 
       {view === "discover" && (
-        <>
-          <label className="ir-search"><Search size={19} /><span className="ir-sr">Search real discovered candidates</span>
-            <input type="search" placeholder="Search discovered films, music, places, ideas…" value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+        <div className="ir-discover-workspace">
+          <form className="ir-search" onSubmit={(event) => {
+            event.preventDefault();
+            const text = query.trim();
+            if (text) {
+              void onTurn({ type: "message", text: `Explore ${text}. Find relevant results with sources and explain what is known.` });
+            }
+          }}>
+            <Search size={21} aria-hidden="true" />
+            <label className="ir-sr" htmlFor="ir-discovery-search">Discover across any domain</label>
+            <input id="ir-discovery-search" type="search" placeholder="Discover something…" value={query}
+              onChange={(event) => setQuery(event.target.value)} />
+            <button type="submit" className="ir-search-submit" disabled={!query.trim() || busy} aria-label="Ask Igor to discover"><ArrowRight size={23} /></button>
+          </form>
           <div className="ir-chip-row" role="group" aria-label="Discovery categories">
-            {categories.map((cat) => <button key={cat} aria-pressed={category === cat} onClick={() => setCategory(cat)}>{cat === "all" ? "All" : typeLabel(cat)}</button>)}
+            {categories.map((cat) => <button key={cat} aria-pressed={category === cat}
+              onClick={() => setCategory(cat)}>{cat === "all" ? "All" : cat === "films" ? "Films & TV" : cat[0].toUpperCase() + cat.slice(1)}</button>)}
           </div>
-          <div className="ir-section-line"><h3>From your conversation</h3><span>{filtered.length} grounded {filtered.length === 1 ? "result" : "results"}</span></div>
-          <div className="ir-gallery">
-            {filtered.map((c) => (
-              <article key={c.id} className="ir-candidate">
-                <button className="ir-card-open" onClick={() => {setSelectedId(c.id); onNavigate("detail");}}>
-                  <CandidateMedia candidate={c} /><strong>{c.name}</strong><span>{typeLabel(c.type)}</span>
-                </button>
-                <div className="ir-card-actions">
-                  <button disabled={busy} onClick={() => void addToWork(c.id)}><Plus size={15}/> Add to work</button>
-                  <button onClick={() => {toggleCompare(c.id); onNavigate("compare");}}>Compare</button>
+
+          {emptyDiscovery && (
+            <div className="ir-reference-disclaimer">
+              These are illustrative starting points, not personalized Qloo results.
+              Select any card to ask Igor to research it.
+            </div>
+          )}
+          {emptyDiscovery && (
+            <>
+              <InspirationRail title="Trending to explore" type="portrait"
+                items={inspirationPrimary.filter(inspirationMatches)}
+                onChoose={(item) => void onTurn({ type: "message", text: item.prompt })} />
+              <InspirationRail title="Find your next favorite" type="landscape"
+                items={inspirationSecondary.filter(inspirationMatches)}
+                onChoose={(item) => void onTurn({ type: "message", text: item.prompt })} />
+              {!inspirationPrimary.some(inspirationMatches) && !inspirationSecondary.some(inspirationMatches) && (
+                <div className="ir-empty"><h3>No matching examples</h3>
+                  <p>Search for anything above and Igor will research it.</p>
                 </div>
-              </article>
-            ))}
-          </div>
-          {!filtered.length && <div className="ir-empty" role="status"><h3>No matching saved results</h3>
-            <p>Try another category, or ask Igor to research a new direction in the conversation.</p>
-            <button onClick={() => {setQuery("");setCategory("all");}}>Clear filters</button></div>}
-        </>
+              )}
+            </>
+          )}
+          {!emptyDiscovery && (
+            <>
+              <div className="ir-section-line"><h3>Discovered for this task</h3>
+                <span>{filtered.length} grounded {filtered.length === 1 ? "result" : "results"}</span></div>
+              <div className="ir-gallery">
+                {filtered.map((c) => (
+                  <article key={c.id} className="ir-candidate">
+                    <button className="ir-card-open" onClick={() => {setSelectedId(c.id); onNavigate("detail");}}>
+                      <CandidateMedia candidate={c} /><strong>{c.name}</strong><span>{typeLabel(c.type)}</span>
+                    </button>
+                    <div className="ir-card-actions">
+                      <button disabled={busy} onClick={() => void addToWork(c.id)}><Plus size={15}/> Add to work</button>
+                      <button onClick={() => {toggleCompare(c.id); onNavigate("compare");}}>Compare</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {!filtered.length && <div className="ir-empty" role="status"><h3>No matching saved results</h3>
+                <p>Try another category, or search for something new.</p>
+                <button onClick={() => {setQuery("");setCategory("all");}}>Clear filters</button></div>}
+            </>
+          )}
+        </div>
       )}
 
       {view === "compare" && (
