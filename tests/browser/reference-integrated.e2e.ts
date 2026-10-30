@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 test("cinematic Home accepts arbitrary editable prompts without domain intake", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await expect(page.getByRole("heading", { name: /Your agent.*With taste/i })).toBeVisible();
-  console.log("UI_DIAG_HOME", JSON.stringify({route: new URL(page.url()).pathname, buttons: await page.locator("button").allTextContents(), quickCount: await page.locator(".iw-quick-start button").count()}));
   await expect(page.getByRole("button", { name: "Research a topic" })).toBeVisible();
   await page.getByRole("button", { name: "Research a topic" }).click();
   await expect(page.getByRole("textbox", { name: "Message Igor" })).toHaveValue(/research a topic/);
@@ -22,9 +21,8 @@ test("Discover opens in the same authenticated workspace, with honest empty resu
 
 test("mobile navigation keeps all primary actions accessible without page overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/app");
   const nav = page.getByRole("navigation", { name: "Product navigation" });
-  console.log("UI_DIAG_MOBILE", JSON.stringify({route: new URL(page.url()).pathname, navCount: await nav.count(), buttons: await nav.locator("button").allTextContents(), navigationStyle: await nav.evaluate((e) => getComputedStyle(e).display).catch(() => "missing")}));
   for (const name of ["Home", "Explore", "Create", "Search", "Library"]) {
     await expect(nav.getByRole("button", { name })).toBeVisible();
   }
