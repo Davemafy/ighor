@@ -16,7 +16,9 @@ export default async function AppPage({
           ? "saved"
           : query.view === "conversations"
             ? "history"
-            : "work"
+            : query.view === "explore" || query.view === "maps" || query.view === "create"
+              ? query.view
+              : "work"
       }
       initialConversation={!!query.task || layout?.startsWith("conversation:")}
       initialPane={query.view === "editor" ? "work" : "thread"}
