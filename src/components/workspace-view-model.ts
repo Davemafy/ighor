@@ -1,18 +1,17 @@
 import {
-  WorkspaceSnapshotSchema,
-  type WorkspaceSnapshot,
-} from "@/core/workspace-snapshot";
+  TaskSchema,
+  type Task,
+  type Candidate,
+  type CandidateInput,
+  type Evidence,
+} from "@/core/contracts";
 
 /**
- * A read-only presentation adapter. The server Task and WorkspaceSnapshot are
- * authoritative; this module must not produce new candidate identities, facts,
- * positions, personal tastes, revisions or synthetic success states.
+ * A read-only frontend projection of the canonical Task schema actually
+ * available on this UI branch. It neither copies state nor invents facts.
  */
-export type WorkspaceCandidate =
-  | WorkspaceSnapshot["discovery"]["catalogue"][number]
-  | WorkspaceSnapshot["discovery"]["candidates"][number];
-
-export type WorkspaceEvidence = WorkspaceSnapshot["discovery"]["evidence"][number];
+export type WorkspaceCandidate = Candidate | CandidateInput;
+export type WorkspaceEvidence = Evidence;
 
 export type ScopedCulturalSignal = {
   key: string;
@@ -30,59 +29,55 @@ export type ScopedCulturalSignal = {
 };
 
 export type GroundedMapPlace = {
-  candidate: WorkspaceSnapshot["spatial"]["places"][number];
+  candidate: WorkspaceCandidate;
   latitude: number;
   longitude: number;
 };
 
 export type WorkspaceViewModel = {
-  /** This is the original validated snapshot; always keep its revision. */
-  snapshot: WorkspaceSnapshot;
+  task: Task;
   id: string;
   revision: number;
   candidates: readonly WorkspaceCandidate[];
   mapPlaces: readonly GroundedMapPlace[];
-  evidenceById: ReadonlyMap<string, WorkspaceEvidence>;
+  evidenceById: ReadonlyMap<string, Evidence>;
   candidateById: ReadonlyMap<string, WorkspaceCandidate>;
-  participants: WorkspaceSnapshot["participants"];
+  participants: Task["brief"]["participants"];
   selectedIds: readonly string[];
   selectedCandidates: readonly WorkspaceCandidate[];
-  artifacts: WorkspaceSnapshot["artifacts"];
-  conversation: WorkspaceSnapshot["conversation"];
-  execution: WorkspaceSnapshot["execution"];
-  /** Only exposes persisted source references for evaluated candidates. */
-  evidenceForCandidate: (id: string) => readonly WorkspaceEvidence[];
-  /** Raw Qloo signals are query scoped; no invented group score. */
+  artifacts: Task["artifacts"];
+  conversation: Task["messages"];
+  execution: Task["agentRun"];
+  evidenceForCandidate: (id: string) => readonly Evidence[];
   culturalSignalsForCandidate: (id: string) => readonly ScopedCulturalSignal[];
 };
 
 /**
- * A display model for *any* task, not an itinerary-specific view.
- * Validation happens on the boundary, including schema version checks.
+ * Use the Task currently returned by workspace-api and use-workspace.
+ * The upstream WorkspaceSnapshot v1 contract is not in the base branch
+ * of this frontend PR; do not introduce an unsupported endpoint.
  */
-export function adaptWorkspaceSnapshot(input: unknown): WorkspaceViewModel {
-  const snapshot = WorkspaceSnapshotSchema.parse(input);
+export function adaptTaskForPresentation(input: unknown): WorkspaceViewModel {
+  const task = TaskSchema.parse(input);
   const byId = new Map<string, WorkspaceCandidate>();
 
-  // Evaluated candidates overwrite raw catalogue records with the *same* ID.
-  for (const item of snapshot.discovery.catalogue) byId.set(item.id, item);
-  for (const item of snapshot.discovery.candidates) byId.set(item.id, item);
+  // Evaluated candidates override catalogue records with matching IDs.
+  for (const item of task.catalogue) byId.set(item.id, item);
+  for (const item of task.candidates) byId.set(item.id, item);
 
-  const evidenceById = new Map<string, WorkspaceEvidence>();
-  for (const item of snapshot.discovery.evidenceArchive)
-    evidenceById.set(item.id, item);
-  for (const item of snapshot.discovery.evidence)
-    evidenceById.set(item.id, item);
+  const evidenceById = new Map<string, Evidence>();
+  for (const item of task.evidenceArchive ?? []) evidenceById.set(item.id, item);
+  for (const item of task.evidence) evidenceById.set(item.id, item);
 
   const participantById = new Map(
-    snapshot.participants.map((person) => [person.id, person]),
+    task.brief.participants.map((person) => [person.id, person]),
   );
-  const geocodedIds = new Set(snapshot.spatial.geocodedPlaceIds);
-  const mapPlaces: GroundedMapPlace[] = [];
 
-  for (const candidate of snapshot.spatial.places) {
-    if (!geocodedIds.has(candidate.id) || candidate.sample) continue;
-    if (candidate.type !== "place") continue;
+  const mapPlaces: GroundedMapPlace[] = [];
+  for (const candidate of byId.values()) {
+    if (candidate.type !== "place" || candidate.sample || !candidate.providerId) {
+      continue;
+    }
     const latitude = candidate.place?.latitude;
     const longitude = candidate.place?.longitude;
     if (
@@ -96,29 +91,25 @@ export function adaptWorkspaceSnapshot(input: unknown): WorkspaceViewModel {
     mapPlaces.push({ candidate, latitude, longitude });
   }
 
-  function evidenceForCandidate(id: string): readonly WorkspaceEvidence[] {
+  function evidenceForCandidate(id: string): readonly Evidence[] {
     const candidate = byId.get(id);
     if (!candidate || !("evidenceIds" in candidate)) return [];
     return candidate.evidenceIds
       .map((evidenceId) => evidenceById.get(evidenceId))
-      .filter((evidence): evidence is WorkspaceEvidence => evidence !== undefined);
+      .filter((evidence): evidence is Evidence => evidence !== undefined);
   }
 
-  function culturalSignalsForCandidate(
-    id: string,
-  ): readonly ScopedCulturalSignal[] {
+  function culturalSignalsForCandidate(id: string): readonly ScopedCulturalSignal[] {
     const candidate = byId.get(id);
     if (!candidate?.cultural) return [];
 
     return Object.entries(candidate.cultural).map(([key, signal]) => {
       const person = participantById.get(key);
-      // Do not reclassify an aggregate/context query as a person's score.
-      const isParticipant =
-        !!person && signal.signalScope !== "context";
+      const isParticipant = Boolean(person) && signal.signalScope !== "context";
       return {
         key,
-        participantId: isParticipant ? person.id : null,
-        participantName: isParticipant ? person.name : null,
+        participantId: isParticipant && person ? person.id : null,
+        participantName: isParticipant && person ? person.name : null,
         scope: isParticipant
           ? ("participant" as const)
           : signal.signalScope === "context"
@@ -136,23 +127,22 @@ export function adaptWorkspaceSnapshot(input: unknown): WorkspaceViewModel {
     });
   }
 
-  const candidates = [...byId.values()];
   return {
-    snapshot,
-    id: snapshot.id,
-    revision: snapshot.revision,
-    candidates,
+    task,
+    id: task.id,
+    revision: task.brief.version,
+    candidates: [...byId.values()],
     mapPlaces,
     evidenceById,
     candidateById: byId,
-    participants: snapshot.participants,
-    selectedIds: snapshot.plan.selectedCandidateIds,
-    selectedCandidates: snapshot.plan.selectedCandidateIds
+    participants: task.brief.participants,
+    selectedIds: task.brief.selected,
+    selectedCandidates: task.brief.selected
       .map((id) => byId.get(id))
-      .filter((candidate): candidate is WorkspaceCandidate => !!candidate),
-    artifacts: snapshot.artifacts,
-    conversation: snapshot.conversation,
-    execution: snapshot.execution,
+      .filter((candidate): candidate is WorkspaceCandidate => candidate !== undefined),
+    artifacts: task.artifacts,
+    conversation: task.messages,
+    execution: task.agentRun,
     evidenceForCandidate,
     culturalSignalsForCandidate,
   };
