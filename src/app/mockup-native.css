@@ -972,3 +972,96 @@
  .iw-app.igor-mockup .iw-story-open:hover img,
  .ir-reference-image-open:hover img {transform:none}
 }
+
+/* Connected plan: image-led right-hand cover and typographic itinerary, screen 04 */
+.ir-surface.ir-plan {
+  max-width:none;
+  padding:56px clamp(30px,4.8vw,74px) 54px;
+}
+.ir-plan .ir-heading {margin:0;}
+.ir-plan .ir-heading h2 {
+  font-size:clamp(42px,4.7vw,68px);line-height:.97;letter-spacing:-.058em;
+  font-variation-settings:"wght" 900,"wdth" 77;
+}
+.ir-plan .ir-heading p {display:none}
+.ir-plan-byline {display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+  color:#475363;font-size:clamp(15px,1.7vw,23px);margin:6px 0 37px}
+.ir-plan-byline span:not(:last-child)::after {content:" ·";margin-left:12px}
+.ir-plan-tabs {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-bottom:1px solid #eceef0;
+  gap:10px;padding:0 0 15px;margin:0 0 15px}
+.ir-plan-tabs button {
+  min-width:0;padding:13px 16px;min-height:62px;background:transparent;
+  color:#48525f;font-size:clamp(15px,1.65vw,22px);font-weight:520;
+  border:0;border-radius:16px;text-align:center;
+}
+.ir-plan-tabs button[aria-current="page"] {background:#050607;color:#fff;font-weight:700}
+.ir-plan-reference-grid {display:grid;grid-template-columns:minmax(0,1.26fr) minmax(340px,.92fr);
+  gap:clamp(28px,5vw,70px);min-height:670px}
+.ir-plan-timeline-pane {padding:12px 0 0}
+.ir-plan-timeline {list-style:none;margin:0;padding:0}
+.ir-plan-timeline li {display:grid;grid-template-columns:96px 18px minmax(0,1fr);
+  gap:17px;align-items:start;min-height:199px;position:relative;}
+.ir-plan-timeline li:not(:last-child)::after {
+  content:"";position:absolute;top:36px;bottom:-3px;left:122px;width:1px;background:#d9dee5;
+}
+.ir-plan-time {font-size:17px;line-height:30px;white-space:nowrap;color:#14171c}
+.ir-plan-marker {z-index:1;width:13px;height:13px;border-radius:50%;background:#08090b;
+  margin:8px 0 0 3px;box-shadow:0 0 0 5px white}
+.ir-plan-event {display:flex;align-items:flex-start;gap:15px;width:100%;min-height:132px;
+  color:#121418;background:transparent;border:0;text-align:left;padding:0;}
+.ir-plan-event:disabled {opacity:1;cursor:default}
+.ir-plan-thumb {width:78px;height:78px;flex:0 0 78px;border-radius:11px;
+  overflow:hidden;background:#f2f2f3;display:grid;place-items:center}
+.ir-plan-thumb img {display:block;width:100%;height:100%;object-fit:cover}
+.ir-plan-thumb span {font-size:23px;font-weight:800;color:#939aa5}
+.ir-plan-event strong {font-size:clamp(17px,1.8vw,26px);display:block;
+  letter-spacing:-.044em;font-weight:800;line-height:1.16}
+.ir-plan-event span:not(.ir-plan-thumb) {display:block;color:#546274;
+  font-size:clamp(15px,1.65vw,21px);margin-top:3px}
+.ir-plan-event small {display:block;color:#667385;font-size:12px;margin-top:5px}
+.ir-plan-avatars {display:flex;gap:0;margin:14px 0 0}
+.ir-plan-avatars i {display:grid;place-items:center;width:34px;height:34px;margin-right:-5px;
+  background:#e8eef5;color:#152e45;border:2px solid white;
+  border-radius:50%;font-style:normal;font-size:14px;font-weight:700}
+.ir-plan-add-stop {display:inline-flex;align-items:center;justify-content:center;gap:15px;
+  padding:14px 23px;background:#fff;border:1px solid #e5e7ec;
+  border-radius:18px;min-height:60px;font-size:18px;font-weight:720;color:#11151b}
+.ir-plan-cover {min-width:0;align-self:start}
+.ir-plan-cover-art {position:relative;overflow:hidden;min-height:680px;border-radius:20px;background:#05090d}
+.ir-plan-cover-art > img {position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;}
+.ir-plan-cover-art::after {content:"";position:absolute;inset:0;
+  background:linear-gradient(0deg,#02070be9 0%,#0711193c 60%,transparent)}
+.ir-plan-cover-copy {position:absolute;z-index:1;left:29px;right:28px;bottom:35px}
+.ir-plan-cover-copy strong {display:block;color:#fff;max-width:13ch;
+  font-size:clamp(28px,3vw,49px);font-weight:850;line-height:1.02;letter-spacing:-.055em;
+  font-variation-settings:"wght" 850,"wdth" 78}
+.ir-plan-cover small {display:block;margin-top:9px;color:#67717d;font-size:11px;}
+.ir-plan-tab-panel {padding:20px 3px 50px;min-height:390px}
+.ir-plan-notes {max-width:700px}
+.ir-plan-notes p {font-size:16px;padding:14px 0;border-bottom:1px solid #eee}
+.ir-plan-no-schedule {padding:35px 0}
+.ir-plan-no-schedule h3 {font-size:28px}
+@media(max-width:1180px) {
+ .ir-plan-reference-grid {grid-template-columns:minmax(0,1fr) minmax(290px,.86fr);gap:25px}
+ .ir-plan-timeline li {grid-template-columns:70px 12px minmax(0,1fr);gap:10px}
+ .ir-plan-timeline li:not(:last-child)::after {left:86px}
+ .ir-plan-event {gap:10px}
+ .ir-plan-thumb {width:55px;height:55px;flex-basis:55px}
+ .ir-plan-cover-art {min-height:560px}
+}
+@media(max-width:760px) {
+ .ir-surface.ir-plan {padding:83px 19px 45px}
+ .ir-plan .ir-heading h2 {font-size:47px}
+ .ir-plan-byline {font-size:16px;gap:6px;margin:10px 0 25px}
+ .ir-plan-tabs {display:flex;overflow-x:auto;gap:8px;scrollbar-width:none}
+ .ir-plan-tabs button {min-height:45px;padding:10px 17px;flex:0 0 auto;font-size:15px}
+ .ir-plan-reference-grid {display:flex;flex-direction:column;gap:20px}
+ .ir-plan-timeline li {min-height:145px;grid-template-columns:70px 13px minmax(0,1fr)}
+ .ir-plan-timeline li:not(:last-child)::after {left:86px}
+ .ir-plan-time {font-size:12px}
+ .ir-plan-thumb {width:61px;height:61px;flex-basis:61px}
+ .ir-plan-event strong {font-size:16px}
+ .ir-plan-event span:not(.ir-plan-thumb) {font-size:14px}
+ .ir-plan-cover-art {min-height:290px;border-radius:16px;}
+ .ir-plan-cover-copy strong {font-size:28px;max-width:19ch}
+}
