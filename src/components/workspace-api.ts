@@ -1,4 +1,8 @@
 import {
+  WorkspaceSnapshotSchema,
+  type WorkspaceSnapshot,
+} from "@/core/workspace-snapshot";
+import {
   EventSchema,
   TaskSchema,
   type Event,
@@ -45,6 +49,25 @@ export async function fetchWorkspace(id: string): Promise<Task | null> {
   }
 
   return TaskSchema.parse(await response.json());
+}
+
+/** Read the canonical frontend projection; no local work or evidence store. */
+export async function fetchWorkspaceSnapshot(
+  id: string,
+): Promise<WorkspaceSnapshot | null> {
+  const response = await fetch(
+    `/api/tasks/${encodeURIComponent(id)}/snapshot`,
+    { cache: "no-store" },
+  );
+
+  if (response.status === 401 || response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error("Could not load the saved workspace snapshot.");
+  }
+
+  return WorkspaceSnapshotSchema.parse(await response.json());
 }
 
 export async function fetchWorkspaceHistory(): Promise<
