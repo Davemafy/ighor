@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
 import { projectWorkspace } from "@/core/workspace-snapshot";
-import { adaptWorkspaceSnapshot, type WorkspaceCandidate } from "./workspace-view-model";
+import { adaptWorkspaceSnapshot, type WorkspaceCandidate, type WorkspaceViewModel } from "./workspace-view-model";
 import { ArrowRight, Check, ChevronDown, MapPin, Plus, Search } from "lucide-react";
 import { TaskCanvas } from "./task-canvas";
 
@@ -58,8 +58,7 @@ function EvidenceSource({ source }: { source: Task["evidence"][number] }) {
   );
 }
 
-function CandidateSignals({ task, candidate }: { task: Task; candidate: Candidate }) {
-  const vm = adaptWorkspaceSnapshot(projectWorkspace(task));
+function CandidateSignals({ task, candidate, vm }: { task: Task; candidate: Candidate; vm: WorkspaceViewModel }) {
   const signals = vm.culturalSignalsForCandidate(candidate.id);
   const sampleIds = new Set(task.brief.participants.filter((p) => p.sample).map((p) => p.id));
   return (
@@ -100,11 +99,11 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const comparedIds = comparisonIds.length ? comparisonIds : task.canvas?.comparisonIds.length
     ? task.canvas.comparisonIds : task.brief.selected.length ? task.brief.selected : candidates.slice(0, 3).map((c) => c.id);
   const compared = comparedIds.map((id) => vm.candidateById.get(id)).filter((c): c is Candidate => !!c);
-  const proposalNode = task.canvas?.surface.nodes.find((node) => (node.type === "discovery" || node.type === "spatial") && node.candidateIds.length > 0);
+  const proposalNode = task.canvas?.surface.nodes.find((node) => node.type === "discovery" || node.type === "spatial");
 
   async function addToWork(id: string) {
     const canEditItinerary = !!proposalNode && !!task.canvas &&
-      proposalNode.candidateIds.includes(id) &&
+      ("candidateIds" in proposalNode) && proposalNode.candidateIds.includes(id) &&
       task.candidates.some((candidate) => candidate.id === id && candidate.freshness === "current");
     if (canEditItinerary && task.canvas && proposalNode) {
       const candidateIds = [...new Set([...task.canvas.itineraryIds, id])];
@@ -182,7 +181,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
                     <p>Availability · {c.available == null ? "Not checked" : c.available ? "Reported available" : "Reported unavailable"}</p>
                   </div>
                   <div className="ir-matrix-metric"><small>People and query-scoped evidence</small>
-                    <CandidateSignals task={task} candidate={c}/>
+                    <CandidateSignals task={task} candidate={c} vm={vm}/>
                   </div>
                   <div className="ir-matrix-metric"><small>Sources</small>
                     {vm.evidenceForCandidate(c.id).length ? vm.evidenceForCandidate(c.id).map((s) => <p key={s.id}>{s.title || s.summary.slice(0, 80)}</p>)
@@ -209,7 +208,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
                 <button className="ir-secondary" onClick={() => {toggleCompare(chosen.id);onNavigate("compare");}}>Compare</button>
               </div>
             </div>
-            <h4>Qloo evidence</h4><CandidateSignals task={task} candidate={chosen}/>
+            <h4>Qloo evidence</h4><CandidateSignals task={task} candidate={chosen} vm={vm}/>
           </div>
           <aside className="ir-detail-sources">
             <h4>Sources and context</h4>
