@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Task, TaskAction } from "@/core/contracts";
-import { projectWorkspace } from "@/core/workspace-snapshot";
-import { adaptWorkspaceSnapshot, type WorkspaceCandidate, type WorkspaceViewModel } from "./workspace-view-model";
+import { adaptTaskForPresentation, type WorkspaceCandidate, type WorkspaceViewModel } from "./workspace-view-model";
 import { ArrowRight, Check, ChevronDown, MapPin, Plus, Search } from "lucide-react";
 import { TaskCanvas } from "./task-canvas";
 
@@ -84,7 +83,7 @@ function CandidateSignals({ task, candidate, vm }: { task: Task; candidate: Cand
 }
 
 export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
-  const vm = useMemo(() => adaptWorkspaceSnapshot(projectWorkspace(task)), [task]);
+  const vm = useMemo(() => adaptTaskForPresentation(task), [task]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
