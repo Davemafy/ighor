@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { Compass, FilePlus2, Map, Home as HomeIcon, UserRound } from "lucide-react";
 import { AccountDialog } from "./account-panel";
 import { Connections } from "./connections-view";
+import { ReferenceWork } from "./reference-work";
 import { DecisionWork } from "./decision-work";
 import { InvitationStudio } from "./invitation-studio";
 import { projectInvitationScene } from "@/core/invitation-scene";
@@ -53,6 +54,7 @@ import "../app/workbench.css";
 import "../app/native-workspace.css";
 import "../app/mockup-native.css";
 import "../app/research-discovery.css";
+import "../app/reference-work.css";
 
 const assets = "/marketing/assets/";
 const starts = [
@@ -85,7 +87,7 @@ const starts = [
       "Help me plan a short trip. Start with where I am leaving from, my dates and budget.",
   },
 ];
-type Page = "work" | "history" | "saved";
+type Page = "work" | "history" | "saved" | "explore" | "maps" | "create";
 
 export function AgentWorkspace({
   initialPage = "work",
@@ -102,6 +104,7 @@ export function AgentWorkspace({
   const [page, setPage] = useState<Page>(initialPage);
   const [prompt, setPrompt] = useState("");
   const [menu, setMenu] = useState(false);
+  const [exploreView, setExploreView] = useState<"discover" | "compare" | "plan" | "detail" | "revisions" | "maps">("discover");
   const [historyError, setHistoryError] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -264,7 +267,9 @@ export function AgentWorkspace({
         ? "conversation"
         : next === "history"
           ? "conversations"
-          : "saved",
+          : next === "saved"
+            ? "saved"
+            : next,
     );
     history.replaceState({}, "", url);
   }
@@ -389,22 +394,37 @@ export function AgentWorkspace({
             aria-current={page === "work" ? "page" : undefined}
             onClick={() => navigate("work")}
           >
-            <MessageCircle />
-            <span>Your space</span>
+            <HomeIcon />
+            <span>Home</span>
+          </button>
+          <button aria-current={page === "explore" ? "page" : undefined}
+            onClick={() => { setExploreView("discover"); navigate("explore"); }}>
+            <Compass />
+            <span>Explore</span>
+          </button>
+          <button aria-current={page === "create" ? "page" : undefined}
+            onClick={() => navigate("create")}>
+            <FilePlus2 />
+            <span>Create</span>
+          </button>
+          <button aria-current={page === "maps" ? "page" : undefined}
+            onClick={() => { setExploreView("maps"); navigate("maps"); }}>
+            <Map />
+            <span>Maps</span>
           </button>
           <button
             aria-current={page === "history" ? "page" : undefined}
             onClick={() => navigate("history")}
           >
             <Search />
-            <span>Conversations</span>
+            <span>Search</span>
           </button>
           <button
             aria-current={page === "saved" ? "page" : undefined}
             onClick={() => navigate("saved")}
           >
             <Bookmark />
-            <span>Saved</span>
+            <span>Library</span>
           </button>
         </nav>
         <button
@@ -441,6 +461,15 @@ export function AgentWorkspace({
             <button onClick={() => navigate("work")}>
               <MessageCircle />
               Your space
+            </button>
+            <button onClick={() => { setExploreView("discover");navigate("explore"); }}>
+              <Compass /> Explore
+            </button>
+            <button onClick={() => navigate("create")}>
+              <FilePlus2 /> Create
+            </button>
+            <button onClick={() => { setExploreView("maps");navigate("maps"); }}>
+              <Map /> Maps
             </button>
             <button onClick={() => navigate("history")}>
               <Search />
@@ -729,6 +758,27 @@ export function AgentWorkspace({
             </footer>
           </section>
         )}
+        {(page === "explore" || page === "maps") && task && (
+          <section className="iw-standalone-reference" aria-label="Discover and maps">
+            <ReferenceWork task={task} view={page === "maps" ? "maps" : exploreView}
+              busy={w.isBusy || w.isLoadingWorkspace} onTurn={turn}
+              onNavigate={(view) => { setExploreView(view); if (view === "maps") navigate("maps"); else if (page === "maps") navigate("explore"); }} />
+            <div className="iw-standalone-composer">{composer}</div>
+          </section>
+        )}
+        {page === "create" && task && (
+          <section className="iw-standalone-reference" aria-label="Create work">
+            {task.work?.documents.length || task.artifacts.length || task.canvas ? (
+              <Work key={task.id + ":create"} task={task} busy={w.isBusy || w.isLoadingWorkspace}
+                onTurn={turn} onTask={w.acceptTask} onLoad={open} preferred="documents"/>
+            ) : (
+              <div className="ir-empty"><h2>Make something real.</h2>
+                <p>Start with your idea in the composer. Igor will create editable work from the conversation.</p></div>
+            )}
+            <div className="iw-standalone-composer">{composer}</div>
+          </section>
+        )}
+        {(page === "create" || page === "explore" || page === "maps") && !task && <LoadingSurface mode="output" />}
         {page === "history" && (
           <section className="iw-library iw-history-page">
             <header className="iw-history-heading">
@@ -867,14 +917,16 @@ function Work({
   onTurn,
   onTask,
   onLoad,
+  preferred,
 }: {
   task: Task;
   busy: boolean;
   onTurn: (a: TaskAction) => Promise<void>;
   onTask: (t: Task) => void;
   onLoad: (id: string) => Promise<void>;
+  preferred?: string;
 }) {
-  const [resource, setResource] = useState<string | null>(null);
+  const [resource, setResource] = useState<string | null>(preferred ?? null);
   const research = buildResearchCards(task);
   const placeNode = task.canvas?.surface.nodes.find(
     (node) => node.type === "spatial",
@@ -887,6 +939,11 @@ function Work({
   // genuine invitation artifact has been saved to this task.
   const hasInvitation = Boolean(projectInvitationScene(task)?.artifact);
   const resources = [
+    ...(task.candidates.length || task.catalogue.length ? [{ id: "discover", title: "Discover" }] : []),
+    ...(task.candidates.length + task.catalogue.length > 1 ? [{ id: "compare", title: "Compare" }] : []),
+    ...(task.brief.selected.length || task.schedule.length ? [{ id: "plan", title: "Plan" }] : []),
+    ...(task.candidates.length ? [{ id: "detail", title: "Details" }] : []),
+    ...(task.receipts?.length || task.artifactHistory?.length ? [{ id: "revisions", title: "Versions" }] : []),
     ...(hasInvitation ? [{ id: "invite", title: "Invitation" }] : []),
     ...(hasCanvasWork || research
       ? [{ id: "workspace", title: research ? "Explore" : "Current view" }]
@@ -955,6 +1012,10 @@ function Work({
             excludeQuestions
           />
         ))}
+      {(["discover", "compare", "plan", "detail", "revisions"].includes(active || "")) && (
+        <ReferenceWork task={task} view={active as "discover" | "compare" | "plan" | "detail" | "revisions"} busy={busy}
+          onTurn={onTurn} onNavigate={(view) => setResource(view)} />
+      )}
       {active === "invite" && (
         <InvitationStudio task={task} busy={busy} onTurn={onTurn} />
       )}
