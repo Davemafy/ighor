@@ -57,41 +57,13 @@ import "../app/research-discovery.css";
 
 const assets = "/marketing/assets/";
 const starts = [
-  {
-    title: "A thoughtful gift",
-    caption: "A little more them.",
-    image: "covers/c01.webp",
-    prompt:
-      "Help me find a thoughtful gift. Ask who it is for and what matters before suggesting anything.",
-  },
-  {
-    title: "Something together",
-    caption: "Room for everyone.",
-    image: "covers/c02.webp",
-    prompt:
-      "Plan something great with friends. Use the details I provide to explore real options, show a sourced shortlist, and save a usable plan. Ask only for essential missing information.",
-  },
-  {
-    title: "A new direction",
-    caption: "Give the idea a shape.",
-    image: "covers/c03.webp",
-    prompt:
-      "Help me develop a creative idea. Ask what I am making and who it is for.",
-  },
-  {
-    title: "A few days away",
-    caption: "Somewhere worth going.",
-    image: "covers/c04.webp",
-    prompt:
-      "Help me plan a short trip. Start with where I am leaving from, my dates and budget.",
-  },
-  {
-    title: "A question worth asking",
-    caption: "Research, compare, understand.",
-    image: "covers/c05.webp",
-    prompt: "Help me research a question. Find useful sources, compare the evidence and create a clear brief.",
-  },
+  { title: "A film night for 6 friends", image: "home-story-1.webp", fallback: "photos/hero-dinner-a-800.webp", prompt: "Plan a film and music evening for six friends in New York, with indie films, jazz and good food. Ask only for essential missing details." },
+  { title: "Rooftop spots in New York", image: "home-story-2.webp", fallback: "photos/gallery-800.webp", prompt: "Find rooftop places in New York. Show verified venues and explain the trade-offs." },
+  { title: "Afrobeats meets jazz", image: "home-story-3.webp", fallback: "covers/c08.webp", prompt: "Explore artists, playlists and experiences where Afrobeats meets jazz." },
+  { title: "Hidden gems in London", image: "home-story-4.webp", fallback: "photos/london-street-800.webp", prompt: "Discover underrated cultural places and experiences in London, with verifiable sources." },
+  { title: "Books for a cozy weekend", image: "home-story-5.webp", fallback: "covers/c05.webp", prompt: "Find books for a cozy weekend, using what I like and leaving room for new discoveries." },
 ];
+
 type Page = "work" | "history" | "saved" | "explore" | "maps" | "create";
 
 export function AgentWorkspace({
@@ -508,7 +480,7 @@ export function AgentWorkspace({
                 ["Plan an evening", "Plan a thoughtful evening with friends. Ask for essential details."],
                 ["Find a film", "Help me find a film based on my taste."],
                 ["Build a playlist", "Help me build a playlist with a particular mood."],
-                ["Research a topic", "Help me research a topic and compare reliable sources."],
+                ["Find a place", "Help me find a place worth visiting. Ask for the city if needed."],
                 ["Compare options", "Help me compare some options and decide on one."],
               ].map(([label, request]) => (
                 <button key={label} disabled={!task || w.isBusy}
@@ -526,14 +498,24 @@ export function AgentWorkspace({
                   }}
                 >
                   <div className="iw-poster">
-                    <LoadingImage src={assets + s.image} />
+                    <img
+                      src={`/reference-art/${s.image}`}
+                      alt=""
+                      loading="eager"
+                      onError={(event) => {
+                        const fallback = assets + s.fallback;
+                        if (event.currentTarget.src !== new URL(fallback, location.origin).href) {
+                          event.currentTarget.src = fallback;
+                        }
+                      }}
+                    />
                     <span className="iw-poster-number">0{i + 1}</span>
                   </div>
                   <div>
                     <h2>{s.title}</h2>
                     <ArrowUpRight />
                   </div>
-                  <p>{s.caption}</p>
+
                 </button>
               ))}
             </div>
