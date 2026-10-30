@@ -889,7 +889,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
                 </p>
               )}
               <p className="ir-footnote">
-                Any descriptive fit wording is Igor's interpretation, not a
+                Any descriptive fit wording is Igor&apos;s interpretation, not a
                 guaranteed Qloo explanation.
               </p>
             </aside>
