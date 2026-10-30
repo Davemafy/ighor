@@ -86,6 +86,12 @@ const starts = [
     prompt:
       "Help me plan a short trip. Start with where I am leaving from, my dates and budget.",
   },
+  {
+    title: "A question worth asking",
+    caption: "Research, compare, understand.",
+    image: "covers/c05.webp",
+    prompt: "Help me research a question. Find useful sources, compare the evidence and create a clear brief.",
+  },
 ];
 type Page = "work" | "history" | "saved" | "explore" | "maps" | "create";
 
@@ -498,6 +504,18 @@ export function AgentWorkspace({
               </p>
             </div>
             <div className="iw-welcome-compose">{composer}</div>
+            <div className="iw-quick-start" aria-label="Start a new task">
+              {[
+                ["Plan an evening", "Plan a thoughtful evening with friends. Ask for essential details."],
+                ["Find a film", "Help me find a film based on my taste."],
+                ["Build a playlist", "Help me build a playlist with a particular mood."],
+                ["Research a topic", "Help me research a topic and compare reliable sources."],
+                ["Compare options", "Help me compare some options and decide on one."],
+              ].map(([label, request]) => (
+                <button key={label} disabled={!task || w.isBusy}
+                  onClick={() => { setPrompt(request); input.current?.focus(); }}>{label}</button>
+              ))}
+            </div>
             <div className="iw-ideas" aria-label="Ways to begin">
               {starts.map((s, i) => (
                 <button
@@ -770,7 +788,7 @@ export function AgentWorkspace({
           <section className="iw-standalone-reference" aria-label="Create work">
             {task.work?.documents.length || task.artifacts.length || task.canvas ? (
               <Work key={task.id + ":create"} task={task} busy={w.isBusy || w.isLoadingWorkspace}
-                onTurn={turn} onTask={w.acceptTask} onLoad={open} preferred="documents"/>
+                onTurn={turn} onTask={w.acceptTask} onLoad={open} preferred={task.work?.documents.length ? "documents" : task.artifacts.length ? "drafts" : "workspace"}/>
             ) : (
               <div className="ir-empty"><h2>Make something real.</h2>
                 <p>Start with your idea in the composer. Igor will create editable work from the conversation.</p></div>
@@ -938,11 +956,12 @@ function Work({
   // A gathering is not an invitation. Only expose the editor once a
   // genuine invitation artifact has been saved to this task.
   const hasInvitation = Boolean(projectInvitationScene(task)?.artifact);
+  const groundedCount = [...task.candidates, ...task.catalogue].filter((candidate) => !candidate.sample).length;
   const resources = [
-    ...(task.candidates.length || task.catalogue.length ? [{ id: "discover", title: "Discover" }] : []),
-    ...(task.candidates.length + task.catalogue.length > 1 ? [{ id: "compare", title: "Compare" }] : []),
+    ...(groundedCount ? [{ id: "discover", title: "Discover" }] : []),
+    ...(groundedCount > 1 ? [{ id: "compare", title: "Compare" }] : []),
     ...(task.brief.selected.length || task.schedule.length ? [{ id: "plan", title: "Plan" }] : []),
-    ...(task.candidates.length ? [{ id: "detail", title: "Details" }] : []),
+    ...(groundedCount ? [{ id: "detail", title: "Details" }] : []),
     ...(task.receipts?.length || task.artifactHistory?.length ? [{ id: "revisions", title: "Versions" }] : []),
     ...(hasInvitation ? [{ id: "invite", title: "Invitation" }] : []),
     ...(hasCanvasWork || research
