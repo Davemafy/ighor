@@ -86,6 +86,10 @@ A read-only adapter **must not** synthesize scores, participant rankings, an act
 | 11 Revise | RevisionWorkspace | RevisionSummary, VersionTimeline, AgentComposer |
 | 12 Mobile | MobileCompositions | MobileWorkSheet + *same roots/models* |
 
+### Snapshot v1 limitation to resolve with engine owners
+
+The existing `WorkspaceSnapshotSchema v1` includes `plan.work` and `artifacts`, **but not `task.canvas` / `PresentationSchema`**. Until a compatible engine-contract revision is agreed, the existing `/api/tasks/:id` task object remains the source for the declarative canvas, while the snapshot powers its supported families. **Do not** invent `snapshot.presentation`, silently scrape raw assistant messages to infer layout, or patch the engine in this UI branch.
+
 ## Interaction topology
 
 1. **Entry:** free text or starter → existing authenticated task turn; no Qloo-required intake for arbitrary prompts.
