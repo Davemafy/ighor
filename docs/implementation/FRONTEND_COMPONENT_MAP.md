@@ -2,7 +2,7 @@
 
 **Branch baseline:** `design/mockup-to-native-ui-20261029` (stacked on PR #27).  
 **Design authority:** all 12 owner-provided references.  
-**Data authority:** `WorkspaceSnapshotSchema v1` in `src/core/workspace-snapshot.ts`; existing task-turn and journal endpoints for writes/recovery.
+**Data authority on this branch:** `TaskSchema` in `src/core/contracts.ts` through the existing authenticated task/turn/journal APIs. `WorkspaceSnapshotSchema v1` is upstream work and is **not present** in PR #28's current base.
 
 The frontend is a **projection** of one canonical task, not twelve stores. Screens are capabilities and compositions, not a rigid route sequence.
 
@@ -11,9 +11,9 @@ The frontend is a **projection** of one canonical task, not twelve stores. Scree
 | Existing module | Responsibility | Design adaptation |
 | --- | --- | --- |
 | `src/core/contracts.ts` | Task, participant, candidate, evidence, artifacts and turn type schemas | **Do not modify** as part of UI work |
-| `src/core/workspace-snapshot.ts` | Read-only v1 projection of canonical task, revision and geocoded IDs | Validate at the client boundary; preserve exact identities |
+| `src/core/workspace-snapshot.ts` (upstream only) | Proposed read-only projection, absent from this branch | Do not import until integrated in a compatible engine update |
 | `src/core/presentation.ts` | Finite declarative vocabulary: text, findings, sources, tables, chart, document, timeline, discovery, spatial, question | Adapt stable semantic objects, not raw LLM text or HTML |
-| `src/components/workspace-api.ts` | Authenticated task load, history, turns, SSE, recovery journal and optimistic versioning | Reuse turn transport; add an additive snapshot read helper if needed |
+| `src/components/workspace-api.ts` | Authenticated canonical Task load, history, turns, SSE, recovery journal and optimistic versioning | Reuse existing transport; do not call nonexistent snapshot endpoint |
 | `src/components/use-workspace.ts` | Workspace identity, turn events, recovery, task state | Single authoritative state hook, no Zustand duplication |
 | `src/components/agent-workspace.tsx` | Navigation, thread, local presentation routing, results and saved work | Decompose monolith incrementally; preserve all behavior |
 | `src/components/task-canvas.tsx` | Declarative work rendering/mutations, version selection | Style presentation primitives and maintain node IDs |
@@ -56,7 +56,7 @@ The frontend is a **projection** of one canonical task, not twelve stores. Scree
 
 ### Shared view adapter (P0)
 
-A small pure client-safe module should accept `unknown`, validate `WorkspaceSnapshotSchema`, produce stable selectors, and expose:
+A small pure client-safe module accepts `unknown`, validates `TaskSchema`, produces stable selectors, and exposes:
 
 - `id`, `revision`, `state`, `goal` and saved conversation.
 - `candidates`: deduped by ID, evaluated records preferred.
@@ -88,7 +88,7 @@ A read-only adapter **must not** synthesize scores, participant rankings, an act
 
 ### Snapshot v1 limitation to resolve with engine owners
 
-The existing `WorkspaceSnapshotSchema v1` includes `plan.work` and `artifacts`, **but not `task.canvas` / `PresentationSchema`**. Until a compatible engine-contract revision is agreed, the existing `/api/tasks/:id` task object remains the source for the declarative canvas, while the snapshot powers its supported families. **Do not** invent `snapshot.presentation`, silently scrape raw assistant messages to infer layout, or patch the engine in this UI branch.
+On the currently checked-out frontend base, `src/core/workspace-snapshot.ts` and `/api/tasks/:id/snapshot` are absent. The implemented adapter `adaptTaskForPresentation` therefore validates the existing `TaskSchema` returned by `/api/tasks/:id`, which already includes the declarative canvas and all grounded task data. A later snapshot integration requires an explicit engine branch reconciliation; never import a module that is absent from this PR base.
 
 ## Interaction topology
 
