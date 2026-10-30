@@ -65,8 +65,14 @@ test("mobile navigation keeps all primary actions accessible without page overfl
     path: "test-results/reference-native-home-mobile.png",
   });
   await nav.getByRole("button", { name: "Explore" }).click();
+  // The reference-faithful Discover layout visually hides its large heading.
+  // Verify the actual route and visible discovery surface instead.
+  await expect(nav.getByRole("button", { name: "Explore" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await expect(
-    page.getByRole("heading", { name: "Explore", exact: true }),
+    page.getByRole("searchbox", { name: "Discover across any domain" }),
   ).toBeVisible();
   await expect
     .poll(() =>
