@@ -459,3 +459,282 @@
     transform: none !important;
   }
 }
+
+/* Igor source-matched working surfaces. Existing Archivo and controls retained.
+   No reference screenshot, synthetic media, or user taste is injected here. */
+.iw-app.igor-mockup {
+  --ir-black: #090b0c;
+  --ir-ink: #0d0e0f;
+  --ir-muted: #66707c;
+  --ir-line: #e6e7e7;
+  --ir-white: #fff;
+  --ir-quiet: #f6f6f6;
+  background: #fff;
+}
+.ir-sr {position:absolute;clip:rect(0 0 0 0);height:1px;width:1px;overflow:hidden;white-space:nowrap}
+.ir-surface {
+  color: var(--ir-ink);
+  width:100%;
+  max-width: 1420px;
+  margin:0 auto;
+  padding: clamp(22px, 3.5vw, 48px) clamp(18px,3.5vw,48px) 56px;
+  font-family: Archivo, Arial, sans-serif;
+  min-width: 0;
+}
+.ir-heading { display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:25px; }
+.ir-heading h2 {font-variation-settings: "wght" 900, "wdth" 76;
+  font-size:clamp(38px,4.3vw,74px);font-weight:900;line-height:.95;letter-spacing:-.071em;margin:0 0 10px;}
+.ir-heading p {font-size:clamp(14px,1.4vw,19px);line-height:1.4;color:var(--ir-muted);margin:0;}
+.ir-surface h3 {font-size:clamp(20px,2vw,29px);letter-spacing:-.04em;font-weight:800;margin:22px 0 13px;}
+.ir-surface h4 {font-size:21px;letter-spacing:-.03em;margin:24px 0 14px;}
+.ir-surface button {cursor:pointer;font-family:inherit;}
+.ir-surface button:disabled {cursor:not-allowed;opacity:.55;}
+.ir-surface :is(button,input,summary,a):focus-visible {outline:2px solid #e16b45;outline-offset:3px}
+.ir-search {display:flex;align-items:center;gap:15px;padding:0 20px;height:62px;background:white;border:1px solid #e1e3e6;border-radius:20px;box-shadow:0 2px 14px #11111107;margin:12px 0 19px;}
+.ir-search input {border:0;outline:0;background:transparent;flex:1;min-width:0;font-size:16px;box-shadow:none;}
+.ir-search input:focus {outline:0}
+.ir-chip-row {display:flex;gap:9px;overflow-x:auto;scrollbar-width:thin;padding:0 1px 14px;margin-bottom:21px}
+.ir-chip-row button {flex:0 0 auto;min-height:43px;padding:11px 24px;border:1px solid #e6e7e8;border-radius:16px;background:#f7f7f7;color:#46505b;font-size:14px;text-transform:capitalize;transition:background .18s,color .18s}
+.ir-chip-row button[aria-pressed="true"] {background:#08090a;color:#fff;border-color:#08090a;}
+.ir-section-line {display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:22px 0 15px}
+.ir-section-line h3 {margin:0}
+.ir-section-line span {font-size:13px;color:var(--ir-muted)}
+.ir-gallery {display:grid;grid-template-columns:repeat(auto-fill,minmax(166px,1fr));gap:24px 13px;}
+.ir-candidate {min-width:0}
+.ir-card-open {display:flex;flex-direction:column;gap:7px;padding:0;text-align:left;width:100%;background:transparent;color:var(--ir-ink);border:0;min-width:0}
+.ir-card-open strong {font-size:clamp(16px,1.4vw,21px);font-weight:800;letter-spacing:-.04em;line-height:1.12}
+.ir-card-open > span {font-size:14px;line-height:1.2;color:var(--ir-muted);text-transform:capitalize}
+.ir-media {aspect-ratio: 4/5;background:#e9ebee;overflow:hidden;border-radius:12px;width:100%;position:relative}
+.ir-media-wide {aspect-ratio: 16/10}
+.ir-media img {width:100%;height:100%;object-fit:cover;display:block}
+.ir-media-fallback {width:100%;height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;
+  background:linear-gradient(145deg,#273038,#131a20);color:#fff;padding:20px;overflow-wrap:anywhere;}
+.ir-media-fallback span {font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#ccd0d4}
+.ir-media-fallback strong {font-size:clamp(16px,1.7vw,27px);font-variation-settings:"wght" 850,"wdth" 80;line-height:1.02;letter-spacing:-.04em}
+.ir-card-actions {display:flex;gap:8px;margin-top:13px;align-items:stretch;flex-wrap:wrap}
+.ir-card-actions button {border:1px solid #e3e5e7;padding:9px 11px;min-height:38px;border-radius:10px;font-size:12px;font-weight:650;display:inline-flex;align-items:center;gap:5px}
+.ir-card-actions button:first-child {background:#0a0a0b;color:white;border-color:#0a0a0b}
+.ir-empty {border:1px solid var(--ir-line);border-radius:22px;padding:clamp(25px,4vw,60px);text-align:center;color:var(--ir-muted);background:#fafafa;margin:20px 0;}
+.ir-empty h2,.ir-empty h3 {color:var(--ir-ink);margin:10px 0}
+.ir-empty button {margin-top:20px;padding:12px 24px;border-radius:12px;background:#101112;color:white}
+.ir-primary,.ir-secondary {display:inline-flex;align-items:center;justify-content:center;gap:12px;
+  border-radius:14px;min-height:46px;padding:12px 19px;font-size:14px;font-weight:700;}
+.ir-primary {background:#08090a;color:#fff;border:1px solid #08090a;}
+.ir-secondary {background:#fff;color:#161719;border:1px solid #e3e5e7;}
+.ir-compare-picker {display:flex;gap:8px;flex-wrap:wrap;margin:15px 0 20px}
+.ir-compare-picker button {display:flex;align-items:center;gap:5px;padding:10px 14px;min-height:40px;font-size:13px;border-radius:12px;border:1px solid #e0e1e4;background:#fff;}
+.ir-compare-picker button[aria-pressed="true"] {background:#111;color:white;border-color:#111}
+.ir-matrix-scroll {overflow-x:auto;max-width:100%;scrollbar-width:thin;padding-bottom:5px}
+.ir-matrix {display:grid;gap:0;min-width:600px;border-left:1px solid #e5e6e8;border-top:1px solid #e5e6e8;border-radius:15px;overflow:hidden;}
+.ir-matrix-column {display:flex;flex-direction:column;min-width:0;border-right:1px solid #e5e6e8;border-bottom:1px solid #e5e6e8;padding:12px;gap:12px}
+.ir-matrix-column .ir-media {border-radius:11px}
+.ir-matrix-metric {padding:15px 2px;border-top:1px solid #e9eaed;min-height:90px}
+.ir-matrix-metric > small {display:block;margin:0 0 10px;color:#7b8590;font-size:11px;letter-spacing:.02em}
+.ir-matrix-metric > p {font-size:13px;line-height:1.45;margin:7px 0}
+.ir-matrix-column > .ir-primary {margin-top:auto;}
+.ir-footnote {font-size:12px;color:#737c85;line-height:1.55;margin-top:18px}
+.ir-detail-layout {display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,.85fr);gap:clamp(20px,3vw,45px);}
+.ir-detail-main > .ir-media {aspect-ratio: 2.45;max-height:430px}
+.ir-detail-copy {padding:19px 0 4px}
+.ir-kicker {font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.1em;color:#78818b}
+.ir-detail-copy h3 {font-variation-settings:"wght" 900,"wdth" 76;font-size:clamp(38px,4vw,62px);line-height:1;margin:6px 0 13px}
+.ir-detail-copy p:not(.ir-kicker) {font-size:16px;line-height:1.6;max-width:70ch;color:#515a63;}
+.ir-detail-actions {display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.ir-detail-sources {border:1px solid #e5e6e7;border-radius:20px;padding:21px;background:#fafafa;align-self:start}
+.ir-detail-sources h4 {margin:0 0 16px}
+.ir-evidence {border-top:1px solid #e2e4e6;padding:17px 0;}
+.ir-source-head {display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.ir-source-head strong {font-size:14px}
+.ir-source-head span {font-size:10px;color:#56616b;text-transform:uppercase;white-space:nowrap}
+.ir-evidence p {font-size:13px;line-height:1.6;margin:10px 0}
+.ir-evidence small,.ir-subtle {color:#77818b;font-size:13px;line-height:1.5}
+.ir-evidence a {color:#0c1c29;text-decoration:underline;display:inline-flex;align-items:center;gap:7px;font-size:13px}
+.ir-signals {display:grid;gap:8px}
+.ir-signal {border:1px solid #e9eaeb;border-radius:12px;background:#fff;padding:13px 14px;min-width:0;}
+.ir-signal-top {display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ir-signal-top strong {font-size:13px}
+.ir-signal-top span {font-size:10px;background:#ecf2f8;color:#1d384d;border-radius:20px;padding:3px 8px;font-weight:750;}
+.ir-signal p {margin:6px 0;font-size:13px}
+.ir-signal p span {color:#7d838b}
+.ir-signal small {display:block;font-size:11px;color:#7b828b;line-height:1.45;overflow-wrap:anywhere}
+.ir-plan-layout {display:grid;grid-template-columns:minmax(0,1.65fr) minmax(240px, .8fr);gap:clamp(20px,3vw,46px);margin-top:10px}
+.ir-timeline {list-style:none;padding:10px 0 10px 0;margin:0}
+.ir-timeline li {display:grid;grid-template-columns:80px 16px minmax(0,1fr);gap:16px;align-items:center;min-height:94px;}
+.ir-time {font-size:14px}
+.ir-dot {height:11px;width:11px;border-radius:50%;background:#0b0b0b;box-shadow:0 0 0 4px #fff}
+.ir-timeline li:not(:last-child) .ir-dot:after {content:"";display:block;width:1px;height:85px;background:#dde0e3;position:relative;top:13px;left:5px;}
+.ir-timeline strong {font-size:17px}
+.ir-timeline p {color:#73808a;margin:5px 0}
+.ir-constraint-panel {padding:23px;border:1px solid #e3e4e5;border-radius:19px;align-self:start;background:#fff}
+.ir-constraint-panel h3 {margin:0 0 18px}
+.ir-constraint-panel p {display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#65707b;padding:13px 0;margin:0;border-bottom:1px solid #ecedef}
+.ir-constraint-panel p strong {color:#161719;text-align:right}
+.ir-constraint-panel .ir-secondary {margin-top:22px}
+.ir-selection-list {display:flex;flex-direction:column;gap:4px}
+.ir-selection-list button {display:flex;justify-content:space-between;align-items:center;padding:15px 8px;border-bottom:1px solid #e5e7e8;text-align:left}
+.ir-revisions {max-width:950px;margin:20px auto}
+.ir-revision-current {border:1px solid #d7e5dd;background:#f3faf5;border-radius:15px;padding:19px;display:flex;align-items:start;gap:14px}
+.ir-revision-current > svg {color:#177d4b}
+.ir-revision-current strong {font-size:17px}
+.ir-revision-current p {font-size:14px;color:#516357;margin:7px 0 0}
+.ir-version-list {list-style:none;padding:0;margin:0}
+.ir-version-list li {display:grid;grid-template-columns:110px minmax(0,1fr);gap:20px;align-items:start;border-bottom:1px solid #e5e6e8;padding:21px 8px}
+.ir-version-list li > span {font-weight:800;font-size:16px}
+.ir-version-list strong {font-size:15px}
+.ir-version-list p {font-size:13px;color:#6e7681;margin:7px 0}
+.ir-version-list details summary {font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.ir-version-list pre {white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 Archivo,Arial,sans-serif;background:#f8f8f8;border-radius:12px;padding:20px;}
+/* Shell geometry: the reference uses a labeled sidebar, not a narrow icon rail. */
+@media (min-width: 761px) {
+ .iw-app.igor-mockup {padding-left:218px;}
+ .iw-app.igor-mockup .iw-nav,
+ .iw-app.igor-mockup .iw-nav:is(:hover,:focus-within) {
+  position:fixed;top:0;left:0;bottom:0;width:218px;height:100dvh;
+  padding:28px 17px 18px;background:#fff;color:#1d242c;border-right:1px solid #e9e9e9;
+  border-radius:0;box-shadow:none;transition:none;align-items:stretch;gap:25px;
+ }
+ .iw-app.igor-mockup .iw-nav .iw-brand,
+ .iw-app.igor-mockup .iw-nav:is(:hover,:focus-within) .iw-brand {
+  width:100%;height:60px;margin:0 0 15px;padding:4px 12px;
+  flex-direction:row;justify-content:flex-start;align-items:center;gap:13px;color:#0b0c0d;
+ }
+ .iw-app.igor-mockup .iw-nav .iw-brand img {width:32px;min-width:32px;filter:none}
+ .iw-app.igor-mockup .iw-nav .iw-brand span {font-size:29px;font-weight:850;letter-spacing:-.07em;opacity:1}
+ .iw-app.igor-mockup .iw-nav nav {display:flex;flex-direction:column;gap:4px;width:100%}
+ .iw-app.igor-mockup .iw-nav nav button,
+ .iw-app.igor-mockup .iw-nav:is(:hover,:focus-within) nav button {
+  width:100%;min-height:50px;max-height:none;display:flex;flex-direction:row;
+  align-items:center;justify-content:flex-start;text-align:left;gap:15px;
+  padding:12px 15px;border:0;border-radius:13px;color:#4b5563;background:transparent;
+  font-size:15px;font-weight:550;
+ }
+ .iw-app.igor-mockup .iw-nav nav button[aria-current="page"] {background:#f3f3f3;color:#08090a;font-weight:770}
+ .iw-app.igor-mockup .iw-nav nav button:hover {background:#f4f4f4;color:#111}
+ .iw-app.igor-mockup .iw-nav nav button svg {width:22px;height:22px;stroke-width:1.8}
+ .iw-app.igor-mockup .iw-nav nav button span {opacity:1;font-size:15px}
+ .iw-app.igor-mockup .iw-nav .iw-new {margin-top:auto;background:transparent;color:#555;order:0}
+ .iw-app.igor-mockup .iw-nav .iw-new:hover {background:#f0f0f0;color:#111}
+ .iw-app.igor-mockup .iw-nav .iw-new span {opacity:1}
+ .iw-app.igor-mockup .iw-nav .iw-account {order:0;margin-top:0;align-self:flex-start}
+}
+/* Cinematic entry uses existing approved first-party photography and mark. */
+.iw-app.igor-mockup .iw-welcome {
+ background:
+  linear-gradient(90deg,rgba(4,9,11,.88) 0%,rgba(4,9,11,.46) 54%,rgba(4,9,11,.26) 100%),
+  linear-gradient(0deg,#04090bd9 0%,transparent 57%),
+  url("/marketing/assets/photos/hero-dinner-a-1200.webp") center center / cover no-repeat;
+ color:white;max-width:none;min-height:100dvh;box-sizing:border-box;
+ padding:clamp(70px,10vh,135px) clamp(25px,5.2vw,90px) 55px;
+}
+.iw-app.igor-mockup .iw-intro h1 {color:white;font-size:clamp(62px,7.7vw,130px);font-variation-settings:"wght" 900,"wdth" 76;letter-spacing:-.075em;line-height:.88}
+.iw-app.igor-mockup .iw-intro p {color:#f5f7f8;font-size:clamp(20px,2.2vw,30px);line-height:1.3;max-width:650px}
+.iw-app.igor-mockup .iw-welcome-compose {margin-top:32px;width:min(100%,890px)}
+.iw-app.igor-mockup .iw-welcome .iw-composer {background:#fff;border-radius:23px;padding:7px 8px 7px 16px;min-height:72px}
+.iw-app.igor-mockup .iw-welcome .iw-composer textarea {font-size:19px;color:#14191e}
+.iw-app.igor-mockup .iw-welcome .iw-composer button[type="submit"] {border-radius:50%;min-width:49px;min-height:49px}
+.iw-app.igor-mockup .iw-ideas {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;max-width:1120px;margin:34px 0 0}
+.iw-app.igor-mockup .iw-ideas > button {padding:0;border:1px solid #ffffff30;border-radius:16px;position:relative;min-height:220px;overflow:hidden;isolation:isolate;background:#0e1618;color:#fff}
+.iw-app.igor-mockup .iw-ideas .iw-poster {aspect-ratio:auto;position:absolute;inset:0;border-radius:0;box-shadow:none;z-index:-1}
+.iw-app.igor-mockup .iw-ideas .iw-poster::after {content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000d,#0000 75%)}
+.iw-app.igor-mockup .iw-ideas > button > div:not(.iw-poster) {margin:0;padding:134px 13px 10px;display:flex;align-items:end;gap:10px}
+.iw-app.igor-mockup .iw-ideas h2 {color:#fff;font-size:clamp(16px,1.65vw,24px);font-variation-settings:"wght" 850,"wdth" 80;letter-spacing:-.045em;line-height:1.06}
+.iw-app.igor-mockup .iw-ideas > button p {display:none}
+.iw-app.igor-mockup .iw-ideas .iw-poster-number {display:none}
+@media(min-width:761px) {
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav,
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav:is(:hover,:focus-within) {
+   background:#061014;color:white;border-color:#ffffff19;
+ }
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav .iw-brand {color:white}
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav .iw-brand img {filter:invert(1)}
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav nav button {color:#c4c8c9}
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav nav button[aria-current="page"] {color:#fff;background:#ffffff20}
+ .iw-app.igor-mockup:has(.iw-welcome) .iw-nav .iw-new {color:#fff}
+}
+.iw-app.igor-mockup .iw-standalone-reference {min-height:100dvh;min-width:0;display:flex;flex-direction:column;background:#fff}
+.iw-app.igor-mockup .iw-standalone-composer {position:sticky;bottom:0;background:#fff;padding:12px clamp(20px,3.5vw,48px) max(14px,env(safe-area-inset-bottom));border-top:1px solid #e9e9e9;z-index:11}
+.iw-app.igor-mockup .iw-standalone-composer .iw-composer {max-width:950px;margin:auto}
+.iw-app.igor-mockup .iw-inline-output .ir-surface {padding:18px 0 30px}
+.iw-app.igor-mockup .iw-inline-output .ir-heading h2 {font-size:clamp(33px,3.8vw,55px)}
+.iw-app.igor-mockup .iw-resource-tabs {gap:8px;overflow-x:auto}
+.iw-app.igor-mockup .iw-resource-tabs button {border:1px solid #e9ebed;padding:11px 18px;min-height:44px;white-space:nowrap;border-radius:13px;color:#56616a;background:#f8f8f8}
+.iw-app.igor-mockup .iw-resource-tabs button[aria-pressed="true"] {color:#fff;background:#08090a;border-color:#08090a}
+@media(max-width:1023px) {
+ .ir-detail-layout,.ir-plan-layout {grid-template-columns:1fr}
+ .ir-gallery {grid-template-columns:repeat(auto-fill,minmax(145px,1fr))}
+}
+@media(max-width:760px) {
+ .iw-app.igor-mockup {padding-left:0;padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+ .iw-app.igor-mockup .iw-nav {
+  position:fixed;inset:auto 0 0 0;z-index:90;
+  width:100%;height:calc(66px + env(safe-area-inset-bottom));padding:0 7px env(safe-area-inset-bottom);
+  background:#fff;color:#101112;border:0;border-top:1px solid #e9ebed;border-radius:0;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+ }
+ .iw-app.igor-mockup .iw-nav .iw-brand {display:none}
+ .iw-app.igor-mockup .iw-nav nav {display:flex;flex-direction:row;width:100%;gap:1px;align-items:stretch;justify-content:space-around}
+ .iw-app.igor-mockup .iw-nav nav button {
+  display:flex;flex:1;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-height:58px;padding:5px 1px;border:0;border-radius:8px;font-size:10px;background:transparent;
+  color:#6a747e;
+ }
+ .iw-app.igor-mockup .iw-nav nav button[aria-current="page"] {background:#f4f5f6;color:#08090a}
+ .iw-app.igor-mockup .iw-nav nav button:nth-child(4) {display:none}
+ .iw-app.igor-mockup .iw-nav nav button span {opacity:1;display:block;font-size:10px}
+ .iw-app.igor-mockup .iw-nav nav button svg {width:20px;height:20px}
+ .iw-app.igor-mockup .iw-nav .iw-new {position:fixed;top:12px;left:13px;background:#fff;color:#111;border-radius:40px;box-shadow:0 2px 16px #0002;padding:10px;z-index:10}
+ .iw-app.igor-mockup .iw-nav .iw-new span {display:none}
+ .iw-app.igor-mockup .iw-nav .iw-account {position:fixed;top:12px;right:13px;margin:0;background:#fff;border-radius:50%;box-shadow:0 2px 16px #0002;padding:10px;z-index:10}
+ .iw-app.igor-mockup .iw-nav .iw-menu-toggle {display:none}
+ .iw-app.igor-mockup .iw-welcome {padding:clamp(90px,16vh,150px) 20px 34px;min-height:calc(100dvh - 66px);background-position:58% center}
+ .iw-app.igor-mockup .iw-intro h1 {font-size:clamp(59px,12.4vw,85px)}
+ .iw-app.igor-mockup .iw-intro p {font-size:20px}
+ .iw-app.igor-mockup .iw-welcome .iw-composer {min-height:65px}
+ .iw-app.igor-mockup .iw-welcome .iw-composer textarea {font-size:16px}
+ .iw-app.igor-mockup .iw-ideas {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:26px}
+ .iw-app.igor-mockup .iw-ideas > button {min-height:150px}
+ .iw-app.igor-mockup .iw-ideas > button > div:not(.iw-poster) {padding:85px 12px 10px}
+ .iw-app.igor-mockup .iw-ideas h2 {font-size:17px}
+ .ir-surface {padding:78px 17px 44px;}
+ .ir-heading {flex-direction:column;gap:13px}
+ .ir-heading h2 {font-size:47px}
+ .ir-heading p {font-size:15px}
+ .ir-gallery {grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 11px}
+ .ir-matrix-scroll {margin-right:-17px}
+ .ir-compare-picker {overflow-x:auto;flex-wrap:nowrap;padding-bottom:8px}
+ .ir-compare-picker button {flex:0 0 auto}
+ .ir-timeline li {grid-template-columns:66px 12px minmax(0,1fr);gap:10px;min-height:100px}
+ .ir-time {font-size:12px}
+ .ir-version-list li {grid-template-columns:50px minmax(0,1fr);gap:12px}
+ .iw-app.igor-mockup .iw-standalone-composer {bottom:calc(66px + env(safe-area-inset-bottom));padding:10px 15px;max-width:100%}
+ .iw-app.igor-mockup .iw-workspace-footer {padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+ .iw-app.igor-mockup .iw-resource-tabs {scrollbar-width:none}
+ .iw-app.igor-mockup .iw-inline-output .ir-surface {padding:20px 0}
+}
+@media(prefers-reduced-motion:reduce) {
+ .iw-app.igor-mockup :is(.ir-candidate,.ir-chip-row button,.iw-ideas .iw-poster) {transition:none!important;animation:none!important;transform:none!important}
+}
+/* Reference-inspired prompt suggestions, distinct from image-led work cards. */
+.iw-app.igor-mockup .iw-quick-start {
+ display:flex;flex-wrap:wrap;gap:9px;margin-top:24px;
+ max-width:1080px;
+}
+.iw-app.igor-mockup .iw-quick-start button {
+ border-radius:30px;border:1px solid #ffffff33;background:#142025d4;
+ color:#fff;font:500 14px/1.2 Archivo,Arial,sans-serif;padding:12px 21px;
+ min-height:44px;backdrop-filter:blur(3px);
+}
+.iw-app.igor-mockup .iw-quick-start button:hover,
+.iw-app.igor-mockup .iw-quick-start button:focus-visible {background:#ffffff2a}
+.ir-demo-note {
+ margin:0 0 19px;padding:10px 13px;border-radius:9px;
+ background:#fff7e9;color:#735223;font-size:12px;border:1px solid #e9d7ad;
+}
+@media(max-width:760px){
+ .iw-app.igor-mockup .iw-quick-start {gap:7px}
+ .iw-app.igor-mockup .iw-quick-start button {padding:10px 13px;font-size:12px;min-height:40px}
+ .iw-app.igor-mockup .iw-nav nav button:nth-child(5) {order:6}
+ .iw-app.igor-mockup .iw-nav nav button:nth-child(6) {order:5}
+}
+
+.iw-app.igor-mockup .iw-intro { text-align:left; }
