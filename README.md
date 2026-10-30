@@ -21,19 +21,19 @@ This public code is intended for review and authorized live-provider configurati
 
 ## Find your way
 
-| Folder              | Contents                                               |
-| ------------------- | ------------------------------------------------------ |
-| `src/app/`          | Pages, API routes and styles                           |
-| `src/components/`   | Workspace views and editors                            |
-| `src/core/`         | Task contracts, conversations and revision rules       |
-| `src/capabilities/` | Discovery, comparison, composition and validation      |
-| `src/tools/`        | Provider adapters and response caches                  |
-| `src/data/`         | SQLite stores and sample tasks                         |
-| `tests/unit/`       | Unit and integration tests                             |
-| `tests/browser/`    | Complete browser journeys                              |
-| `tests/fixtures/`   | Private recordings excluded from public release        |
-| `scripts/`          | Local development and verification commands            |
-| `docs/`             | Setup, architecture, supported outcomes and research   |
+| Folder              | Contents                                             |
+| ------------------- | ---------------------------------------------------- |
+| `src/app/`          | Pages, API routes and styles                         |
+| `src/components/`   | Workspace views and editors                          |
+| `src/core/`         | Task contracts, conversations and revision rules     |
+| `src/capabilities/` | Discovery, comparison, composition and validation    |
+| `src/tools/`        | Provider adapters and response caches                |
+| `src/data/`         | SQLite stores and sample tasks                       |
+| `tests/unit/`       | Unit and integration tests                           |
+| `tests/browser/`    | Complete browser journeys                            |
+| `tests/fixtures/`   | Private recordings excluded from public release      |
+| `scripts/`          | Local development and verification commands          |
+| `docs/`             | Setup, architecture, supported outcomes and research |
 
 Start with [the orchestrator](src/core/orchestrator.ts) to follow a turn, or [the workspace](src/components/workspace.tsx) to follow the interface.
 

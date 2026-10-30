@@ -112,9 +112,7 @@ function InvitationEditor({
     }
 
     try {
-      await navigator.clipboard.writeText(
-        `${title.trim()}\n\n${body.trim()}`,
-      );
+      await navigator.clipboard.writeText(`${title.trim()}\n\n${body.trim()}`);
       setNotice("Copied the invitation text. Nothing was sent.");
     } catch {
       setNotice("Could not copy automatically. Select the message to copy it.");
@@ -148,9 +146,7 @@ function InvitationEditor({
         <div>
           <span className="ei-kicker">YOUR GATHERING</span>
           <h2>Your invitation.</h2>
-          <p>
-            A draft you can edit and copy. Nothing is sent from here.
-          </p>
+          <p>A draft you can edit and copy. Nothing is sent from here.</p>
         </div>
         <span className="ei-draft-state">
           {scene.state === "current"
@@ -163,10 +159,20 @@ function InvitationEditor({
 
       <div className="ei-layout">
         <div className="ei-preview-area">
-          <div className="ei-poster" data-style={style} aria-label="Invitation poster preview">
+          <div
+            className="ei-poster"
+            data-style={style}
+            aria-label="Invitation poster preview"
+          >
             <div className="ei-poster-top">
-              <span>{scene.state === "not-written" ? "INVITATION PREVIEW" : "YOU’RE INVITED"}</span>
-              <span className="ei-poster-sigil" aria-hidden="true">✳</span>
+              <span>
+                {scene.state === "not-written"
+                  ? "INVITATION PREVIEW"
+                  : "YOU’RE INVITED"}
+              </span>
+              <span className="ei-poster-sigil" aria-hidden="true">
+                ✳
+              </span>
             </div>
 
             <div className="ei-poster-main">
@@ -176,7 +182,14 @@ function InvitationEditor({
               >
                 <h3>{title.trim() || "Untitled gathering"}</h3>
               </div>
-              <div className={visibleReferences.length ? "ei-visuals" : "ei-visuals ei-visuals-type"} aria-hidden="true">
+              <div
+                className={
+                  visibleReferences.length
+                    ? "ei-visuals"
+                    : "ei-visuals ei-visuals-type"
+                }
+                aria-hidden="true"
+              >
                 {visibleReferences.length ? (
                   visibleReferences.slice(0, 3).map((item, index) => (
                     <div
@@ -224,13 +237,15 @@ function InvitationEditor({
                     : "Location to be confirmed"}
                 </span>
               </div>
-              <span className="ei-byline">with igor<span>·</span></span>
+              <span className="ei-byline">
+                with igor<span>·</span>
+              </span>
             </div>
           </div>
           {visibleReferences.length > 0 && (
             <p className="ei-poster-caption">
-              Cover art shows cultural references, not the actual gathering or venue.
-              Check usage rights before publishing.
+              Cover art shows cultural references, not the actual gathering or
+              venue. Check usage rights before publishing.
             </p>
           )}
           <p className="ei-preview-note">
@@ -272,8 +287,8 @@ function InvitationEditor({
             {scene.state === "not-written" && (
               <div className="ei-request">
                 <p>
-                  Your gathering is still taking shape. Ask Igor to write
-                  an editable invitation from the details you’ve confirmed.
+                  Your gathering is still taking shape. Ask Igor to write an
+                  editable invitation from the details you’ve confirmed.
                 </p>
                 <button
                   type="button"
@@ -291,13 +306,14 @@ function InvitationEditor({
             )}
             {scene.state === "needs-review" && (
               <p className="ei-edit-warning">
-                The underlying plan changed. Ask Igor to refresh this
-                invitation before editing or sending it.
+                The underlying plan changed. Ask Igor to refresh this invitation
+                before editing or sending it.
               </p>
             )}
             {scene.artifact?.locked && (
               <p className="ei-edit-warning">
-                This invitation is approved and locked. Unlock it in Drafts to edit.
+                This invitation is approved and locked. Unlock it in Drafts to
+                edit.
               </p>
             )}
             {scene.artifact && (
@@ -305,7 +321,9 @@ function InvitationEditor({
                 <button
                   className="ei-save"
                   type="button"
-                  disabled={!writable || busy || !dirty || !title.trim() || !body.trim()}
+                  disabled={
+                    !writable || busy || !dirty || !title.trim() || !body.trim()
+                  }
                   onClick={() => void saveDraft()}
                 >
                   <Check size={17} /> Save changes
@@ -330,8 +348,14 @@ function InvitationEditor({
 
           <div className="ei-editor-section ei-appearance">
             <h3>The look</h3>
-            <p>Change the poster’s mood. The preview style stays on this device.</p>
-            <div className="ei-style-grid" role="group" aria-label="Invitation appearance">
+            <p>
+              Change the poster’s mood. The preview style stays on this device.
+            </p>
+            <div
+              className="ei-style-grid"
+              role="group"
+              aria-label="Invitation appearance"
+            >
               {styles.map((option) => (
                 <button
                   key={option.id}
@@ -365,11 +389,17 @@ function InvitationEditor({
                 </div>
                 <div>
                   <dt>TIME ALLOWANCE</dt>
-                  <dd>{scene.durationSetting} minutes · planning setting, not a scheduled time</dd>
+                  <dd>
+                    {scene.durationSetting} minutes · planning setting, not a
+                    scheduled time
+                  </dd>
                 </div>
                 <div>
                   <dt>BUDGET SETTING</dt>
-                  <dd>${scene.budgetSetting} USD · costs are not independently verified</dd>
+                  <dd>
+                    ${scene.budgetSetting} USD · costs are not independently
+                    verified
+                  </dd>
                 </div>
               </dl>
               {scene.references.length ? (
@@ -388,8 +418,8 @@ function InvitationEditor({
                     </div>
                   ))}
                   <p>
-                    A cultural connection does not establish that any
-                    experience is available, affordable or booked.
+                    A cultural connection does not establish that any experience
+                    is available, affordable or booked.
                   </p>
                 </div>
               ) : (

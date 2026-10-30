@@ -6,7 +6,9 @@ describe("workspace presentation adapter", () => {
   it("rejects invalid canonical task payloads", () => {
     expect(() => adaptTaskForPresentation({})).toThrow();
     const task = freshTask("view-invalid", "owner");
-    expect(() => adaptTaskForPresentation({ ...task, status: "unsupported-status" })).toThrow();
+    expect(() =>
+      adaptTaskForPresentation({ ...task, status: "unsupported-status" }),
+    ).toThrow();
   });
 
   it("preserves canonical IDs, participant identity and unknowns", () => {
@@ -66,7 +68,9 @@ describe("workspace presentation adapter", () => {
       latitude: 40.731,
       longitude: -73.989,
     });
-    expect(view.candidates.some((item) => item.id === "sample-place")).toBe(true);
+    expect(view.candidates.some((item) => item.id === "sample-place")).toBe(
+      true,
+    );
   });
 
   it("never treats context Qloo evidence as a person's score", () => {

@@ -9,11 +9,12 @@
 
 Observed relationships are based on supplied screenshots, **not** DOM measurements, Figma metadata, or original image assets. Exact values must be recovered from originals at native pixel resolution and checked against Playwright captures. Reference images may contain illustrative factual errors; composition is the visual reference, never proof of live recommendations, affinity, availability, geography or cast identities.
 
-**Reference grammar:** a dark, full-bleed *Home*; predominantly warm-white productive surfaces; a compact consistently recognizable Igor mark/navigation; bold, narrow Archivo display headings; photographic content with intentional crops; restrained controls; strong factual/evidence hierarchy; genuine map views when geolocation exists.
+**Reference grammar:** a dark, full-bleed _Home_; predominantly warm-white productive surfaces; a compact consistently recognizable Igor mark/navigation; bold, narrow Archivo display headings; photographic content with intentional crops; restrained controls; strong factual/evidence hierarchy; genuine map views when geolocation exists.
 
 ## Screen-by-screen decomposition
 
 ### 01 — HOME
+
 1. **Layout:** dark left navigation; remaining canvas is a full-height photographic stage, not a white marketing page.
 2. **Hierarchy:** 2-line enormous slogan → 2-line supporting copy → single high-contrast composer → small prompt chips → five distinct tall image-led ideas.
 3. **Type:** condensed heavyweight white headline; proportionally smaller sans supporting copy and short chips; labels laid on photographs with high local contrast.
@@ -26,6 +27,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `IgorShell`, `AgentComposer`, `MediaCard`, `StarterAction`, `AgentStatus`; unique cinematic hero composition.
 
 ### 02 — DISCOVER
+
 1. **Layout:** bright working surface; top search; horizontal domain filters; two vertically stacked image-led content sections.
 2. **Hierarchy:** search → categories → Trending for you → portrait cards → Because your crew likes → shorter landscape cards; section labels must reflect real data basis.
 3. **Type:** bold condensed section headers; dense clear card titles and compact category metadata.
@@ -38,6 +40,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `DiscoveryRail`, `CategoryTabs`, `CandidateCard`, `EvidenceTag`, `MediaFallback`.
 
 ### 03 — CONVERSATION
+
 1. **Layout:** quiet white transcript; contextual candidate result region rather than generic chat + unrelated dashboard.
 2. **Hierarchy:** user prompt → agent response/progress → actual participant identities when supplied → matching result candidates and explanations → persistent composer.
 3. **Type:** conversational body remains readable; compact user labels/signal copy; only section names use narrow weight.
@@ -50,6 +53,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `ConversationThread`, `AgentActivity`, `ParticipantStrip`, `EvidenceCard`, `AgentComposer`.
 
 ### 04 — CONNECTED PLAN
+
 1. **Layout:** editorial title/meta top; tabs; left event timeline and right tall photographic/artifact cover in reference.
 2. **Hierarchy:** name → contextual facts → Overview/Itinerary/Map/Options/Notes → stops/times → cover/action.
 3. **Type:** large condensed plan title; strong compact activity labels; muted factual metadata.
@@ -62,6 +66,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `OutcomeHeader`, `WorkTabs`, `PlanTimeline`, `ArtifactCover`, `ConstraintStatus`.
 
 ### 05 — MAPS 2D
+
 1. **Layout:** dark styled real map; floating search/filter chips, left place-list inspector, right map controls.
 2. **Hierarchy:** map canvas primary; place list second; selected marker/detail third; attribution visible.
 3. **Type:** high-contrast short place labels and compact venue metadata.
@@ -74,6 +79,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `PlaceList`, `MapMarker`, `PlacePreview`, `MapFallback`; reuse Google Maps adapter currently in repo.
 
 ### 06 — MAPS 3D
+
 1. **Layout:** immersive 3D scene, prominent place callouts and selected bottom inspector; navigation remains visible.
 2. **Hierarchy:** place-relevant camera/map → labels → selected place sheet and actions.
 3. **Type:** white high-contrast labels against dark view; concise supporting metadata.
@@ -86,6 +92,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `SpatialView` + shared `PlacePreview`, `MapFallback`; 3D adapter already exists.
 
 ### 07 — CREATE
+
 1. **Layout:** large editable visual composition left; narrow structured itinerary/metadata inspector right.
 2. **Hierarchy:** Draft → big artifact title → important fields/actions → staggered image collage → explanatory copy and sections.
 3. **Type:** huge condensed title; readable edit fields; strong small section labels.
@@ -98,6 +105,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `ArtifactEditor`, `InvitationStudio`, `ArtifactVersion`, `MediaCollage`.
 
 ### 08 — COMPARE
+
 1. **Layout:** horizontal comparison matrix with four named candidate columns in reference, rows aligned across six participants.
 2. **Hierarchy:** title/description → domain tabs → candidate image → participant-specific evidence → add-to-plan row.
 3. **Type:** small labels and compact rich rows; raw ranks/affinity not overblown marketing percentages.
@@ -110,6 +118,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `ComparisonMatrix`, `CandidateHeader`, `PersonSignalRow`, `EvidenceInspector`.
 
 ### 09 — LIBRARY
+
 1. **Layout:** white background, large condensed heading and subtitle, category pills, three-across content image grid.
 2. **Hierarchy:** saved work title → filters → actual persisted items with preview and type/count.
 3. **Type:** strong image-card names; small quiet metadata.
@@ -122,6 +131,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `LibraryGrid`, `SavedWorkCard`, `SearchFilter`, `WorkPreview`.
 
 ### 10 — DETAILS + SOURCES
+
 1. **Layout:** panoramic media hero and contextual actions; horizontally arranged tabs; bounded evidence card and source entries.
 2. **Hierarchy:** identity/metadata → action → selected section → rank/affinity scope → actual source records.
 3. **Type:** large title over hero; dense source provenance text differentiated from interpretation.
@@ -134,6 +144,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `EntityDetail`, `EvidenceInspector`, `SourceProvenance`, `MediaHero`.
 
 ### 11 — REVISE
+
 1. **Layout:** user change bubble, agent response, semantic changes list, image preview strip, version timeline, composer.
 2. **Hierarchy:** requested change → actual change/preserve summary → updated outcome → versions and restore.
 3. **Type:** readable response; bold condensed section headings; muted timestamps/current state.
@@ -146,6 +157,7 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 10. **Reuse:** `RevisionSummary`, `WorkVersionTimeline`, `PreservedObjects`, `AgentComposer`.
 
 ### 12 — MOBILE
+
 1. **Layout:** three distinct references (cinematic home, map/discovery, plan timeline) in phone frames; these are responsive variants, NOT three new task stores.
 2. **Hierarchy:** one primary surface at a time; clear back/context, bottom 5-icon navigation, visible primary action.
 3. **Type:** display at readable mobile scale and consistent rhythm; avoid desktop type simply shrunk.
@@ -159,17 +171,17 @@ Observed relationships are based on supplied screenshots, **not** DOM measuremen
 
 ## Preliminary visual asset inventory
 
-| Asset family | Source hierarchy | Acceptance gate |
-| --- | --- | --- |
-| Igor mark/wordmark | Existing `public/marketing/assets/brand/*` | Actual logo asset and dimensions; black/white inverted variants |
-| Brand hero | Approved reference-matched licensed/owned photograph | Correct scene, crop, text-safe region, rights; no fabricated venue assertion |
-| Editorial discovery images | Candidate's eligible `imageUrl` or authorized image/provider resolver | Candidate identity must match picture; correct license/attribution |
-| Film/music cover art | Authorized media artwork, preferably source-linked | Do not silently substitute fabricated art for named works |
-| Crew avatars | Stored participant images only; initials otherwise | No invented people/tastes in real thread |
-| Venue imagery | Real credited place media when available | No stock image presented as a photo of an actual venue |
-| Map | Existing Google Maps 2D/3D provider | Only geocoded pins; attribution; graceful fallback |
-| Collage/plan covers | Reused stored authorized assets | One canonical media ID across work/compare/detail |
-| Icons | Existing Lucide and Igor mark | Consistent stroke, alignment and state |
+| Asset family               | Source hierarchy                                                      | Acceptance gate                                                              |
+| -------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Igor mark/wordmark         | Existing `public/marketing/assets/brand/*`                            | Actual logo asset and dimensions; black/white inverted variants              |
+| Brand hero                 | Approved reference-matched licensed/owned photograph                  | Correct scene, crop, text-safe region, rights; no fabricated venue assertion |
+| Editorial discovery images | Candidate's eligible `imageUrl` or authorized image/provider resolver | Candidate identity must match picture; correct license/attribution           |
+| Film/music cover art       | Authorized media artwork, preferably source-linked                    | Do not silently substitute fabricated art for named works                    |
+| Crew avatars               | Stored participant images only; initials otherwise                    | No invented people/tastes in real thread                                     |
+| Venue imagery              | Real credited place media when available                              | No stock image presented as a photo of an actual venue                       |
+| Map                        | Existing Google Maps 2D/3D provider                                   | Only geocoded pins; attribution; graceful fallback                           |
+| Collage/plan covers        | Reused stored authorized assets                                       | One canonical media ID across work/compare/detail                            |
+| Icons                      | Existing Lucide and Igor mark                                         | Consistent stroke, alignment and state                                       |
 
 ## Gaps observed in the current frontend
 

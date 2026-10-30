@@ -16,7 +16,9 @@ export default async function AppPage({
           ? "saved"
           : query.view === "conversations"
             ? "history"
-            : query.view === "explore" || query.view === "maps" || query.view === "create"
+            : query.view === "explore" ||
+                query.view === "maps" ||
+                query.view === "create"
               ? query.view
               : "work"
       }

@@ -278,13 +278,22 @@ it("grounds 'Maya doesn't like that music' to only one explicitly selected artis
     { id: "maya", name: "Maya", preferences: [], sample: false },
     { id: "alex", name: "Alex", preferences: [], sample: false },
   ];
-  const artist = task.catalogue.find((candidate) => candidate.type === "artist");
+  const artist = task.catalogue.find(
+    (candidate) => candidate.type === "artist",
+  );
 
   expect(artist).toBeDefined();
   task.brief.selected = [artist!.id];
   const result = applyConversationActions(
     task,
-    [{ kind: "preference", participant: "Maya", value: artist!.name, polarity: "dislike" }],
+    [
+      {
+        kind: "preference",
+        participant: "Maya",
+        value: artist!.name,
+        polarity: "dislike",
+      },
+    ],
     "Maya doesn't like that music",
   );
 
@@ -305,9 +314,15 @@ it("grounds 'Maya doesn't like that music' to only one explicitly selected artis
   expect(
     applyConversationActions(
       task,
-      [{ kind: "preference", participant: "Maya", value: artist!.name, polarity: "dislike" }],
+      [
+        {
+          kind: "preference",
+          participant: "Maya",
+          value: artist!.name,
+          polarity: "dislike",
+        },
+      ],
       "Maya doesn't like that music",
     ).ok,
   ).toBe(false);
 });
-

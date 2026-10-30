@@ -69,7 +69,9 @@ describe("grounded gathering invitation scene", () => {
     expect(model.state).toBe("current");
     expect(model.participantCount).toBe(2);
     expect(model.sampleProfiles).toBe(true);
-    expect(JSON.stringify(model)).not.toMatch(/RSVP.*confirmed|guest.*accepted/i);
+    expect(JSON.stringify(model)).not.toMatch(
+      /RSVP.*confirmed|guest.*accepted/i,
+    );
   });
 
   it("distinguishes Qloo CACHED provenance from availability", () => {
@@ -149,8 +151,6 @@ describe("grounded gathering invitation scene", () => {
     expect(() => composeInvitationDraft(" ", "Hello")).toThrow();
     expect(() => composeInvitationDraft("Hello", " ")).toThrow();
     expect(() => composeInvitationDraft("x".repeat(101), "Hello")).toThrow();
-    expect(() =>
-      composeInvitationDraft("Hello", "x".repeat(10001)),
-    ).toThrow();
+    expect(() => composeInvitationDraft("Hello", "x".repeat(10001))).toThrow();
   });
 });

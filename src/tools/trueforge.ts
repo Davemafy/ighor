@@ -256,7 +256,10 @@ export async function consultTrueForge(
           ? (data as { data?: { id?: unknown } }).data?.id
           : undefined;
 
-      if (typeof candidate !== "string" || !/^[a-zA-Z0-9_-]{1,160}$/.test(candidate)) {
+      if (
+        typeof candidate !== "string" ||
+        !/^[a-zA-Z0-9_-]{1,160}$/.test(candidate)
+      ) {
         throw new Error("TrueForge session creation returned an invalid id");
       }
 

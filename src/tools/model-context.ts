@@ -152,7 +152,8 @@ export function modelContext(task: Task, message: string) {
           ...task.conversationFocus,
           orderedCandidates: task.conversationFocus.activeCandidateIds.map(
             (id, index) => {
-              const candidate = task.candidates.find((item) => item.id === id) ??
+              const candidate =
+                task.candidates.find((item) => item.id === id) ??
                 task.catalogue.find((item) => item.id === id);
 
               return {

@@ -12,7 +12,7 @@ Public Partiful documentation describes these controls and their order:
 1. Name the event and select title typography.
 2. Choose a poster, including uploaded imagery or GIFs.
 3. Supply the event's actual date, place and description.
-4. Customize *Theme* (background) and *Effect* (animation) separately.
+4. Customize _Theme_ (background) and _Effect_ (animation) separately.
 5. Save a draft before inviting people; invitation/RSVP is a distinct step.
 
 The editorial principle is **one expressive thing surrounded by quiet controls**.
@@ -20,6 +20,7 @@ The example event creator lets the poster/background carry almost all of the
 personality. The editing toolbar never pretends to be a scientific instrument.
 
 References:
+
 - https://help.partiful.com/en-us/articles/15525299-creating-your-first-partiful-event
 - https://partiful.com/create
 - https://help.partiful.com/en-us/articles/15525324-how-do-i-invite-guests-to-my-event
@@ -38,7 +39,7 @@ clearly attributable cultural cover references. Its editing controls should be
 understandable instantly. Do not add fake crosshairs, fake measurements, glowing
 nodes or “AI instrument” labels.
 
-**Separate the result from its source.** Qloo is a *cultural association*
+**Separate the result from its source.** Qloo is a _cultural association_
 provider. On an invite poster, Qloo imagery is presented as cultural reference
 art, not a photograph of the event or its venue. Source delivery can be marked
 LIVE/CACHED only where a current evidence ID matches the candidate. There are
@@ -76,7 +77,7 @@ copying an official font file, poster, animation, trademark or proprietary token
 
 This design system should scale into discovery, collaborative planning and
 research **without** painting everything like a birthday invitation. The
-rule is expressive *outputs* and disciplined *tools*. For a map the expressive
+rule is expressive _outputs_ and disciplined _tools_. For a map the expressive
 object may be the map; for a document the expressive object is the document;
 for a gathering it is the invite and its cultural references. Each should feel
 native to the same Igor product.

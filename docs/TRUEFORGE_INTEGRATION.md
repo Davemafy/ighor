@@ -18,6 +18,7 @@ Igor already owns authenticated user workspaces, Qloo result provenance, applica
 ## Enable behind an existing TrueForge server
 
 TrueForge server prerequisites (separate process/service, **not automatically started by Igor**):
+
 1. Run the TrueForge harness on a secure localhost port for development or an HTTPS endpoint with authentication for hosted use.
 2. Configure an agent in TrueForge named `igor-delegate` with a model and only the tools you are prepared to authorize. Do not expose a no-login local TrueForge server on the public internet.
 3. Configure the **server-side** Igor environment:

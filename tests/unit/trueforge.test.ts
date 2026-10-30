@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createAgentToolRegistry, type AgentToolContext } from "../../src/core/agent-tool-registry";
+import {
+  createAgentToolRegistry,
+  type AgentToolContext,
+} from "../../src/core/agent-tool-registry";
 import { freshTask } from "../../src/data/fixtures";
 import {
   consultTrueForge,
@@ -12,13 +15,14 @@ const config = {
   agentName: "igor-delegate",
 };
 
-const successfulStream = [
-  'data: {"type":"turn.created","thread_id":null}',
-  'data: {"type":"model.message.delta","thread_id":"main","content":"An observed "}',
-  'data: {"type":"model.message.delta","thread_id":"subagent-1","content":"Do not include this"}',
-  'data: {"type":"model.message.delta","thread_id":"main","content":"candidate."}',
-  'data: {"type":"turn.done","state":{"status":"done","output":{"content":"An observed candidate."},"required_actions":[]}}',
-].join("\n\n") + "\n\n";
+const successfulStream =
+  [
+    'data: {"type":"turn.created","thread_id":null}',
+    'data: {"type":"model.message.delta","thread_id":"main","content":"An observed "}',
+    'data: {"type":"model.message.delta","thread_id":"subagent-1","content":"Do not include this"}',
+    'data: {"type":"model.message.delta","thread_id":"main","content":"candidate."}',
+    'data: {"type":"turn.done","state":{"status":"done","output":{"content":"An observed candidate."},"required_actions":[]}}',
+  ].join("\n\n") + "\n\n";
 
 function turn(body = successfulStream) {
   return new Response(body, {
@@ -33,7 +37,9 @@ describe("TrueForge opt-in safety boundary", () => {
   });
 
   it("is unavailable unless explicitly enabled with an agent and safe origin", () => {
-    expect(trueForgeConfig({ TRUEFORGE_BASE_URL: "http://localhost:8790" })).toBeNull();
+    expect(
+      trueForgeConfig({ TRUEFORGE_BASE_URL: "http://localhost:8790" }),
+    ).toBeNull();
     expect(
       trueForgeConfig({
         IGOR_TRUEFORGE_ENABLED: "1",
@@ -133,23 +139,36 @@ describe("TrueForge opt-in safety boundary", () => {
       'data: {"type":"turn.done","state":{"status":"done","output":null,"required_actions":[{"type":"tool.approval_required"}]}}\n\n',
     );
 
-    await expect(readTrueForgeTurn(pause)).rejects.toThrow("paused for approval");
+    await expect(readTrueForgeTurn(pause)).rejects.toThrow(
+      "paused for approval",
+    );
     await expect(
-      readTrueForgeTurn(turn('data: {"type":"turn.done","state":{"status":"error"}}\n\n')),
+      readTrueForgeTurn(
+        turn('data: {"type":"turn.done","state":{"status":"error"}}\n\n'),
+      ),
     ).rejects.toThrow("did not complete");
-    await expect(readTrueForgeTurn(turn("data: {}\n\n"))).rejects.toThrow("did not complete");
+    await expect(readTrueForgeTurn(turn("data: {}\n\n"))).rejects.toThrow(
+      "did not complete",
+    );
     await expect(
-      consultTrueForge(config, "A bounded objective", "../outside", vi.fn() as typeof fetch),
+      consultTrueForge(
+        config,
+        "A bounded objective",
+        "../outside",
+        vi.fn() as typeof fetch,
+      ),
     ).rejects.toThrow("session id is invalid");
   });
 
   it("caps streaming content and never treats a subagent delta as main output", async () => {
     const answer = await readTrueForgeTurn(
-      turn([
-        'data: {"type":"model.message.delta","thread_id":"main","content":"Validated placeholder"}',
-        'data: {"type":"model.message.delta","thread_id":"subagent-2","content":"Bad output"}',
-        'data: {"type":"turn.done","state":{"status":"done","output":null,"required_actions":[]}}',
-      ].join("\n\n") + "\n\n"),
+      turn(
+        [
+          'data: {"type":"model.message.delta","thread_id":"main","content":"Validated placeholder"}',
+          'data: {"type":"model.message.delta","thread_id":"subagent-2","content":"Bad output"}',
+          'data: {"type":"turn.done","state":{"status":"done","output":null,"required_actions":[]}}',
+        ].join("\n\n") + "\n\n",
+      ),
     );
 
     expect(answer).toBe("Validated placeholder");
@@ -165,7 +184,9 @@ describe("TrueForge opt-in safety boundary", () => {
     } as unknown as AgentToolContext;
 
     expect(
-      createAgentToolRegistry(context).find((tool) => tool.name === "trueforge.consult")?.available,
+      createAgentToolRegistry(context).find(
+        (tool) => tool.name === "trueforge.consult",
+      )?.available,
     ).toBe(false);
 
     vi.stubEnv("IGOR_TRUEFORGE_ENABLED", "1");

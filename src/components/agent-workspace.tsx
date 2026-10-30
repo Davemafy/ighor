@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Compass, FilePlus2, Heart, Map, Home as HomeIcon, UserRound } from "lucide-react";
+import {
+  Compass,
+  FilePlus2,
+  Heart,
+  Map,
+  Home as HomeIcon,
+  UserRound,
+} from "lucide-react";
 import { AccountDialog } from "./account-panel";
 import { Connections } from "./connections-view";
 import { ReferenceWork } from "./reference-work";
@@ -57,11 +64,41 @@ import "../app/research-discovery.css";
 
 const assets = "/marketing/assets/";
 const starts = [
-  { title: "A film night for 6 friends", image: "home-story-1.webp", fallback: "photos/hero-dinner-a-800.webp", prompt: "Plan a film and music evening for six friends in New York, with indie films, jazz and good food. Ask only for essential missing details." },
-  { title: "Rooftop spots in New York", image: "home-story-2.webp", fallback: "photos/gallery-800.webp", prompt: "Find rooftop places in New York. Show verified venues and explain the trade-offs." },
-  { title: "Afrobeats meets jazz", image: "home-story-3.webp", fallback: "covers/c08.webp", prompt: "Explore artists, playlists and experiences where Afrobeats meets jazz." },
-  { title: "Hidden gems in London", image: "home-story-4.webp", fallback: "photos/london-street-800.webp", prompt: "Discover underrated cultural places and experiences in London, with verifiable sources." },
-  { title: "Books for a cozy weekend", image: "home-story-5.webp", fallback: "covers/c05.webp", prompt: "Find books for a cozy weekend, using what I like and leaving room for new discoveries." },
+  {
+    title: "A film night for 6 friends",
+    image: "home-story-1.webp",
+    fallback: "photos/hero-dinner-a-800.webp",
+    prompt:
+      "Plan a film and music evening for six friends in New York, with indie films, jazz and good food. Ask only for essential missing details.",
+  },
+  {
+    title: "Rooftop spots in New York",
+    image: "home-story-2.webp",
+    fallback: "photos/gallery-800.webp",
+    prompt:
+      "Find rooftop places in New York. Show verified venues and explain the trade-offs.",
+  },
+  {
+    title: "Afrobeats meets jazz",
+    image: "home-story-3.webp",
+    fallback: "covers/c08.webp",
+    prompt:
+      "Explore artists, playlists and experiences where Afrobeats meets jazz.",
+  },
+  {
+    title: "Hidden gems in London",
+    image: "home-story-4.webp",
+    fallback: "photos/london-street-800.webp",
+    prompt:
+      "Discover underrated cultural places and experiences in London, with verifiable sources.",
+  },
+  {
+    title: "Books for a cozy weekend",
+    image: "home-story-5.webp",
+    fallback: "covers/c05.webp",
+    prompt:
+      "Find books for a cozy weekend, using what I like and leaving room for new discoveries.",
+  },
 ];
 
 type Page = "work" | "history" | "saved" | "explore" | "maps" | "create";
@@ -82,7 +119,9 @@ export function AgentWorkspace({
   const [prompt, setPrompt] = useState("");
   const [storyShortlist, setStoryShortlist] = useState<string[]>([]);
   const [menu, setMenu] = useState(false);
-  const [exploreView, setExploreView] = useState<"discover" | "compare" | "plan" | "detail" | "revisions" | "maps">("discover");
+  const [exploreView, setExploreView] = useState<
+    "discover" | "compare" | "plan" | "detail" | "revisions" | "maps"
+  >("discover");
   const [historyError, setHistoryError] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -171,7 +210,8 @@ export function AgentWorkspace({
     presentedResult.current = resultIdentity;
     const frame = requestAnimationFrame(() => {
       // The work is already visible beside conversation on desktop.
-      if (window.matchMedia("(min-width: 1024px)").matches) return;
+      if (window.matchMedia("(min-width: 1024px)").matches) {return;}
+
       outputRef.current?.scrollIntoView({
         block: "start",
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -351,7 +391,9 @@ export function AgentWorkspace({
   );
 
   return (
-    <div className={`iw-app igor-mockup ${started && page === "work" ? "iw-active" : ""}`}>
+    <div
+      className={`iw-app igor-mockup ${started && page === "work" ? "iw-active" : ""}`}
+    >
       <AppearanceControl />
       {accountOpen && <AccountDialog onClose={() => setAccountOpen(false)} />}
       <a className="iw-skip" href="#iw-main">
@@ -375,18 +417,30 @@ export function AgentWorkspace({
             <HomeIcon />
             <span>Home</span>
           </button>
-          <button aria-current={page === "explore" ? "page" : undefined}
-            onClick={() => { setExploreView("discover"); navigate("explore"); }}>
+          <button
+            aria-current={page === "explore" ? "page" : undefined}
+            onClick={() => {
+              setExploreView("discover");
+              navigate("explore");
+            }}
+          >
             <Compass />
             <span>Explore</span>
           </button>
-          <button aria-current={page === "create" ? "page" : undefined}
-            onClick={() => navigate("create")}>
+          <button
+            aria-current={page === "create" ? "page" : undefined}
+            onClick={() => navigate("create")}
+          >
             <FilePlus2 />
             <span>Create</span>
           </button>
-          <button aria-current={page === "maps" ? "page" : undefined}
-            onClick={() => { setExploreView("maps"); navigate("maps"); }}>
+          <button
+            aria-current={page === "maps" ? "page" : undefined}
+            onClick={() => {
+              setExploreView("maps");
+              navigate("maps");
+            }}
+          >
             <Map />
             <span>Maps</span>
           </button>
@@ -440,13 +494,23 @@ export function AgentWorkspace({
               <MessageCircle />
               Your space
             </button>
-            <button onClick={() => { setExploreView("discover");navigate("explore"); }}>
+            <button
+              onClick={() => {
+                setExploreView("discover");
+                navigate("explore");
+              }}
+            >
               <Compass /> Explore
             </button>
             <button onClick={() => navigate("create")}>
               <FilePlus2 /> Create
             </button>
-            <button onClick={() => { setExploreView("maps");navigate("maps"); }}>
+            <button
+              onClick={() => {
+                setExploreView("maps");
+                navigate("maps");
+              }}
+            >
               <Map /> Maps
             </button>
             <button onClick={() => navigate("history")}>
@@ -478,43 +542,90 @@ export function AgentWorkspace({
             <div className="iw-welcome-compose">{composer}</div>
             <div className="iw-quick-start" aria-label="Start a new task">
               {[
-                ["Plan an evening", "Plan a thoughtful evening with friends. Ask for essential details."],
+                [
+                  "Plan an evening",
+                  "Plan a thoughtful evening with friends. Ask for essential details.",
+                ],
                 ["Find a film", "Help me find a film based on my taste."],
-                ["Build a playlist", "Help me build a playlist with a particular mood."],
-                ["Find a place", "Help me find a place worth visiting. Ask for the city if needed."],
-                ["Compare options", "Help me compare some options and decide on one."],
+                [
+                  "Build a playlist",
+                  "Help me build a playlist with a particular mood.",
+                ],
+                [
+                  "Find a place",
+                  "Help me find a place worth visiting. Ask for the city if needed.",
+                ],
+                [
+                  "Compare options",
+                  "Help me compare some options and decide on one.",
+                ],
               ].map(([label, request]) => (
-                <button key={label} disabled={!task || w.isBusy}
-                  onClick={() => { setPrompt(request); input.current?.focus(); }}>{label}</button>
+                <button
+                  key={label}
+                  disabled={!task || w.isBusy}
+                  onClick={() => {
+                    setPrompt(request);
+                    input.current?.focus();
+                  }}
+                >
+                  {label}
+                </button>
               ))}
             </div>
             <div className="iw-ideas" aria-label="Ways to begin">
               {starts.map((story) => (
                 <article className="iw-story-card" key={story.title}>
-                  <button className="iw-story-open" disabled={!task || w.isBusy}
-                    onClick={() => { setPrompt(story.prompt); input.current?.focus(); }}
-                    aria-label={`Start: ${story.title}`}>
+                  <button
+                    className="iw-story-open"
+                    disabled={!task || w.isBusy}
+                    onClick={() => {
+                      setPrompt(story.prompt);
+                      input.current?.focus();
+                    }}
+                    aria-label={`Start: ${story.title}`}
+                  >
                     <img
                       src={`/reference-art/${story.image}`}
                       alt=""
                       loading="eager"
                       onError={(event) => {
                         const fallback = assets + story.fallback;
-                        if (event.currentTarget.src !== new URL(fallback, location.origin).href) {
+
+                        if (
+                          event.currentTarget.src !==
+                          new URL(fallback, location.origin).href
+                        ) {
                           event.currentTarget.src = fallback;
                         }
                       }}
                     />
                     <span className="iw-story-name">{story.title}</span>
                   </button>
-                  <button type="button" className="iw-story-heart"
-                    aria-label={storyShortlist.includes(story.title)
-                      ? `Remove ${story.title} from this preview shortlist`
-                      : `Shortlist ${story.title} in this preview`}
+                  <button
+                    type="button"
+                    className="iw-story-heart"
+                    aria-label={
+                      storyShortlist.includes(story.title)
+                        ? `Remove ${story.title} from this preview shortlist`
+                        : `Shortlist ${story.title} in this preview`
+                    }
                     aria-pressed={storyShortlist.includes(story.title)}
-                    onClick={() => setStoryShortlist((items) => items.includes(story.title)
-                      ? items.filter((item) => item !== story.title) : [...items, story.title])}>
-                    <Heart size={23} fill={storyShortlist.includes(story.title) ? "currentColor" : "none"}/>
+                    onClick={() =>
+                      setStoryShortlist((items) =>
+                        items.includes(story.title)
+                          ? items.filter((item) => item !== story.title)
+                          : [...items, story.title],
+                      )
+                    }
+                  >
+                    <Heart
+                      size={23}
+                      fill={
+                        storyShortlist.includes(story.title)
+                          ? "currentColor"
+                          : "none"
+                      }
+                    />
                   </button>
                 </article>
               ))}
@@ -758,26 +869,59 @@ export function AgentWorkspace({
           </section>
         )}
         {(page === "explore" || page === "maps") && task && (
-          <section className="iw-standalone-reference" aria-label="Discover and maps">
-            <ReferenceWork task={task} view={page === "maps" ? "maps" : exploreView}
-              busy={w.isBusy || w.isLoadingWorkspace} onTurn={turn}
-              onNavigate={(view) => { setExploreView(view); if (view === "maps") navigate("maps"); else if (page === "maps") navigate("explore"); }} />
+          <section
+            className="iw-standalone-reference"
+            aria-label="Discover and maps"
+          >
+            <ReferenceWork
+              task={task}
+              view={page === "maps" ? "maps" : exploreView}
+              busy={w.isBusy || w.isLoadingWorkspace}
+              onTurn={turn}
+              onNavigate={(view) => {
+                setExploreView(view);
+
+                if (view === "maps") {navigate("maps");}
+                else if (page === "maps") {navigate("explore");}
+              }}
+            />
             <div className="iw-standalone-composer">{composer}</div>
           </section>
         )}
         {page === "create" && task && (
           <section className="iw-standalone-reference" aria-label="Create work">
-            {task.work?.documents.length || task.artifacts.length || task.canvas ? (
-              <Work key={task.id + ":create"} task={task} busy={w.isBusy || w.isLoadingWorkspace}
-                onTurn={turn} onTask={w.acceptTask} onLoad={open} preferred={task.work?.documents.length ? "documents" : task.artifacts.length ? "drafts" : "workspace"}/>
+            {task.work?.documents.length ||
+            task.artifacts.length ||
+            task.canvas ? (
+              <Work
+                key={task.id + ":create"}
+                task={task}
+                busy={w.isBusy || w.isLoadingWorkspace}
+                onTurn={turn}
+                onTask={w.acceptTask}
+                onLoad={open}
+                preferred={
+                  task.work?.documents.length
+                    ? "documents"
+                    : task.artifacts.length
+                      ? "drafts"
+                      : "workspace"
+                }
+              />
             ) : (
-              <div className="ir-empty"><h2>Make something real.</h2>
-                <p>Start with your idea in the composer. Igor will create editable work from the conversation.</p></div>
+              <div className="ir-empty">
+                <h2>Make something real.</h2>
+                <p>
+                  Start with your idea in the composer. Igor will create
+                  editable work from the conversation.
+                </p>
+              </div>
             )}
             <div className="iw-standalone-composer">{composer}</div>
           </section>
         )}
-        {(page === "create" || page === "explore" || page === "maps") && !task && <LoadingSurface mode="output" />}
+        {(page === "create" || page === "explore" || page === "maps") &&
+          !task && <LoadingSurface mode="output" />}
         {page === "history" && (
           <section className="iw-library iw-history-page">
             <header className="iw-history-heading">
@@ -937,13 +1081,19 @@ function Work({
   // A gathering is not an invitation. Only expose the editor once a
   // genuine invitation artifact has been saved to this task.
   const hasInvitation = Boolean(projectInvitationScene(task)?.artifact);
-  const groundedCount = [...task.candidates, ...task.catalogue].filter((candidate) => !candidate.sample).length;
+  const groundedCount = [...task.candidates, ...task.catalogue].filter(
+    (candidate) => !candidate.sample,
+  ).length;
   const resources = [
     ...(groundedCount ? [{ id: "discover", title: "Discover" }] : []),
     ...(groundedCount > 1 ? [{ id: "compare", title: "Compare" }] : []),
-    ...(task.brief.selected.length || task.schedule.length ? [{ id: "plan", title: "Plan" }] : []),
+    ...(task.brief.selected.length || task.schedule.length
+      ? [{ id: "plan", title: "Plan" }]
+      : []),
     ...(groundedCount ? [{ id: "detail", title: "Details" }] : []),
-    ...(task.receipts?.length || task.artifactHistory?.length ? [{ id: "revisions", title: "Versions" }] : []),
+    ...(task.receipts?.length || task.artifactHistory?.length
+      ? [{ id: "revisions", title: "Versions" }]
+      : []),
     ...(hasInvitation ? [{ id: "invite", title: "Invitation" }] : []),
     ...(hasCanvasWork || research
       ? [{ id: "workspace", title: research ? "Explore" : "Current view" }]
@@ -1012,9 +1162,18 @@ function Work({
             excludeQuestions
           />
         ))}
-      {(["discover", "compare", "plan", "detail", "revisions"].includes(active || "")) && (
-        <ReferenceWork task={task} view={active as "discover" | "compare" | "plan" | "detail" | "revisions"} busy={busy}
-          onTurn={onTurn} onNavigate={(view) => setResource(view)} />
+      {["discover", "compare", "plan", "detail", "revisions"].includes(
+        active || "",
+      ) && (
+        <ReferenceWork
+          task={task}
+          view={
+            active as "discover" | "compare" | "plan" | "detail" | "revisions"
+          }
+          busy={busy}
+          onTurn={onTurn}
+          onNavigate={(view) => setResource(view)}
+        />
       )}
       {active === "invite" && (
         <InvitationStudio task={task} busy={busy} onTurn={onTurn} />

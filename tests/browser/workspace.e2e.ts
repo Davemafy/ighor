@@ -102,7 +102,9 @@ test("HTTP ownership, input validation and stale request rejection", async ({
   expect(foreign.status()).toBe(404);
 });
 
-test("a repeated accepted turn never repeats inference and its saved events survive reload", async ({ page }) => {
+test("a repeated accepted turn never repeats inference and its saved events survive reload", async ({
+  page,
+}) => {
   const created = await page.request.post("/api/tasks");
   expect(created.ok()).toBe(true);
   const task = await created.json();
@@ -114,13 +116,18 @@ test("a repeated accepted turn never repeats inference and its saved events surv
     clientTurnId: turnId,
   };
 
-  const first = await page.request.post(`/api/tasks/${task.id}/turn`, { data: body });
+  const first = await page.request.post(`/api/tasks/${task.id}/turn`, {
+    data: body,
+  });
   expect(first.ok()).toBe(true);
   expect(await first.text()).toContain('"type":"done"');
   const before = await (await page.request.get(`/api/tasks/${task.id}`)).json();
-  expect(before.messages.filter((message: { role: string; text: string }) =>
-    message.role === "user" && message.text === "hey",
-  )).toHaveLength(1);
+  expect(
+    before.messages.filter(
+      (message: { role: string; text: string }) =>
+        message.role === "user" && message.text === "hey",
+    ),
+  ).toHaveLength(1);
 
   const journal = await page.request.get(
     `/api/tasks/${task.id}/turn?turnId=${turnId}`,
@@ -128,15 +135,21 @@ test("a repeated accepted turn never repeats inference and its saved events surv
   expect(journal.ok()).toBe(true);
   const record = await journal.json();
   expect(record.status).toBe("completed");
-  expect(record.events.some((entry: { event: { type: string } }) =>
-    entry.event.type === "done",
-  )).toBe(true);
+  expect(
+    record.events.some(
+      (entry: { event: { type: string } }) => entry.event.type === "done",
+    ),
+  ).toBe(true);
 
-  const second = await page.request.post(`/api/tasks/${task.id}/turn`, { data: body });
+  const second = await page.request.post(`/api/tasks/${task.id}/turn`, {
+    data: body,
+  });
   expect(second.ok()).toBe(true);
   expect(await second.text()).toContain('"type":"done"');
 
-  const afterward = await (await page.request.get(`/api/tasks/${task.id}`)).json();
+  const afterward = await (
+    await page.request.get(`/api/tasks/${task.id}`)
+  ).json();
   expect(afterward.brief.version).toBe(before.brief.version);
   expect(afterward.messages).toEqual(before.messages);
 
@@ -145,7 +158,10 @@ test("a repeated accepted turn never repeats inference and its saved events surv
   });
   expect(keyReuse.status()).toBe(409);
 
-  await page.addInitScript((id) => localStorage.setItem("igor-task", id), task.id);
+  await page.addInitScript(
+    (id) => localStorage.setItem("igor-task", id),
+    task.id,
+  );
   await page.goto(`/app?task=${task.id}`);
   await expect(page.locator(".iw-message.iw-user")).toHaveCount(1);
   await expect(page.locator(".iw-message.iw-assistant")).toBeVisible();

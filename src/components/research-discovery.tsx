@@ -177,53 +177,61 @@ export function ResearchDiscovery({
       )}
       {filtered.length ? (
         <div className="ird-gallery">
-          {(expanded ? filtered : filtered.slice(0, 6)).map((finding, index) => (
-            <article
-              className={
-                "ird-card" +
-                (finding.imageUrl ? " ird-has-image" : " ird-link-card")
-              }
-              key={finding.id}
-            >
-              <button
-                type="button"
-                className="ird-card-open"
-                onClick={() => setSelectedId(finding.id)}
-                aria-label={`Open ${finding.title}`}
+          {(expanded ? filtered : filtered.slice(0, 6)).map(
+            (finding, index) => (
+              <article
+                className={
+                  "ird-card" +
+                  (finding.imageUrl ? " ird-has-image" : " ird-link-card")
+                }
+                key={finding.id}
               >
-                <span className="ird-cover">
-                  {finding.imageUrl ? (
-                    <SourceImage key={finding.imageUrl} finding={finding} />
-                  ) : index === 0 ? (
-                    <span className="ird-title-cover" aria-hidden="true">
-                      <span>{finding.kind === "qloo" ? "Qloo source" : "Web source"}</span>
-                      <strong>{finding.title}</strong>
-                      <span>01</span>
-                    </span>
-                  ) : (
-                    <span className="ird-reference-number" aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                  )}
-                </span>
-                <span className="ird-card-body">
-                  <span className="ird-card-index">
-                    <span>{finding.domain}</span>
-                    <span className="ird-source-tag">{finding.verification}</span>
+                <button
+                  type="button"
+                  className="ird-card-open"
+                  onClick={() => setSelectedId(finding.id)}
+                  aria-label={`Open ${finding.title}`}
+                >
+                  <span className="ird-cover">
+                    {finding.imageUrl ? (
+                      <SourceImage key={finding.imageUrl} finding={finding} />
+                    ) : index === 0 ? (
+                      <span className="ird-title-cover" aria-hidden="true">
+                        <span>
+                          {finding.kind === "qloo"
+                            ? "Qloo source"
+                            : "Web source"}
+                        </span>
+                        <strong>{finding.title}</strong>
+                        <span>01</span>
+                      </span>
+                    ) : (
+                      <span className="ird-reference-number" aria-hidden="true">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    )}
                   </span>
-                  <h3>{finding.title}</h3>
-                  {finding.description && (
-                    <span className="ird-description">
-                      {finding.description}
+                  <span className="ird-card-body">
+                    <span className="ird-card-index">
+                      <span>{finding.domain}</span>
+                      <span className="ird-source-tag">
+                        {finding.verification}
+                      </span>
                     </span>
-                  )}
-                  <span className="ird-card-action">
-                    Inspect reference <ArrowUpRight />
+                    <h3>{finding.title}</h3>
+                    {finding.description && (
+                      <span className="ird-description">
+                        {finding.description}
+                      </span>
+                    )}
+                    <span className="ird-card-action">
+                      Inspect reference <ArrowUpRight />
+                    </span>
                   </span>
-                </span>
-              </button>
-            </article>
-          ))}
+                </button>
+              </article>
+            ),
+          )}
         </div>
       ) : (
         <div className="ird-empty">

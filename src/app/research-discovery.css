@@ -538,7 +538,6 @@
   }
 }
 
-
 /* The inspector remains a source document, not a rounded marketing card. */
 .iw-app .ig-dialog:has(.ird-detail) {
   border-radius: 3px;
@@ -604,6 +603,10 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ird-card { transition: none; }
+  .ird-card {
+    transition: none;
+  }
 }
-.iw-app[data-motion="off"] .ird-card { transition: none; }
+.iw-app[data-motion="off"] .ird-card {
+  transition: none;
+}
