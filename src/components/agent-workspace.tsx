@@ -54,7 +54,6 @@ import "../app/workbench.css";
 import "../app/native-workspace.css";
 import "../app/mockup-native.css";
 import "../app/research-discovery.css";
-import "../app/reference-work.css";
 
 const assets = "/marketing/assets/";
 const starts = [
