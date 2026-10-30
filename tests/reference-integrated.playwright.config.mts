@@ -11,7 +11,6 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3580",
     viewport: { width: 1440, height: 900 },
     headless: true,
-    reducedMotion: "reduce",
   },
   webServer: {
     cwd: fileURLToPath(new URL("../", import.meta.url)),
