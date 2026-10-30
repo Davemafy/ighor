@@ -170,6 +170,7 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
   const [category, setCategory] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [comparisonIds, setComparisonIds] = useState<string[]>([]);
+  const [planTab, setPlanTab] = useState<"overview" | "itinerary" | "map" | "options" | "notes">("overview");
   const candidates = vm.candidates.filter((c) => !c.sample && (!("freshness" in c) || c.freshness === "current"));
   const categories = ["all", "places", "films", "music", "books", "dining", "experiences", "ideas"];
   const matchesCategory = (candidate: Candidate) => category === "all" ||
@@ -357,31 +358,117 @@ export function ReferenceWork({ task, view, busy, onTurn, onNavigate }: Props) {
       ) : <div className="ir-empty">No candidate details yet. Continue your conversation.</div>)}
 
       {view === "plan" && (
-        <div className="ir-plan-layout">
-          <div>
-            <div className="ir-kicker">Connected to workspace revision {vm.revision}</div>
-            {task.schedule.length ? <ol className="ir-timeline">
-              {task.schedule.map((stop, index) => <li key={index}>
-                <span className="ir-time">{stop.minutes} min</span>
-                <span className="ir-dot" aria-hidden="true"/>
-                <div><strong>{stop.label}</strong><p>{stop.candidateId ? vm.candidateById.get(stop.candidateId)?.name || "Candidate unavailable" : "No linked candidate"}</p></div>
-              </li>)}</ol> :
-              <div className="ir-empty"><h3>No timeline saved</h3><p>This task may be research, analysis or creation rather than an event. Its actual work remains in the workspace documents and canvas.</p></div>}
-            <h3>Selected and planned objects</h3>
-            <div className="ir-selection-list">{[...new Set([...vm.selectedIds, ...(task.canvas?.itineraryIds || [])])].map((id) => {
-              const candidate = vm.candidateById.get(id);
-              return candidate ? <button key={id} onClick={() => {setSelectedId(id);onNavigate("detail");}}>{candidate.name}<ArrowRight size={16}/></button> : null;
-            })}</div>
-            {!vm.selectedIds.length && !task.canvas?.itineraryIds.length && <p className="ir-subtle">No confirmed candidate selections yet.</p>}
+        <div className="ir-connected-plan">
+          <div className="ir-plan-byline">
+            <span>{task.brief.participants.filter((person) => !person.sample).length || "No confirmed"} people</span>
+            <span>{task.brief.constraints.location || "Location TBD"}</span>
+            <span>Saved revision {vm.revision}</span>
           </div>
-          <aside className="ir-constraint-panel">
-            <h3>Current constraints</h3>
-            <p>Location <strong>{task.brief.constraints.location}</strong></p>
-            <p>Budget <strong>{task.brief.constraints.budget} {task.brief.constraints.currency}</strong></p>
-            <p>Duration <strong>{task.brief.constraints.duration} minutes</strong></p>
-            {!!task.brief.unresolved.length && <><h4>Still unresolved</h4>{task.brief.unresolved.map((x, i) => <p key={i}>{x}</p>)}</>}
-            <button className="ir-secondary" onClick={() => onNavigate("revisions")}>View versions <ArrowRight size={16}/></button>
-          </aside>
+          <nav className="ir-plan-tabs" aria-label="Plan sections">
+            {(["overview", "itinerary", "map", "options", "notes"] as const).map((tab) => (
+              <button key={tab} aria-current={planTab === tab ? "page" : undefined}
+                onClick={() => setPlanTab(tab)}>
+                {tab[0].toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </nav>
+          {(planTab === "overview" || planTab === "itinerary") && (
+            <div className="ir-plan-reference-grid">
+              <div className="ir-plan-timeline-pane">
+                {task.schedule.length ? (
+                  <ol className="ir-plan-timeline">
+                    {task.schedule.map((stop, index) => {
+                      const candidate = stop.candidateId ? vm.candidateById.get(stop.candidateId) : null;
+                      return (
+                        <li key={index}>
+                          <span className="ir-plan-time">Time TBD</span>
+                          <span className="ir-plan-marker" aria-hidden="true" />
+                          <button className="ir-plan-event" disabled={!candidate}
+                            onClick={() => { if (candidate) {setSelectedId(candidate.id);onNavigate("detail");} }}>
+                            <div className="ir-plan-thumb">
+                              {candidate?.imageUrl ? <img src={candidate.imageUrl} alt="" /> : <span>{index + 1}</span>}
+                            </div>
+                            <div>
+                              <strong>{stop.label}</strong>
+                              <span>{candidate?.name || "Details not confirmed"}</span>
+                              <small>{stop.minutes} min{candidate?.available == null ? " · Availability not checked" : ""}</small>
+                              {task.brief.participants.some((person) => !person.sample) && (
+                                <div className="ir-plan-avatars" aria-label="Plan participants">
+                                  {task.brief.participants.filter((person) => !person.sample).slice(0,6).map((person) => (
+                                    <i key={person.id} title={person.name}>{person.name.slice(0,1)}</i>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <div className="ir-plan-no-schedule">
+                    <h3>Your work is connected.</h3>
+                    <p>No fixed itinerary exists for this task. The outcomes and selected evidence remain available.</p>
+                    <div className="ir-selection-list">{vm.selectedCandidates.map((candidate) => (
+                      <button key={candidate.id} onClick={() => {setSelectedId(candidate.id);onNavigate("detail");}}>
+                        {candidate.name}<ArrowRight size={17}/>
+                      </button>
+                    ))}</div>
+                  </div>
+                )}
+                <button className="ir-plan-add-stop" disabled={busy} onClick={() =>
+                  void onTurn({ type: "message", text: "Add a suitable next step to my existing plan, preserving all confirmed decisions. Ask only for any essential details." })
+                }><Plus size={22}/> Add a stop</button>
+              </div>
+              <aside className="ir-plan-cover">
+                <div className="ir-plan-cover-art">
+                  {vm.selectedCandidates[0]?.imageUrl ? (
+                    <img src={vm.selectedCandidates[0].imageUrl} alt="Selected work cover" />
+                  ) : (
+                    <img src="/reference-art/plan-editorial-cover.webp" alt=""
+                      onError={(event) => { event.currentTarget.src="/marketing/assets/photos/hero-dinner-a-800.webp"; }} />
+                  )}
+                  <div className="ir-plan-cover-copy">
+                    <strong>{task.brief.goal || "An experience worth remembering."}</strong>
+                  </div>
+                </div>
+                {!vm.selectedCandidates[0]?.imageUrl && <small>Illustrative cover art · not a verified venue photo</small>}
+              </aside>
+            </div>
+          )}
+          {planTab === "map" && (
+            <div className="ir-plan-tab-panel">
+              {task.canvas?.surface.nodes.some((node) => node.type === "spatial") ? (
+                <TaskCanvas task={task} busy={busy} onTurn={onTurn}
+                  focusNodeId={task.canvas.surface.nodes.find((node) => node.type === "spatial")?.id} />
+              ) : <div className="ir-empty">A map becomes available when Igor has verified coordinates for the places in your plan.</div>}
+            </div>
+          )}
+          {planTab === "options" && (
+            <div className="ir-plan-tab-panel">
+              <h3>Options you considered</h3>
+              <div className="ir-selection-list">
+                {vm.candidates.filter((candidate) => !candidate.sample).map((candidate) => (
+                  <button key={candidate.id} onClick={() => {setSelectedId(candidate.id);onNavigate("detail");}}>
+                    {candidate.name}<ArrowRight size={17}/>
+                  </button>
+                ))}
+              </div>
+              <button className="ir-secondary" onClick={() => onNavigate("compare")}>Compare alternatives</button>
+            </div>
+          )}
+          {planTab === "notes" && (
+            <div className="ir-plan-tab-panel ir-plan-notes">
+              <h3>Current constraints</h3>
+              <p>Location: <strong>{task.brief.constraints.location}</strong></p>
+              <p>Budget: <strong>{task.brief.constraints.budget} {task.brief.constraints.currency}</strong></p>
+              <p>Duration: <strong>{task.brief.constraints.duration} minutes</strong></p>
+              {task.brief.unresolved.length ? (
+                <><h3>Still unresolved</h3>{task.brief.unresolved.map((text, index) => <p key={index}>{text}</p>)}</>
+              ) : <p>No unresolved constraints recorded.</p>}
+              <button className="ir-secondary" onClick={() => onNavigate("revisions")}>View version history <ArrowRight size={17}/></button>
+            </div>
+          )}
         </div>
       )}
 
