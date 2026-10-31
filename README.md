@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/Davemafy/ighor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Davemafy/ighor/actions/workflows/ci.yml)
 
-**Tell Igor what you love. Turn it into something you can actually do.**
+**Most AI gives you recommendations. Igor turns cultural intelligence into decisions, connected work, and plans that can change with you.**
 
-Igor is a conversational agent with taste. It uses Qloo's cultural intelligence to connect films, music and places to the things you're planning, then helps you compare options and make something useful: a gathering, an itinerary, an invitation or a creative brief. Change the budget, the mood or the plan, and Igor keeps the parts of your work that still make sense.
+Meet Igor, your agent with taste. Start with a film, an artist, a place or a feeling. Powered by Qloo's Taste Graph, Igor helps you discover what fits, compare preferences, and turn a conversation into an editable plan, invitation, itinerary or creative brief. When things change, your decisions and work can carry forward.
 
 https://github.com/Davemafy/ighor/blob/main/assets/Screen%20Recording%202026-10-31%20035320.mp4
 
