@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://igor-production-243e.up.railway.app/app">
-    <img src="assets/readme/igor-cover.webp" alt="Igor. Your agent with taste. Powered by Qloo." width="100%">
+    <img src="assets/readme/igor-cover.webp" width="100%" alt="Igor. Your agent with taste. Powered by Qloo.">
   </a>
 </p>
 
@@ -14,127 +14,118 @@
 <p align="center">
   <a href="https://igor-production-243e.up.railway.app/app"><strong>Try Igor</strong></a>
   &nbsp;·&nbsp;
-  <a href="#-see-igor-at-work">See it work</a>
+  <a href="#-a-real-igor-workflow">See the workflow</a>
   &nbsp;·&nbsp;
-  <a href="#-get-started">Get started</a>
+  <a href="qloo/README.md">Explore Qloo integration</a>
   &nbsp;·&nbsp;
-  <a href="qloo/README.md">Qloo integration</a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/Davemafy/ighor">Source</a>
+  <a href="#-run-it-locally">Run locally</a>
 </p>
 
 ---
 
-## 💡 Meet Igor
+## 💡 An AI agent with taste
 
-**What if your AI agent had taste?**
+You want to plan an evening with friends. One loves indie films. Another wants jazz. Two people disagree about dinner. You have a budget, a time limit, and plenty of opinions.
 
-Not just the ability to suggest a film or find a restaurant, but the cultural understanding to connect your interests, make sense of different preferences, and turn ideas into something useful.
+Ask a typical AI for help and you get a list.
 
-**Igor** is a conversational agent powered by [Qloo's Taste Graph](https://www.qloo.com/). Qloo provides cultural connections. Igor brings them into discovery, evaluation, group decisions, and editable work, all in one conversation.
+**Now you have ten more things to argue about.**
 
-And when you change your mind? **You don't have to start over.**
+Igor goes beyond the list. It's a conversational agent that uses [Qloo's Taste Graph](https://www.qloo.com/) to discover cultural connections, weigh preferences and constraints, and turn the result into editable work.
 
-## 🎬 See Igor at work
+Plans, invitations, itineraries, creative briefs. One conversation that can keep evolving.
 
-*This isn't another list of recommendations. It's what happens after the list.*
+**Because a good recommendation is only useful if you can do something with it.**
 
-In a documented Railway production check on **October 26, 2026**, an operator asked Igor for films connected to Portishead and *Arrival*. Igor returned ten film references with **LIVE Qloo evidence**. The operator then changed the budget. Igor updated the constraint, kept the film reference pool, and made **zero new Qloo requests** for that correction.
+## 🎬 A real Igor workflow
 
-<p align="center">
-  <a href="docs/live-integration.md">
-    <img src="assets/readme/igor-observed-workflow.svg" alt="Documented three-step Igor journey: a Portishead and Arrival film request, ten film references with LIVE Qloo evidence, and a budget correction that preserved the film pool with zero new Qloo requests" width="100%">
-  </a>
-</p>
+*The interesting part starts when you change your mind.*
 
-<sub>The graphic illustrates a recorded production check, rather than recreating an app screenshot. [Read the test evidence](docs/live-integration.md) or [open the application](https://igor-production-243e.up.railway.app/app).</sub>
+In a documented Railway production check on **October 26, 2026**, Igor received this request:
 
-## 🧭 Judge walkthrough
+> **“I like Portishead and Arrival. Find films for me for a quiet evening.”**
 
-**Start with one conversation. Change one thing. See what Igor keeps.**
+The result: **10 film references**, backed by **LIVE Qloo cultural evidence** retrieved in **2 Qloo requests**.
 
-1. **[Open Igor](https://igor-production-243e.up.railway.app/app)** and begin a fresh conversation. Try: **“I like Portishead and Arrival. Find films for me for a quiet evening.”**
-2. **Explore the evidence.** Inspect the returned cultural references and their Qloo source details. A `LIVE` label means a provider request; `CACHED` means reused evidence.
-3. **Change a constraint.** Say **“Budget: 20.”** See whether the cultural pool is preserved and how the saved task responds.
-4. **Check continuity.** Reload the conversation and ask Igor to recall your earlier request.
-5. **Follow the receipts.** Open the [Qloo integration dossier](qloo/README.md) for the actual provider code, dated production checks, evaluation tooling, and source limitations.
+Then the operator said:
 
-These steps let judges explore the same *kind* of workflow as the October 26 production check. Live results may depend on provider configuration, cached data and the current runtime. The historical observations and their scope are in [qloo/EVIDENCE.md](qloo/EVIDENCE.md).
+> **“Budget: 20.”**
 
-## ✨ Four capabilities. One agent.
+Igor updated the constraint, retained the cultural reference pool, and made **0 new Qloo requests** for the correction.
 
-- 🔎 **Discover:** Explore connections across films, artists, places, and other cultural references using Qloo.
-- ⚖️ **Evaluate:** Consider preferences, known facts, budgets, time, and anything still unknown.
-- 🤝 **Collaborate:** Compare people's stated tastes without pretending everyone agrees.
-- 🎨 **Compose:** Turn selected ideas into editable plans, invitations, itineraries, and creative briefs.
+| 10 film references | 2 live Qloo requests | 0 repeat Qloo requests on budget correction |
+| :---: | :---: | :---: |
+| Cultural discovery | Evidence-backed retrieval | Selective revision |
 
-**No separate assistant for every task. No throwing away a good idea when the brief changes.**
+That's the experience we're building around: **discover once, preserve what matters, change what needs changing**.
 
-## 🧐 Why Igor makes different decisions
+[Read the original production verification](docs/live-integration.md) · [See the Qloo evidence breakdown](qloo/EVIDENCE.md) · [Open Igor](https://igor-production-243e.up.railway.app/app)
 
-**Qloo is part of Igor's decisions, not a recommendation widget added at the end.** [See the source-level Qloo walkthrough](qloo/WORKFLOW.md).
+## 🧭 Try the judge walkthrough
 
+1. **[Open the application](https://igor-production-243e.up.railway.app/app).** Start a fresh conversation and ask for film recommendations connected to Portishead and *Arrival*.
+2. **Inspect the cultural evidence.** Look for source references and whether the result is marked `LIVE` or `CACHED`.
+3. **Change your mind.** Enter `Budget: 20` and examine what changes in the saved task.
+4. **Return to the conversation.** Reload the page and ask what you discussed earlier.
+5. **Inspect the implementation.** The [Qloo dossier](qloo/README.md) connects provider calls, evidence, tests and limitations to the code.
 
-<table>
-<tr>
-<td width="50%" valign="top">
-  <img src="assets/readme/igor-cultural-evidence.svg" alt="Source-aware discovery: cultural connections from Qloo are separate from practical facts such as price, access and timing" width="100%">
-  <p><strong>🔗 Show your sources.</strong><br>Qloo affinity helps Igor explore what fits. It doesn't magically verify prices, opening times, or whether someone will love the result. Igor keeps the signal, its source, and its limits together.</p>
-</td>
-<td width="50%" valign="top">
-  <img src="assets/readme/igor-group-tradeoffs.svg" alt="Group decision model: individual preferences remain separate, comparisons use per-query ranks, and unknown is not treated as dislike" width="100%">
-  <p><strong>🤝 Keep everyone's taste personal.</strong><br>A group isn't one taste profile. Igor preserves who's interested in what, compares signals within each query, and makes trade-offs visible instead of inventing a compatibility score.</p>
-</td>
-</tr>
-</table>
+This is a way to explore Igor's actual behavior, not a guaranteed reproduction of one dated provider result. The [production notes](docs/live-integration.md) record what happened in the October 26 runs.
 
-### 🔄 Change the decision. Keep the work.
+## ✨ One agent. Four capabilities.
 
-<p align="center">
-  <a href="docs/live-integration.md">
-    <img src="assets/readme/igor-selective-revision.svg" alt="Production check: changing a budget preserved the film reference pool and required zero additional Qloo requests" width="100%">
-  </a>
-</p>
+**🔎 Discover.** Cultural connections across films, artists, places and more, informed by Qloo.
 
-Change a budget and Igor can reconsider what depends on it, without restarting the cultural search. Edit an invitation and that shouldn't erase your film choices. Decisions, evidence, documents, and conversation history stay connected through versioned task state.
+**⚖️ Evaluate.** Compare the options against stated interests, budgets, practical facts and unknowns.
 
-The same engine supports a six-person gathering, a multi-day itinerary, an artist-level listening programme, a cultural research report, and a reference-based creative brief. [See supported outcomes](docs/broader-outcomes.md).
+**🤝 Collaborate.** Keep people's tastes distinct. Find overlap without flattening everyone into one imaginary profile.
 
-## 🛠️ Inside Igor
+**🎨 Compose.** Turn chosen ideas into an invitation, a programme, an itinerary, a research report or a creative brief.
 
-The split matters: **Qloo provides cultural references. The agent chooses the work. Validated code checks constraints and revisions.** See the [root-level Qloo dossier](qloo/README.md) for the provider boundaries, dated evidence and evaluation approach.
+All four capabilities share conversation history, evidence and saved work.
 
+## 🔗 Why Qloo matters
 
-We built Igor as a **Next.js and React** application with **TypeScript**, **SQLite**, typed task contracts, and server-side provider adapters. The interface and the agent work from the same saved state.
+Qloo isn't a recommendation widget bolted onto Igor's interface. It is a source of cultural intelligence that the agent can use while deciding what to discover, compare and create.
 
-```mermaid
-flowchart LR
-    A[Your conversation] --> B[Agent orchestrator]
-    B --> C[Qloo cultural discovery]
-    B --> D[Evaluate constraints]
-    C --> E[Editable outcome]
-    D --> E
-    E --> F[Saved task and evidence]
-    F --> B
-```
+**Qloo supplies cultural signals. Igor turns those signals into work.**
 
-The agent interprets a request, chooses the relevant capabilities, checks evidence and constraints, then saves the result. Later changes invalidate dependent decisions while preserving unrelated work. Provider credentials remain on the server.
+An affinity signal isn't proof of a venue's opening hours, current price or availability. Igor keeps cultural evidence separate from practical facts so the user can understand what supports each decision.
 
-| Where to look | What you'll find |
+For the actual integration, start here:
+
+- [How Qloo works inside Igor](qloo/README.md)
+- [The request-to-revision flow](qloo/WORKFLOW.md)
+- [Production evidence](qloo/EVIDENCE.md)
+- [Evaluation protocol](qloo/EVALUATION.md)
+
+## 🔄 Change the decision. Keep the work.
+
+What if the budget changes after you've chosen a film? What if someone wants different music? What if you only want to edit the invitation?
+
+Igor tracks the dependencies between cultural references, constraints and saved outputs. A budget change can reuse existing discovery; a changed cultural preference can trigger fresh exploration. An invitation edit shouldn't erase your earlier selections.
+
+This connected-work model also supports a six-person gathering, a multi-day itinerary, an artist-level listening programme and reference-based creative research.
+
+[See what the engine supports](docs/broader-outcomes.md) · [Read the architecture](docs/architecture.md)
+
+## 🛠️ Under the hood
+
+Igor is built with **Next.js, React, TypeScript, Node.js, SQLite** and typed capability contracts. The model interprets the conversation; server-side adapters handle cultural retrieval; the agent evaluates constraints and commits evidence-linked, versioned outcomes.
+
+| Explore the source | Responsibility |
 | :--- | :--- |
-| [Agent orchestration](src/core/orchestrator.ts) | Versioned turns, execution, and persistence |
-| [Capability contracts](src/capabilities/contract.ts) | Typed discovery, evaluation, collaboration, and composition |
-| [Qloo integration](src/tools/qloo-live.ts) | Cultural retrieval, identity handling, and bounded requests |
-| [Qloo evidence](qloo/EVIDENCE.md) | Dated LIVE and CACHED provider checks with their limits |
-| [Qloo evaluation](qloo/EVALUATION.md) | Blind comparison protocol, runnable tests and unmeasured outcomes |
-| [Evidence and revision rules](docs/architecture.md) | Provenance, constraints, stale dependencies, and selective updates |
-| [Development guide](docs/development.md) | Provider configuration and verification commands |
+| [Agent orchestrator](src/core/orchestrator.ts) | Conversation, capability execution and persistent state |
+| [Qloo adapter](src/tools/qloo-live.ts) | Cultural retrieval, caching and bounded requests |
+| [Qloo response validation](src/tools/qloo-response.ts) | Entity normalization and evidence handling |
+| [Capability contracts](src/capabilities/contract.ts) | Discover, Evaluate, Collaborate and Compose |
+| [Architecture](docs/architecture.md) | Ownership, provenance and dependency-aware revisions |
+| [Provider validation](docs/github-validation.md) | Independent checks and recorded outcomes |
 
-## 💻 Get started
+Tests cover the capability contracts, provider boundaries, persistence, revisions and failure handling. See [the evaluation guide](qloo/EVALUATION.md) for runnable checks and the distinction between an executed test and a planned study.
 
-[**Try the live app**](https://igor-production-243e.up.railway.app/app) or clone the [**public source code**](https://github.com/Davemafy/ighor).
+## 💻 Run it locally
 
-Use **Node.js 24 or newer**:
+Use **Node.js 24+** and the [public source](https://github.com/Davemafy/ighor).
 
 ```bash
 git clone https://github.com/Davemafy/ighor.git
@@ -143,29 +134,24 @@ npm ci
 npm run dev
 ```
 
-Open [localhost:3000/app](http://localhost:3000/app). For live cultural retrieval and conversation, set `QLOO_API_KEY` and a supported server-side model key such as `GEMINI_API_KEY`.
+Open [localhost:3000/app](http://localhost:3000/app). Configure `QLOO_API_KEY` and a supported server-side model key, such as `GEMINI_API_KEY`, for live discovery and conversation.
 
 ```bash
 npm test
+npm run test:eval
 npm run typecheck
 npm run build
 ```
 
-Original Qloo response recordings are not redistributed in this public checkout because their reuse rights have not been established. The recording-only replay suites require authorized fixtures. [Provider setup and test details](docs/development.md) explain the available paths. App results don't imply that a venue is booked, open, or affordable unless those facts have been supplied or independently checked.
+Original Qloo API recordings aren't redistributed in this public checkout because redistribution rights haven't been established; recording-dependent suites need authorized private fixtures. [Development setup](docs/development.md) covers provider configuration and test boundaries.
 
-### 🔍 Reproducibility and limits
+## 🔮 Where we're taking Igor next
 
-The documented October 26 film-discovery run returned ten references with LIVE Qloo evidence. Its budget correction preserved the reference pool with zero additional Qloo requests. The verified discussion journey also restored saved conversation messages after a refresh. These observations are **dated execution evidence**, not a claim that this README commit has passed a fresh production acceptance run.
-
-For test commands, current source boundaries, and the difference between a runnable unit suite and recording-dependent checks, see [Qloo evaluation](qloo/EVALUATION.md) and [provider verification](docs/github-validation.md). Results from a cached fixture aren't relabeled as live results.
-
-## 🔮 What's next?
-
-🗺️ Richer spatial discovery. 📬 Permission-based coordination. 🤝 More shared reviews and approvals. 📊 Comparing outcomes with and without Qloo.
+More immersive cultural exploration, permission-based external coordination, deeper group collaboration, and a blinded study of how much Qloo improves real task outcomes.
 
 ## ❤️ Thank you, Qloo
 
-Huge thanks to the **Qloo team** for organizing this hackathon and letting us experiment with the Taste Graph. What started as a question about whether AI agents could understand taste became a much bigger exploration of culture, decisions, and creative work.
+Huge thanks to the **Qloo team** for organizing this hackathon and giving us the chance to build with the Taste Graph. An idea about agents with taste became an exploration of culture, decisions, memory and what comes after a recommendation.
 
 **Thank you for making it possible. ❤️**
 
