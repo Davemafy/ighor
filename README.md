@@ -1,12 +1,14 @@
 # Igor
 
+[![CI](https://github.com/Davemafy/ighor/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Davemafy/ighor/actions/workflows/ci.yml)
+
 **Tell Igor what you love. Turn it into something you can actually do.**
 
 Igor is a conversational agent with taste. It uses Qloo's cultural intelligence to connect films, music and places to the things you're planning, then helps you compare options and make something useful: a gathering, an itinerary, an invitation or a creative brief. Change the budget, the mood or the plan, and Igor keeps the parts of your work that still make sense.
 
-https://vimeo.com/1241571941
+https://github.com/Davemafy/ighor/blob/main/assets/Screen%20Recording%202026-10-31%20035320.mp4
 
-- **Demo video:** https://vimeo.com/1241571941
+- **Demo video:** [Watch Igor's uploaded recording](assets/Screen%20Recording%202026-10-31%20035320.mp4)
 - **Live app:** https://igor-production-243e.up.railway.app/app
 - **Judge path:** [Try a film discovery, revise the budget, inspect saved work](#judge-walkthrough)
 - **Verified production run:** [October 26 Railway checks](docs/live-integration.md), including a LIVE Qloo retrieval and a correction with no new Qloo calls
@@ -263,9 +265,7 @@ This is a walkthrough of the real app, not a dedicated `/judges` route or a guar
 
 ## Screens
 
-The product walkthrough is recorded on [Vimeo](https://vimeo.com/1241571941). The image below is a frame from that recording, not a fabricated screenshot or a substitute for the video.
-
-[![Igor product walkthrough frame](assets/readme/igor-demo-preview.webp)](https://vimeo.com/1241571941)
+The full product walkthrough is included in this repository: [watch the uploaded MP4](assets/Screen%20Recording%202026-10-31%20035320.mp4).
 
 ## Data model
 
