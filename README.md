@@ -1,12 +1,32 @@
 # Igor
 
-**AI agents are learning how to do almost anything. But how do they know what's right for you?**
+<p align="center">
+  <a href="https://igor-production-243e.up.railway.app/app">
+    <img src="assets/readme/igor-cover.webp" alt="Igor. Your agent with taste." width="100%">
+  </a>
+</p>
 
-**Your agent with taste. Powered by [Qloo](https://www.qloo.com/).**
+<p align="center">
+  <a href="https://igor-production-243e.up.railway.app/app"><strong>Try Igor</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#a-verified-production-run">See a real run</a>
+  &nbsp;·&nbsp;
+  <a href="#how-it-works">How it works</a>
+  &nbsp;·&nbsp;
+  <a href="#running-locally">Run locally</a>
+</p>
 
-Igor connects cultural discovery to the decisions that follow it. It can compare different people's tastes, turn the result into editable work, and preserve that work when the conversation changes.
+**“We should do something this weekend.”**
 
-**[Live application](https://igor-production-243e.up.railway.app/app)** · **[Judge walkthrough](#judge-walkthrough)** · **[Qloo integration](qloo/README.md)** · **[Source code](src/core/orchestrator.ts)**
+Everyone says yes. Then come the suggestions. Someone wants a film, someone else is thinking about music, and another friend asks how much it's all going to cost. The group chat fills up with links. Somehow, nobody has a plan.
+
+**That's the part Igor is here for.**
+
+Igor is your agent with taste. Tell it what you're thinking about, what you like, who you're planning with and what needs to fit. It helps you find interesting connections, make sense of the options, and turn them into something you can actually use.
+
+An evening with friends. A trip. An invitation. A creative brief. And when someone says *“Actually, can we change that?”*, you can carry on from what you've already decided instead of starting over.
+
+Behind the scenes, [Qloo's Taste Graph](https://www.qloo.com/) gives Igor cultural context. But the experience is about **your ideas, your people and what you want to do next.**
 
 ---
 
@@ -31,29 +51,24 @@ Igor connects cultural discovery to the decisions that follow it. It can compare
 
 ## The problem
 
-You want to plan an evening with friends. One loves indie films. Another wants jazz. Two people disagree about dinner. You have a budget, a time limit, and plenty of opinions.
+Finding ideas is easy. Agreeing on one, checking whether it works and keeping everyone on the same page takes considerably more effort.
 
-Ask a typical AI for help and you get a list.
+A list of recommendations doesn't know which choice your friends agreed on. A fresh chat doesn't automatically carry over the invitation you edited yesterday. And changing a budget shouldn't mean redoing all the cultural discovery that still makes sense.
 
-**Now you have ten more things to argue about.**
-
-Igor goes beyond the list. It's a conversational agent that uses [Qloo's Taste Graph](https://www.qloo.com/) to discover cultural connections, weigh preferences and constraints, and turn the result into editable work.
-
-Plans, invitations, itineraries, creative briefs. One conversation that can keep evolving.
-
-**Because a good recommendation is only useful if you can do something with it.**
+We built Igor to connect those steps: **discovery, decisions and the work that follows**, in a conversation you can keep coming back to.
 
 ## What Igor does
 
-**🔎 Discover.** Cultural connections across films, artists, places and more, informed by Qloo.
+Igor has four capabilities that work together, depending on what you're trying to accomplish.
 
-**⚖️ Evaluate.** Compare the options against stated interests, budgets, practical facts and unknowns.
+| Capability | In everyday terms |
+| :--- | :--- |
+| **Discover** | Start with something you love and explore what else might fit. |
+| **Evaluate** | Figure out what works with your preferences, time, budget and the facts you actually know. |
+| **Collaborate** | Make room for different tastes without pretending everyone agrees. |
+| **Compose** | Turn the decisions into a plan, invitation, itinerary or creative direction you can edit. |
 
-**🤝 Collaborate.** Keep people's tastes distinct. Find overlap without flattening everyone into one imaginary profile.
-
-**🎨 Compose.** Turn chosen ideas into an invitation, a programme, an itinerary, a research report or a creative brief.
-
-All four capabilities share conversation history, evidence and saved work.
+You don't need to choose one of these before talking to Igor. **It's one conversation, even when the goal changes.**
 
 ## How it works
 
